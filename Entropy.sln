@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Game", "Entropy.Game\Entropy.Game.csproj", "{1257091A-B6B1-489A-92BA-9FBD95BF0A8C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Engine", "Entropy.Engine\Entropy.Engine.csproj", "{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1257091A-B6B1-489A-92BA-9FBD95BF0A8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1257091A-B6B1-489A-92BA-9FBD95BF0A8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1257091A-B6B1-489A-92BA-9FBD95BF0A8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1257091A-B6B1-489A-92BA-9FBD95BF0A8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
