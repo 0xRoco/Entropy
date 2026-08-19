@@ -7,6 +7,7 @@ public interface IGameInput
 {
     bool IsKeyDown(Keys key);
     bool IsKeyPressed(Keys key);
+    Keys? GetKeyPressed();
     bool IsMouseButtonDown(MouseButton button);
     bool IsMouseButtonPressed(MouseButton button);
     Vector2 MousePosition { get; }

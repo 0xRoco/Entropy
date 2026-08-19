@@ -5,18 +5,6 @@ namespace Entropy.Engine.World;
 
 public static class MapGenerator
 {
-    private readonly record struct Room(int X, int Y, int Width, int Height)
-    {
-        public int CenterX => X + Width / 2;
-        public int CenterY => Y + Height / 2;
-        
-        public bool Intersects(Room other, int padding) =>
-            X - padding < other.X + other.Width &&
-            X + Width + padding > other.X &&
-            Y - padding < other.Y + other.Height &&
-            Y + Height + padding > other.Y;
-    }
-
     public static (TileMap map, List<Vector2i> roomCenters) Generate(int width, int height, Rng rng,
         int roomAttempts = 20, int roomMinSize = 4, int roomMaxSize = 10)
     {
@@ -93,6 +81,18 @@ public static class MapGenerator
     {
         for (var y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
             map.SetTile(x, y, Tile.Floor);
+    }
+    
+    private readonly record struct Room(int X, int Y, int Width, int Height)
+    {
+        public int CenterX => X + Width / 2;
+        public int CenterY => Y + Height / 2;
+        
+        public bool Intersects(Room other, int padding) =>
+            X - padding < other.X + other.Width &&
+            X + Width + padding > other.X &&
+            Y - padding < other.Y + other.Height &&
+            Y + Height + padding > other.Y;
     }
 
 }

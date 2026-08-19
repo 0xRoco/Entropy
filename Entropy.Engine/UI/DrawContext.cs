@@ -18,21 +18,20 @@ public class DrawContext
         Batcher.AddRect(tileX, tileY, width, height, color);
     public void DrawRect(float tileX, float tileY, float width, float height, Color4 color)
         => Batcher.AddRect(tileX, tileY, width, height, color);
-    public void DrawText(int tileX, int tileY, Color4 color, string text)
+    public void DrawText(int tileX, int tileY, string text, Color4 color = default)
     {
+        if (color == default)
+            color = DefaultForeground;
+        
         for (var i = 0; i < text.Length; i++)
             DrawGlyph(tileX + i, tileY, color, text[i]);
     }
-
-
     
     public void DrawBorder(int tileX, int tileY, int width, int height, Color4 color, float thickness = 0.15f)
     {
-        // top and bottom edges — full width, so corners join cleanly
         DrawRect(tileX, tileY, width, thickness, color);
         DrawRect(tileX, tileY + height - thickness, width, thickness, color);
 
-        // left and right edges — inset vertically so they don't overlap the corners' thickness
         DrawRect(tileX, tileY + thickness, thickness, height - 2 * thickness, color);
         DrawRect(tileX + width - thickness, tileY + thickness, thickness, height - thickness * 2, color);
     }

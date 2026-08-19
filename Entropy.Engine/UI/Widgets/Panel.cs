@@ -1,4 +1,5 @@
 using OpenTK.Mathematics;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Entropy.Engine.UI.Widgets;
 
@@ -20,5 +21,15 @@ public class Panel : Widget
         context.DrawBorder(x, y, Width, Height, BorderColor);
         
         base.Draw(context, offsetX + X, offsetY + Y);
+    }
+
+    public override bool OnKey(Keys Key)
+    {
+        if (Key == Keys.Escape)
+        {
+            RequestClose();
+            return true;
+        }
+        return base.OnKey(Key);
     }
 }

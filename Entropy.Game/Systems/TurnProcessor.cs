@@ -9,14 +9,14 @@ namespace Entropy.Game.Systems;
 
 public class TurnProcessor
 {
-    private readonly TurnQueue _queue = new();
     public TurnQueue Queue => _queue;
-        
+    
+    private readonly TurnQueue _queue = new();
     private const int PlayerDamage = 1;
-
+    
     public void AddActor(Entity entity) => _queue.Add(entity);
     public void RemoveActor(Entity entity) => _queue.Remove(entity);
-
+    
     public bool ProcessPlayerTurn(Entity player, Vector2i move, GameContext context, VisibilityMap visibility, int viewRadius)
     {
         ref var pos = ref context.World.Get<Position>(player);

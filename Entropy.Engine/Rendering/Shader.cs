@@ -5,7 +5,6 @@ namespace Entropy.Engine.Rendering;
 
 public class Shader : IDisposable
 {
-    
     public int Handle { get; }
     private readonly Dictionary<string, int> _uniforms = new();
     

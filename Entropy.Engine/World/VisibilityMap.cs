@@ -2,10 +2,11 @@ namespace Entropy.Engine.World;
 
 public class VisibilityMap
 {
-    private readonly bool[] _visible;
-    private readonly bool[] _explored;
     public int Width { get; }
     public int Height { get; }
+    
+    private readonly bool[] _visible;
+    private readonly bool[] _explored;
     
     public VisibilityMap(int width, int height)
     {

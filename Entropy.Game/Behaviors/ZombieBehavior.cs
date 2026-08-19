@@ -22,33 +22,29 @@ public class ZombieBehavior : IBehavior
 
         var player = context.Player;
 
-        // zombie state lives in the component so it survives without a class instance per zombie
         ref var state = ref world.Get<AIState>(self);
 
-        // --- attack: adjacency means detection, regardless of mode ---
         if (world.IsAlive(player) && AiUtil.IsAdjacent(position, world.Get<Position>(player).Value))
         {
             AttackPlayer(world, context, player);
             return;
         }
 
-        // --- sense-driven state transitions ---
         if (awareness.Detected.ContainsKey(player))
         {
             state.Mode = AIMode.Hunt;
         }
         else if (state.Mode == AIMode.Hunt)
         {
-            state.Mode = AIMode.Search; // lost sight — investigate last known position
+            state.Mode = AIMode.Search;
         }
 
         if (awareness.TurnsSinceDetected.TryGetValue(player, out var stale)
             && stale > GiveUpAfterTurns)
         {
-            state.Mode = AIMode.Idle; // been too long — give up
+            state.Mode = AIMode.Idle;
         }
 
-        // --- act by mode ---
         switch (state.Mode)
         {
             case AIMode.Hunt:
@@ -73,7 +69,6 @@ public class ZombieBehavior : IBehavior
                     var here = AiUtil.ToTile(position);
                     if (here.Equals(lastKnown))
                     {
-                        // arrived at last known spot, nobody there — hang around, then give up
                         AiUtil.Wander(world, self, context.Map, context.Rng, 0.5f);
                     }
                     else

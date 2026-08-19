@@ -5,10 +5,10 @@ namespace Entropy.Engine.World;
 
 public class TileMap(int width, int height)
 {
-    private readonly Tile[] _tiles = new Tile[width * height];
-
     public int Width => width;
     public int Height => height;
+    
+    private readonly Tile[] _tiles = new Tile[width * height];
 
     public Tile this[int x, int y]
     {

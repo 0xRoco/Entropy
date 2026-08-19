@@ -8,8 +8,7 @@ public class Camera
     public float Zoom = 1f;
     public Vector2i ViewportSize;
     public const float TilePixelSize = 16f;
-
-
+    
     public Vector2 WorldToScreen(Vector2 world)
     {
         var centerPixels = ViewportSize.ToVector2() * 0.5f;

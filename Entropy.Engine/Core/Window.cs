@@ -54,6 +54,16 @@ public class Window(IGameClient client, WindowSettings settings) : GameWindow(Ga
     
     public new bool IsKeyDown(Keys key) => KeyboardState.IsKeyDown(key);
     public new bool IsKeyPressed(Keys key) => KeyboardState.IsKeyPressed(key);
+    public Keys? GetKeyPressed()
+    {
+        foreach (var key in Enum.GetValues<Keys>())
+        {
+            if ((int)key < 0 || (int)key > 348) continue; 
+            if (KeyboardState.IsKeyPressed(key)) return key;
+        }
+        return null;
+    }
+
     public new bool IsMouseButtonDown(MouseButton button) => MouseState.IsButtonDown(button);
     public new bool IsMouseButtonPressed(MouseButton button) => MouseState.IsButtonPressed(button);
     public new Vector2 MousePosition => MouseState.Position;
