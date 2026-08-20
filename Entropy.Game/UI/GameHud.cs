@@ -1,5 +1,9 @@
+using Entropy.Engine.ECS;
+using Entropy.Engine.ECS.Components;
 using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
+using Entropy.Game.Components;
+using Entropy.Game.Systems;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -10,12 +14,16 @@ public class GameHud
     public Ui Ui { get; }
     public bool InventoryOpen { get; private set;}
 
+    private readonly World _world;
+    private readonly Entity _player;
     private readonly Panel _inventoryPanel;
     private readonly ListView _inventoryList;
-    private MessageLogPanel _logPanel;
+    private readonly MessageLogPanel _logPanel;
 
-    public GameHud(MessageLog log, Vector2i viewportTiles)
+    public GameHud(MessageLog log, World world, Entity player, Vector2i viewportTiles)
     {
+        _world = world;
+        _player = player;
         Ui = new Ui { ViewportTiles = viewportTiles };
         _logPanel = new MessageLogPanel
         {
@@ -27,24 +35,17 @@ public class GameHud
         };
         Ui.AddRoot(_logPanel);
 
-        _inventoryPanel = new Panel
-        { X = 5, Y = 3, Width = 30, Height = 10, Closable = true};
-        _inventoryPanel.Add(new Label
-        { X = 1, Y = 1, Width = 28, Text = "Inventory", Color = Color4.Yellow }); 
+        _inventoryPanel = new Panel { X = 1, Y = 1, Width = 30, Height = 10, Closable = true};
+        _inventoryPanel.Add(new Label { X = 1, Y = 1, Width = 30, Text = "Inventory", Color = Color4.Yellow }); 
         
-        _inventoryList = new ListView { X = 1, Y = 3, Width = 28, Height = 3 };
-        _inventoryList.Items.Add("Iron Sword");
-        _inventoryList.Items.Add("Bandage");
-        _inventoryList.Items.Add("Crackers");
-        _inventoryList.Items.Add("Wrench");
-        _inventoryList.Items.Add("Flashlight");
-        _inventoryList.Items.Add("Empty Bottle");
+        _inventoryList = new ListView { X = 1, Y = 4, Width = 30, Height = 3 };
         _inventoryPanel.Add(_inventoryList);
         
         _inventoryList.OnActivate += i => log.Add($"You fiddle with the {_inventoryList.Items[i]}.", Color4.Cyan);
         
         
         _inventoryPanel.CloseRequested += ToggleInventory;
+        _inventoryList.OnActivate += OnInventoryActivate;
 
     }
 
@@ -74,6 +75,7 @@ public class GameHud
     {
         if (InventoryOpen) return;
         InventoryOpen = true;
+        RefreshInventory();
         Ui.AddRoot(_inventoryPanel);
         Ui.SetFocus(_inventoryList);
     }
@@ -85,4 +87,22 @@ public class GameHud
         Ui.RemoveRoot(_inventoryPanel);
         Ui.SetFocus(null);
     }
+    
+    private void RefreshInventory()
+    {
+        _inventoryList.Items.Clear();
+        foreach (var item in ItemSystem.GetItems(_world, _player))
+        {
+            if (!_world.IsAlive(item)) continue;
+            var identity = _world.Get<ItemIdentity>(item);
+            var glyph = _world.Get<Glyph>(item);
+            _inventoryList.Items.Add($"[{glyph.Character}] {identity.Name}");
+        }
+    }
+    
+    private void OnInventoryActivate(int index)
+    {
+        RefreshInventory();
+    }
+
 }

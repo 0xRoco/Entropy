@@ -30,6 +30,10 @@ public class WorldSetup
 
         var human = EntitySpawner.CreateHuman(world, spawn.X + 1, spawn.Y);
         turns.AddActor(human);
+        
+        EntitySpawner.CreateItem(world, "Iron Sword", '/', Color4.White, spawn.X - 1, spawn.Y + 1);
+        EntitySpawner.CreateItem(world, "Bandage", '!', Color4.Pink, spawn.X + 2, spawn.Y + 1);
+        EntitySpawner.CreateItem(world, "Crackers", '%', Color4.LightYellow, spawn.X, spawn.Y + 1);
 
         foreach (var roomCenter in roomCenters.Skip(1))
         {

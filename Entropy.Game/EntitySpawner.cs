@@ -53,5 +53,15 @@ public static class EntitySpawner
         Console.WriteLine($"Created zombie entity {e.Id} at position ({x}, {y})");
         return e;
     }
+    
+    public static Entity CreateItem(World world, string name, char glyph, Color4 color, int x, int y)
+    {
+        var e = world.Create()
+            .With(world, new Position { Value = new Vector2(x, y) })
+            .With(world, new Glyph { Character = glyph, Foreground = color })
+            .With(world, new Item())
+            .With(world, new ItemIdentity { Name = name });
+        return e;
+    }
 
 }

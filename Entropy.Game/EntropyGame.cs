@@ -53,7 +53,6 @@ public class EntropyGame : IGameClient
         _tileBatcher = new QuadBatcher(_shader, _tileCamera, _atlas);
         _log = new MessageLog();
         _drawContext = new DrawContext {Batcher = _tileBatcher, Atlas = _atlas};
-        _hud = new GameHud(_log, ToTileSize(clientSize));
         
         var result = WorldSetup.StartNewGame(_rng, _log, ViewRadius);
         _map = result.Map;
@@ -61,7 +60,10 @@ public class EntropyGame : IGameClient
         _player = result.Player;
         _visibility = result.Visibility;
         _turnProcessor = result.Turns;
+        
+        _hud = new GameHud(_log, _world, _player, ToTileSize(clientSize));
         _context = new GameContext { Map = _map, Log = _log, World = _world, Player = _player, Rng = _rng };
+        
         _camera.Position = _world.Get<Position>(_player).Value;
     }
 
@@ -85,8 +87,7 @@ public class EntropyGame : IGameClient
         if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
         var move = Controls.GetMoveDirection(_input);
         
-        if (move == null ||
-            !_turnProcessor.ProcessPlayerTurn(_player, (Vector2i)move, _context, _visibility, ViewRadius)) return;
+        if (!ProcessPlayerAction()) return;
         
         _camera.Position = _world.Get<Position>(_player).Value;
         _turnProcessor.RunAITurns(_player, _context);
@@ -113,6 +114,34 @@ public class EntropyGame : IGameClient
         _tileBatcher.Dispose();
         _shader.Dispose();
         _atlas.Dispose();
+    }
+    
+    private bool ProcessPlayerAction()
+    {
+        var move = Controls.GetMoveDirection(_input);
+        if (move != null)
+            return _turnProcessor.ProcessPlayerTurn(_player, (Vector2i)move, _context, _visibility, ViewRadius);
+
+        var key = _input.GetKeyPressed();
+        if (key == Keys.G)
+            return TryPickupAtPlayer();
+
+        return false;
+    }
+
+    private bool TryPickupAtPlayer()
+    {
+        var pos = _world.Get<Position>(_player).Value;
+        var items = ItemSystem.ItemsAt(_world, pos);
+        if (items.Count == 0) return false;
+
+        foreach (var item in items)
+        {
+            var name = _world.Get<ItemIdentity>(item).Name;
+            if (ItemSystem.TryPickup(_world, _player, item))
+                _log.Add($"You pick up the {name}.");
+        }
+        return true;
     }
     
     private static Vector2i ToTileSize(Vector2i pixels) => new Vector2i(pixels. X / (int)Camera.TilePixelSize, pixels.Y / (int)Camera.TilePixelSize);
