@@ -138,6 +138,10 @@ public static class DefinitionLoader
                 case "heal":
                     result.Add(new ItemEffect.Heal(GetRequiredInt(el, "amount", file)));
                     break;
+                
+                case "damage":
+                    result.Add(new ItemEffect.Damage(GetRequiredInt(el, "amount", file)));
+                    break;
 
                 default:
                     throw new InvalidOperationException(

@@ -67,6 +67,8 @@ public static class EntitySpawner
             e.With(world, new Stackable { Count = count, MaxStack = def.MaxStack });
         if (def.Effect<ItemEffect.Heal>() is { } heal)
             e.With(world, new Healing { Amount = heal.Amount });
+        if (def.Effect<ItemEffect.Damage>() is { } damage)
+            e.With(world, new Damage { Amount = damage.Amount });
 
         return e;
     }

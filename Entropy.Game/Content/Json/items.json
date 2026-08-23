@@ -42,7 +42,10 @@
     "material": [ "iron" ],
     "flags": [ "sharp", "weapon_melee", "rigid" ],
     "category": "melee",
-    "weight": 1200
+    "weight": 1200,
+    "effects": [
+      { "kind": "damage", "amount": 3 }
+    ]
   },
   {
     "//": "cheap, common, better than fists",

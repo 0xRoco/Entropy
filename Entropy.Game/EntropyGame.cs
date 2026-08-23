@@ -74,6 +74,7 @@ public class EntropyGame : IGameClient
 
         _hud.OnItemDropped += DropSelectedItem;
         _hud.OnItemActivated += UseSelectedItem;
+        _hud.OnItemWielded += WieldSelectedItem;
         
         _camera.Position = _world.Get<Position>(_player).Value;
     }
@@ -96,7 +97,7 @@ public class EntropyGame : IGameClient
         if (key != null && _hud.HandleKey(key.Value)) return;
         
         if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
-        var move = Controls.GetMoveDirection(_input);
+        Controls.GetMoveDirection(_input);
         
         if (!ProcessPlayerAction()) return;
         
@@ -164,6 +165,9 @@ public class EntropyGame : IGameClient
         var name = _world.Get<ItemIdentity>(item).Name;
         var pos = _world.Get<Position>(_player).Value;
         
+        if (_world.Has<Equipped>(_player) && _world.Get<Equipped>(_player).Item.Equals(item))
+            _world.Remove<Equipped>(_player);
+        
         ItemSystem.Drop(_world, item, (int)pos.X, (int)pos.Y);
         _log.Add($"You drop the {name}.");
     }
@@ -173,6 +177,23 @@ public class EntropyGame : IGameClient
         var items = ItemSystem.GetItems(_world, _player);
         if (index < 0 || index >= items.Count) return;
         ItemUse.Use(_world, _context, items[index], _player);
+    }
+    
+    private void WieldSelectedItem(int index)
+    {
+        var items = ItemSystem.GetItems(_world, _player);
+        if (index < 0 || index >= items.Count) return;
+
+        var item = items[index];
+
+        if (!_world.Has<Damage>(item))
+        {
+            _log.Add($"You can't wield the {_world.Get<ItemIdentity>(item).Name}.", Color4.LightGray);
+            return;
+        }
+
+        _world.Set(_player, new Equipped { Item = item });
+        _log.Add($"You wield the {_world.Get<ItemIdentity>(item).Name}.", Color4.Cyan);
     }
     
     private static Vector2i ToTileSize(Vector2i pixels) => new Vector2i(pixels. X / (int)Camera.TilePixelSize, pixels.Y / (int)Camera.TilePixelSize);

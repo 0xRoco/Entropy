@@ -15,7 +15,9 @@ public class GameHud
     public bool InventoryOpen { get; private set;}
     public Action<int>? OnItemDropped;
     public Action<int>? OnItemActivated;
+    public Action<int>? OnItemWielded;
     
+    private readonly List<Entity> _rowEntities = [];
     private readonly World _world;
     private readonly Entity _player;
     private readonly Panel _inventoryPanel;
@@ -40,7 +42,9 @@ public class GameHud
         _inventoryPanel = new Panel { X = 1, Y = 1, Width = 30, Height = 10, Closable = true};
         _inventoryPanel.Add(new Label { X = 1, Y = 1, Width = 30, Text = "Inventory", Color = Color4.Yellow }); 
         
-        _inventoryList = new ListView { X = 1, Y = 4, Width = 30, Height = 3 };
+        _inventoryList = new ListView { X = 1, Y = 4, Width = 30, Height = 3,
+            ItemColor = RowColor
+        };
         _inventoryPanel.Add(_inventoryList);
         
         _inventoryList.OnActivate += i =>
@@ -48,9 +52,16 @@ public class GameHud
             OnItemActivated?.Invoke(i);
             RefreshInventory();
         };
+        
         _inventoryList.OnDrop += i =>
         {
             OnItemDropped?.Invoke(i);
+            RefreshInventory();
+        };
+        
+        _inventoryList.OnWield += i =>
+        {
+            OnItemWielded?.Invoke(i);
             RefreshInventory();
         };
 
@@ -101,6 +112,15 @@ public class GameHud
     private void RefreshInventory()
     {
         _inventoryList.Items.Clear();
+        _rowEntities.Clear();
+
+        Entity? wielded = null;
+        if (_world.Has<Equipped>(_player))
+        {
+            var w = _world.Get<Equipped>(_player).Item;
+            if (_world.IsAlive(w)) wielded = w;
+        }
+
         foreach (var item in ItemSystem.GetItems(_world, _player))
         {
             if (!_world.IsAlive(item)) continue;
@@ -108,12 +128,15 @@ public class GameHud
             var glyph = _world.Get<Glyph>(item);
             var text = identity.Name;
             if (_world.Has<Stackable>(item))
-            { 
+            {
                 var stack = _world.Get<Stackable>(item);
                 text += $" x{stack.Count}";
             }
-            
+            if (wielded != null && item.Equals(wielded))
+                text += " (wielded)";
+
             _inventoryList.Items.Add($"[{glyph.Character}] {text}");
+            _rowEntities.Add(item);
         }
     }
     
@@ -121,5 +144,16 @@ public class GameHud
     {
         RefreshInventory();
     }
+    
+    private Color4 RowColor(int index)
+    {
+        if (index < 0 || index >= _rowEntities.Count) return Color4.White;
 
+        if (_world.Has<Equipped>(_player))
+        {
+            var wielded = _world.Get<Equipped>(_player).Item;
+            if (_rowEntities[index].Equals(wielded)) return Color4.Cyan;
+        }
+        return Color4.White;
+    }
 }

@@ -12,8 +12,6 @@ public class TurnProcessor
     public TurnQueue Queue => _queue;
     
     private readonly TurnQueue _queue = new();
-    private const int PlayerDamage = 1;
-    
     public void AddActor(Entity entity) => _queue.Add(entity);
     public void RemoveActor(Entity entity) => _queue.Remove(entity);
     
@@ -38,8 +36,18 @@ public class TurnProcessor
             }
             
             ref var hp = ref context.World.Get<Health>(entity);
-            hp.Current -= PlayerDamage;
-            context.Log.Add($"You hit the zombie for {PlayerDamage} damage.");
+            
+            var damage = 1;
+            
+            if (context.World.Has<Equipped>(player))
+            {
+                var equipped = context.World.Get<Equipped>(player).Item;
+                if (context.World.IsAlive(equipped) && context.World.Has<Damage>(equipped))
+                    damage = context.World.Get<Damage>(equipped).Amount;
+            }
+            
+            hp.Current -= damage;
+            context.Log.Add($"You hit the zombie for {damage} damage.");
             if (hp.Current > 0) return true;
             
             context.Log.Add("The zombie has been killed!", Color4.Yellow);

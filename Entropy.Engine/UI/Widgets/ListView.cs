@@ -10,6 +10,7 @@ public class ListView : Widget
     public Color4 TextColor { get; set; } = Color4.White;
     public Action<int>? OnActivate { get; set; }
     public Action<int>? OnDrop { get; set; }
+    public Action<int>? OnWield { get; set; }
     public Func<int, Color4>? ItemColor { get; set; }
 
     private int _scrollOffset;
@@ -41,6 +42,10 @@ public class ListView : Widget
             case Keys.D:
                 OnDrop?.Invoke(SelectedIndex);
                 return true;
+            case Keys.W:
+                OnWield?.Invoke(SelectedIndex);
+                return true;
+                
         }
         
         return false;
