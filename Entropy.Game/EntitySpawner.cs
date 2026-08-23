@@ -2,6 +2,7 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Game.Behaviors;
 using Entropy.Game.Components;
+using Entropy.Game.Definitions;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game;
@@ -54,16 +55,19 @@ public static class EntitySpawner
         return e;
     }
     
-    public static Entity CreateItem(World world, string name, char glyph, Color4 color, int x, int y, int stackCount = 1)
+    public static Entity CreateItem(World world, ItemDefinition def, int x, int y, int count = 1)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
-            .With(world, new Glyph { Character = glyph, Foreground = color })
+            .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
             .With(world, new Item())
-            .With(world, new ItemIdentity { Name = name });
-        
-        if (stackCount > 1)
-            e.With(world, new Stackable { Count = stackCount , MaxStack = 10});
+            .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id });
+
+        if (def.Stackable)
+            e.With(world, new Stackable { Count = count, MaxStack = def.MaxStack });
+        if (def.Effect<ItemEffect.Heal>() is { } heal)
+            e.With(world, new Healing { Amount = heal.Amount });
+
         return e;
     }
 

@@ -70,7 +70,7 @@ public static class ItemSystem
         foreach (var existing in container.Items)
         {
             if (!world.IsAlive(existing) || !world.Has<Stackable>(existing)) continue;
-            if (world.Get<ItemIdentity>(existing).Name != world.Get<ItemIdentity>(item).Name) continue;
+            if (world.Get<ItemIdentity>(existing).DefinitionId != world.Get<ItemIdentity>(item).DefinitionId) continue;
             
             ref var stack = ref world.Get<Stackable>(existing);
             var space = stack.MaxStack - stack.Count;

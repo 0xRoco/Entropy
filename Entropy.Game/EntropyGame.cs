@@ -6,6 +6,7 @@ using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
+using Entropy.Game.Definitions;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using OpenTK.Graphics.OpenGL4;
@@ -29,6 +30,7 @@ public class EntropyGame : IGameClient
     private IGameInput _input = null!;
     private TileMap _map = null!;
     private World _world = null!;
+    private DefinitionRegistry _definitions = null!;
     private Entity _player;
     private VisibilityMap _visibility = null!;
     private Rng _rng = new(1337);
@@ -54,7 +56,10 @@ public class EntropyGame : IGameClient
         _log = new MessageLog();
         _drawContext = new DrawContext {Batcher = _tileBatcher, Atlas = _atlas};
         
-        var result = WorldSetup.StartNewGame(_rng, _log, ViewRadius);
+        _definitions = new DefinitionRegistry();
+        _definitions.LoadItems("Content/Json");
+        
+        var result = WorldSetup.StartNewGame(_rng, _log, _definitions, ViewRadius);
         _map = result.Map;
         _world = result.World;
         _player = result.Player;
@@ -62,7 +67,10 @@ public class EntropyGame : IGameClient
         _turnProcessor = result.Turns;
         
         _hud = new GameHud(_log, _world, _player, ToTileSize(clientSize));
-        _context = new GameContext { Map = _map, Log = _log, World = _world, Player = _player, Rng = _rng };
+        _context = new GameContext
+        {
+            Map = _map, Log = _log, World = _world,Definitions = _definitions, Player = _player, Rng = _rng
+        };
 
         _hud.OnItemDropped += DropSelectedItem;
         _hud.OnItemActivated += UseSelectedItem;
