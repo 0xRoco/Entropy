@@ -30,18 +30,14 @@ public static class ItemSystem
         
         world.Set(item, new InContainer {Parent = picker});
         world.Remove<Position>(item);
-        container.Items.Add(item);
+        AddToContainer(world, picker, item);
         return true;
     }
 
     public static void Drop(World world, Entity item, int x, int y)
     {
-        var parent = world.Get<InContainer>(item).Parent;
-        if (world.IsAlive(parent) && world.Has<Container>(parent))
-            world.Get<Container>(parent).Items.Remove(item);
-        
-        world.Remove<InContainer>(item);
-        world.Set(item, new Position {Value = new Vector2(x, y)});
+        RemoveFromContainer(world, item);
+        world.Set(item, new Position { Value = new Vector2(x, y) });
     }
 
     public static List<Entity> GetItems(World world, Entity container)
@@ -49,5 +45,45 @@ public static class ItemSystem
         return world.Has<Container>(container)
             ? world.Get<Container>(container).Items
             : [];
+    }
+    
+    public static void RemoveFromContainer(World world, Entity item)
+    {
+        if (!world.Has<InContainer>(item)) return;
+        var parent = world.Get<InContainer>(item).Parent;
+        if (world.IsAlive(parent) && world.Has<Container>(parent))
+            world.Get<Container>(parent).Items.Remove(item);
+        world.Remove<InContainer>(item);
+    }
+
+    private static void AddToContainer(World world, Entity picker, Entity item)
+    {
+        var container = world.Get<Container>(picker);
+
+        if (!world.Has<Stackable>(item))
+        {
+            container.Items.Add(item);
+            return;
+        }
+        
+        ref var incoming = ref world.Get<Stackable>(item);
+        foreach (var existing in container.Items)
+        {
+            if (!world.IsAlive(existing) || !world.Has<Stackable>(existing)) continue;
+            if (world.Get<ItemIdentity>(existing).Name != world.Get<ItemIdentity>(item).Name) continue;
+            
+            ref var stack = ref world.Get<Stackable>(existing);
+            var space = stack.MaxStack - stack.Count;
+            var moved = Math.Min(space, incoming.Count);
+            stack.Count += moved;
+            incoming.Count -= moved;
+
+            if (incoming.Count > 0) continue;
+            
+            world.Destroy(item);
+            return;
+        }
+        
+        container.Items.Add(item);
     }
 }

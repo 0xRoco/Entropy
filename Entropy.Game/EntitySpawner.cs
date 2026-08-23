@@ -54,13 +54,16 @@ public static class EntitySpawner
         return e;
     }
     
-    public static Entity CreateItem(World world, string name, char glyph, Color4 color, int x, int y)
+    public static Entity CreateItem(World world, string name, char glyph, Color4 color, int x, int y, int stackCount = 1)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Glyph { Character = glyph, Foreground = color })
             .With(world, new Item())
             .With(world, new ItemIdentity { Name = name });
+        
+        if (stackCount > 1)
+            e.With(world, new Stackable { Count = stackCount , MaxStack = 10});
         return e;
     }
 

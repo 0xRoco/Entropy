@@ -7,11 +7,10 @@ public class ListView : Widget
 {
     public List<string> Items { get; set; } = [];
     public int SelectedIndex { get; set; } 
-    
-    public Action<int>? OnActivate { get; set; }
-    public Func<int, Color4>? ItemColor { get; set; }
-    
     public Color4 TextColor { get; set; } = Color4.White;
+    public Action<int>? OnActivate { get; set; }
+    public Action<int>? OnDrop { get; set; }
+    public Func<int, Color4>? ItemColor { get; set; }
 
     private int _scrollOffset;
     private static readonly Color4 SelectionBackground = new(0.25f, 0.25f, 0.35f, 0.9f);
@@ -38,6 +37,9 @@ public class ListView : Widget
                 return true;
             case Keys.Enter:
                 OnActivate?.Invoke(SelectedIndex);
+                return true;
+            case Keys.D:
+                OnDrop?.Invoke(SelectedIndex);
                 return true;
         }
         

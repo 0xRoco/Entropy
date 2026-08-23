@@ -13,7 +13,9 @@ public class GameHud
 {
     public Ui Ui { get; }
     public bool InventoryOpen { get; private set;}
-
+    public Action<int>? OnItemDropped;
+    public Action<int>? OnItemActivated;
+    
     private readonly World _world;
     private readonly Entity _player;
     private readonly Panel _inventoryPanel;
@@ -41,9 +43,17 @@ public class GameHud
         _inventoryList = new ListView { X = 1, Y = 4, Width = 30, Height = 3 };
         _inventoryPanel.Add(_inventoryList);
         
-        _inventoryList.OnActivate += i => log.Add($"You fiddle with the {_inventoryList.Items[i]}.", Color4.Cyan);
-        
-        
+        _inventoryList.OnActivate += i =>
+        {
+            OnItemActivated?.Invoke(i);
+            RefreshInventory();
+        };
+        _inventoryList.OnDrop += i =>
+        {
+            OnItemDropped?.Invoke(i);
+            RefreshInventory();
+        };
+
         _inventoryPanel.CloseRequested += ToggleInventory;
         _inventoryList.OnActivate += OnInventoryActivate;
 
@@ -96,7 +106,14 @@ public class GameHud
             if (!_world.IsAlive(item)) continue;
             var identity = _world.Get<ItemIdentity>(item);
             var glyph = _world.Get<Glyph>(item);
-            _inventoryList.Items.Add($"[{glyph.Character}] {identity.Name}");
+            var text = identity.Name;
+            if (_world.Has<Stackable>(item))
+            { 
+                var stack = _world.Get<Stackable>(item);
+                text += $" x{stack.Count}";
+            }
+            
+            _inventoryList.Items.Add($"[{glyph.Character}] {text}");
         }
     }
     

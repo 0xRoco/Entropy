@@ -2,6 +2,7 @@ using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.World;
+using Entropy.Game.Components;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using OpenTK.Mathematics;
@@ -32,8 +33,10 @@ public class WorldSetup
         turns.AddActor(human);
         
         EntitySpawner.CreateItem(world, "Iron Sword", '/', Color4.White, spawn.X - 1, spawn.Y + 1);
-        EntitySpawner.CreateItem(world, "Bandage", '!', Color4.Pink, spawn.X + 2, spawn.Y + 1);
-        EntitySpawner.CreateItem(world, "Crackers", '%', Color4.LightYellow, spawn.X, spawn.Y + 1);
+        EntitySpawner.CreateItem(world, "Bandage", '!', Color4.Pink, spawn.X + 2, spawn.Y + 1)
+            .With(world, new Healing { Amount = 5 });
+        EntitySpawner.CreateItem(world, "Crackers", '%', Color4.LightYellow, spawn.X, spawn.Y + 1, 3)
+            .With(world, new Healing { Amount = 2 });
 
         foreach (var roomCenter in roomCenters.Skip(1))
         {

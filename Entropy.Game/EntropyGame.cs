@@ -63,6 +63,9 @@ public class EntropyGame : IGameClient
         
         _hud = new GameHud(_log, _world, _player, ToTileSize(clientSize));
         _context = new GameContext { Map = _map, Log = _log, World = _world, Player = _player, Rng = _rng };
+
+        _hud.OnItemDropped += DropSelectedItem;
+        _hud.OnItemActivated += UseSelectedItem;
         
         _camera.Position = _world.Get<Position>(_player).Value;
     }
@@ -142,6 +145,26 @@ public class EntropyGame : IGameClient
                 _log.Add($"You pick up the {name}.");
         }
         return true;
+    }
+
+    private void DropSelectedItem(int index)
+    {
+        var items = ItemSystem.GetItems(_world, _player);
+        if (index < 0 || index >= items.Count) return;
+        
+        var item = items[index];
+        var name = _world.Get<ItemIdentity>(item).Name;
+        var pos = _world.Get<Position>(_player).Value;
+        
+        ItemSystem.Drop(_world, item, (int)pos.X, (int)pos.Y);
+        _log.Add($"You drop the {name}.");
+    }
+
+    private void UseSelectedItem(int index)
+    {
+        var items = ItemSystem.GetItems(_world, _player);
+        if (index < 0 || index >= items.Count) return;
+        ItemUse.Use(_world, _context, items[index], _player);
     }
     
     private static Vector2i ToTileSize(Vector2i pixels) => new Vector2i(pixels. X / (int)Camera.TilePixelSize, pixels.Y / (int)Camera.TilePixelSize);
