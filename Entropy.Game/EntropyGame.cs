@@ -19,6 +19,7 @@ namespace Entropy.Game;
 public class EntropyGame : IGameClient
 {
     private const int ViewRadius = 6;
+    private int _turnCount;
 
     private Camera _camera = null!;
     private TileCamera _tileCamera = null!;
@@ -66,7 +67,7 @@ public class EntropyGame : IGameClient
         _visibility = result.Visibility;
         _turnProcessor = result.Turns;
         
-        _hud = new GameHud(_log, _world, _player, ToTileSize(clientSize));
+        _hud = new GameHud(_log, _world, _player, () => _turnCount, _rng.Seed, ToTileSize(clientSize));
         _context = new GameContext
         {
             Map = _map, Log = _log, World = _world,Definitions = _definitions, Player = _player, Rng = _rng
@@ -103,6 +104,8 @@ public class EntropyGame : IGameClient
         
         _camera.Position = _world.Get<Position>(_player).Value;
         _turnProcessor.RunAITurns(_player, _context);
+        
+        _turnCount++;
     }
 
     public void Render(FrameEventArgs args)

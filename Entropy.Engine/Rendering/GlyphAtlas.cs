@@ -38,11 +38,18 @@ public class GlyphAtlas : IDisposable
         var row = c / 16;
         var col = c % 16;
 
+        var inset = 0.5f / (CellCols * 16f);
+
         var uMin = col / 16f;
         var uMax = (col + 1) / 16f;
 
         var vMin = row / 16f;
         var vMax = (row + 1) / 16f;
+        
+        uMin += inset;
+        uMax -= inset;
+        vMin += inset;
+        vMax -= inset;
 
         var tl = new Vector2(uMin, vMin);
         var tr = new Vector2(uMax, vMin);

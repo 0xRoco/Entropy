@@ -23,8 +23,9 @@ public class GameHud
     private readonly Panel _inventoryPanel;
     private readonly ListView _inventoryList;
     private readonly MessageLogPanel _logPanel;
+    private readonly StatusPanel _statusPanel;
 
-    public GameHud(MessageLog log, World world, Entity player, Vector2i viewportTiles)
+    public GameHud(MessageLog log, World world, Entity player, Func<int> turnCount, int seed, Vector2i viewportTiles)
     {
         _world = world;
         _player = player;
@@ -37,8 +38,18 @@ public class GameHud
             MarginX = 1,
             MarginY = 1
         };
+        
+        _statusPanel = new StatusPanel(world, player, turnCount, seed)
+        {
+            Width = 22,
+            Height = viewportTiles.Y,
+            Anchor = Widget.UiAnchor.TopRight
+            
+        };
+        
         Ui.AddRoot(_logPanel);
-
+        Ui.AddRoot(_statusPanel);
+        
         _inventoryPanel = new Panel { X = 1, Y = 1, Width = 30, Height = 10, Closable = true};
         _inventoryPanel.Add(new Label { X = 1, Y = 1, Width = 30, Text = "Inventory", Color = Color4.Yellow }); 
         
@@ -90,7 +101,12 @@ public class GameHud
     }
 
     public void Draw(DrawContext context) => Ui.Draw(context);
-    public void Resize(Vector2i viewportTiles) => Ui.ViewportTiles = viewportTiles;
+
+    public void Resize(Vector2i viewportTiles)
+    {
+        Ui.ViewportTiles = viewportTiles;
+        _statusPanel.Height = viewportTiles.Y;
+    }
 
     private void OpenInventory()
     {

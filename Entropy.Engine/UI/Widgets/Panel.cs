@@ -20,7 +20,7 @@ public class Panel : Widget
         
         context.DrawBorder(x, y, Width, Height, BorderColor);
         
-        base.Draw(context, offsetX + X, offsetY + Y);
+        base.Draw(context, offsetX, offsetY);
     }
 
     public override bool OnKey(Keys Key)
