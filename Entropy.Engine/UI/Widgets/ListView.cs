@@ -9,8 +9,7 @@ public class ListView : Widget
     public int SelectedIndex { get; set; } 
     public Color4 TextColor { get; set; } = Color4.White;
     public Action<int>? OnActivate { get; set; }
-    public Action<int>? OnDrop { get; set; }
-    public Action<int>? OnWield { get; set; }
+
     public Func<int, Color4>? ItemColor { get; set; }
 
     private int _scrollOffset;
@@ -39,15 +38,8 @@ public class ListView : Widget
             case Keys.Enter:
                 OnActivate?.Invoke(SelectedIndex);
                 return true;
-            case Keys.D:
-                OnDrop?.Invoke(SelectedIndex);
-                return true;
-            case Keys.W:
-                OnWield?.Invoke(SelectedIndex);
-                return true;
-                
         }
-        
+
         return false;
     }
     
@@ -73,6 +65,12 @@ public class ListView : Widget
             for (var c = 0; c < length; c++)
                 ctx.DrawGlyph(x + c, y + row, selected ? Color4.White : color, text[c]);
         }
+    }
+    
+    public int? VisibleRowOf(int itemIndex)
+    {
+        var row = itemIndex - _scrollOffset;
+        return row >= 0 && row < Height ? row : null;
     }
     
     private void EnsureSelectionVisible()

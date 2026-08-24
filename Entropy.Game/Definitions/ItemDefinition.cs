@@ -9,7 +9,7 @@ public class ItemDefinition
     public required char Symbol { get; init; }
     public required Color4 Color { get; init; }
     
-    public string Description { get; init; } = string.Empty;
+    public string? Description { get; init; } = string.Empty;
     public string Category { get; init; } = string.Empty;
     
     public List<Material> Materials { get; init; } = [];

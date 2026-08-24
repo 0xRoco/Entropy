@@ -67,15 +67,12 @@ public class EntropyGame : IGameClient
         _visibility = result.Visibility;
         _turnProcessor = result.Turns;
         
-        _hud = new GameHud(_log, _world, _player, () => _turnCount, _rng.Seed, ToTileSize(clientSize));
         _context = new GameContext
         {
             Map = _map, Log = _log, World = _world,Definitions = _definitions, Player = _player, Rng = _rng
         };
-
-        _hud.OnItemDropped += DropSelectedItem;
-        _hud.OnItemActivated += UseSelectedItem;
-        _hud.OnItemWielded += WieldSelectedItem;
+        
+        _hud = new GameHud(_context, () => _turnCount, _rng.Seed, ToTileSize(clientSize));
         
         _camera.Position = _world.Get<Position>(_player).Value;
     }
@@ -158,46 +155,7 @@ public class EntropyGame : IGameClient
         }
         return true;
     }
-
-    private void DropSelectedItem(int index)
-    {
-        var items = ItemSystem.GetItems(_world, _player);
-        if (index < 0 || index >= items.Count) return;
-        
-        var item = items[index];
-        var name = _world.Get<ItemIdentity>(item).Name;
-        var pos = _world.Get<Position>(_player).Value;
-        
-        if (_world.Has<Equipped>(_player) && _world.Get<Equipped>(_player).Item.Equals(item))
-            _world.Remove<Equipped>(_player);
-        
-        ItemSystem.Drop(_world, item, (int)pos.X, (int)pos.Y);
-        _log.Add($"You drop the {name}.");
-    }
-
-    private void UseSelectedItem(int index)
-    {
-        var items = ItemSystem.GetItems(_world, _player);
-        if (index < 0 || index >= items.Count) return;
-        ItemUse.Use(_world, _context, items[index], _player);
-    }
     
-    private void WieldSelectedItem(int index)
-    {
-        var items = ItemSystem.GetItems(_world, _player);
-        if (index < 0 || index >= items.Count) return;
-
-        var item = items[index];
-
-        if (!_world.Has<Damage>(item))
-        {
-            _log.Add($"You can't wield the {_world.Get<ItemIdentity>(item).Name}.", Color4.LightGray);
-            return;
-        }
-
-        _world.Set(_player, new Equipped { Item = item });
-        _log.Add($"You wield the {_world.Get<ItemIdentity>(item).Name}.", Color4.Cyan);
-    }
     
     private static Vector2i ToTileSize(Vector2i pixels) => new Vector2i(pixels. X / (int)Camera.TilePixelSize, pixels.Y / (int)Camera.TilePixelSize);
     
