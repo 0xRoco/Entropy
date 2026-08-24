@@ -29,26 +29,29 @@ public class StatusPanel : Panel
         _header = new Label { X = innerX, Y = 1, Width = 22, Text = "STATUS", Color = Color4.Yellow };
         Add(_header);
         
-        _healthBar = new BarWidget { X = innerX, Y = 3, Width = 22, Label = "HP", BarColor = Color4.Red };
+        _healthBar = new BarWidget { X = innerX, Y = 3, Width = 22, Label = "Health", BarColor = Color4.Red };
         Add(_healthBar);
         
-        _wieldLabel = new Label { X = innerX, Y = 5, Width = 22, Text = "Wielding: Fists" };
+        _wieldLabel = new Label { X = innerX, Y = 7, Width = 22, Text = "Wielding: Fists" };
         Add(_wieldLabel);
         
-        _turnLabel = new Label { X = innerX, Y = 7, Width = 22, Text = $"Turn: {_turnCount()}" };
+        _turnLabel = new Label { X = innerX, Y = 9, Width = 22, Text = $"Turn: {_turnCount()}" };
         Add(_turnLabel);
         
-        _seedLabel = new Label { X = innerX, Y = 9, Width = 22, Text = $"Seed: {seed}" };
+        _seedLabel = new Label { X = innerX, Y = 11, Width = 22, Text = $"Seed: {seed}" };
         Add(_seedLabel);
     }
 
     public override void Draw(DrawContext context, int offsetX, int offsetY)
     {
-        if (_world.IsAlive(_player) && _world.Has<Health>(_player))
+        if (_world.IsAlive(_player))
         {
-            ref var hp = ref _world.Get<Health>(_player);
-            _healthBar.Fraction = hp.Max > 0 ? hp.Current / (float)hp.Max : 0f;
-            _healthBar.ValueText = $"{hp.Current}/{hp.Max}";
+            if (_world.Has<Health>(_player))
+            {
+                ref var hp = ref _world.Get<Health>(_player);
+                _healthBar.Fraction = hp.Max > 0 ? hp.Current / (float)hp.Max : 0f;
+                _healthBar.ValueText = $"{hp.Current}/{hp.Max}";
+            }
         }
         
         _wieldLabel.Text = _world.Has<Equipped>(_player)

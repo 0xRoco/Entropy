@@ -20,6 +20,7 @@ public class EntropyGame : IGameClient
 {
     private const int ViewRadius = 6;
     private int _turnCount;
+    private Vector2i _clientSize;
 
     private Camera _camera = null!;
     private TileCamera _tileCamera = null!;
@@ -47,6 +48,7 @@ public class EntropyGame : IGameClient
     {
         GL.Enable(EnableCap.Blend);
         GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        _clientSize = clientSize;
         _input = input;
         _shader = Shader.FromFiles("Content/Shaders/quad.vert", "Content/Shaders/textured.frag");
         _camera = new Camera { ViewportSize = clientSize };
@@ -73,6 +75,8 @@ public class EntropyGame : IGameClient
         };
         
         _hud = new GameHud(_context, () => _turnCount, _rng.Seed, ToTileSize(clientSize));
+        
+        ConfigureMapCamera();
         
         _camera.Position = _world.Get<Position>(_player).Value;
     }
@@ -107,17 +111,25 @@ public class EntropyGame : IGameClient
 
     public void Render(FrameEventArgs args)
     {
+        ApplyMapViewport();
+
         TileRenderer.Draw(_map, _visibility, _camera, _batcher);
         EntityRenderer.Draw(_world, _visibility, _batcher);
+
+        GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
+
         _hud.Draw(_drawContext);
         _tileBatcher.Flush();
     }
 
     public void Resize(int width, int height)
     {
-        _camera.ViewportSize = new Vector2i(width, height);
-        _tileCamera.ViewportSize = new Vector2i(width, height);
-        _hud.Resize(ToTileSize(new Vector2i(width, height)));
+        _clientSize = new Vector2i(width, height);
+
+        _tileCamera.ViewportSize = _clientSize;
+        _hud.Resize(ToTileSize(_clientSize));
+
+        ConfigureMapCamera();
     }
 
     public void Dispose()
@@ -126,6 +138,32 @@ public class EntropyGame : IGameClient
         _tileBatcher.Dispose();
         _shader.Dispose();
         _atlas.Dispose();
+    }
+    
+    private void ConfigureMapCamera()
+    {
+        var rect = _hud.Layout.Map;
+        var pixelsPerTile = (int)Camera.TilePixelSize;
+
+        _camera.ViewportOrigin = new Vector2i(
+            rect.X * pixelsPerTile,
+            rect.Y * pixelsPerTile);
+
+        _camera.ViewportSize = new Vector2i(
+            rect.Width * pixelsPerTile,
+            rect.Height * pixelsPerTile);
+    }
+
+    private void ApplyMapViewport()
+    {
+        var origin = _camera.ViewportOrigin;
+        var size = _camera.ViewportSize;
+
+        GL.Viewport(
+            origin.X,
+            _clientSize.Y - origin.Y - size.Y,
+            size.X,
+            size.Y);
     }
     
     private bool ProcessPlayerAction()
@@ -156,7 +194,8 @@ public class EntropyGame : IGameClient
         return true;
     }
     
-    
-    private static Vector2i ToTileSize(Vector2i pixels) => new Vector2i(pixels. X / (int)Camera.TilePixelSize, pixels.Y / (int)Camera.TilePixelSize);
-    
+    private static Vector2i ToTileSize(Vector2i pixels) =>
+        new(
+            pixels.X / (int)Camera.TilePixelSize,
+            pixels.Y / (int)Camera.TilePixelSize); 
 }

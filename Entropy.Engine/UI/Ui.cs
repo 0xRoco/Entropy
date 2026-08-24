@@ -92,6 +92,8 @@ public class Ui
                 widget.X = (vw - widget.Width) / 2;
                 widget.Y = (vh - widget.Height) / 2;
                 break;
+            case Widget.UiAnchor.Absolute:
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }

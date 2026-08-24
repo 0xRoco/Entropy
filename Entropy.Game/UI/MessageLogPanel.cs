@@ -11,7 +11,7 @@ public class MessageLogPanel : Widget
     public float MinBrightness { get; set; } = 0.35f;
     
     private const int VisibleLines = 6;
-    private readonly List<Label> _labels = new();
+    private readonly List<Label> _labels = [];
 
     public MessageLogPanel()
     {
@@ -25,7 +25,8 @@ public class MessageLogPanel : Widget
 
     public override void Draw(DrawContext context, int offsetX, int offsetY)
     {
-        var lines = Log?.GetRecent(VisibleLines) ?? [];
+        var maxLines = Math.Min(VisibleLines, Math.Max(0, Height - 2));
+        var lines = Log.GetRecent(maxLines) ?? [];
 
         for (var i = 0; i < _labels.Count; i++)
         {
@@ -42,16 +43,11 @@ public class MessageLogPanel : Widget
             _labels[i].Color = new Color4(color.R * dim, color.G * dim, color.B * dim, color.A);
         }
 
-        var shown = lines.Count;
-        Height = shown + 2;
-        if (shown > 0)
-        {
-            var x = X + offsetX;
-            var y = Y + offsetY;
-            context.DrawRect(x, y, Width, shown + 2, new Color4(0.1f, 0.1f, 0.15f, 0.85f));
-            context.DrawBorder(x, y, Width, shown + 2, new Color4(0.3f, 0.3f, 0.35f, 0.8f));
-        }
-        
+        var x = X + offsetX;
+        var y = Y + offsetY;
+        context.DrawRect(x, y, Width, Height, new Color4(0.1f, 0.1f, 0.15f, 0.85f));
+        context.DrawBorder(x, y, Width, Height, new Color4(0.3f, 0.3f, 0.35f, 0.8f));
+
         base.Draw(context, offsetX, offsetY);
     }
 }

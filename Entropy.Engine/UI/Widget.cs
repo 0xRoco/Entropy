@@ -20,7 +20,7 @@ public abstract class Widget
     public event Action? CloseRequested;
     
     public UiAnchor Anchor { get; set; } = UiAnchor.TopLeft;
-    public enum UiAnchor {TopLeft, BottomLeft, BottomRight, TopRight, Center }
+    public enum UiAnchor {Absolute, TopLeft, BottomLeft, BottomRight, TopRight, Center }
 
     public void Add(Widget child)
     {

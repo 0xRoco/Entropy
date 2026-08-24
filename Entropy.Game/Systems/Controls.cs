@@ -49,6 +49,8 @@ public static class Controls
         if (input.IsMouseButtonPressed(MouseButton.Left))
         {
             var mouseScreen = input.MousePosition;
+            if (!camera.ContainsScreenPoint(mouseScreen))
+                return null;
             var mouseWorld = camera.ScreenToWorld(mouseScreen);
             var tx = (int)Math.Floor(mouseWorld.X);
             var ty = (int)Math.Floor(mouseWorld.Y);
