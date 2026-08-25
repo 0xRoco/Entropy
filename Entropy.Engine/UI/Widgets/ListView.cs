@@ -6,14 +6,14 @@ namespace Entropy.Engine.UI.Widgets;
 public class ListView : Widget
 {
     public List<string> Items { get; set; } = [];
-    public int SelectedIndex { get; set; } 
-    public Color4 TextColor { get; set; } = Color4.White;
+    public int SelectedIndex { get; set; }
+    public Color4 TextColor { get; set; } = UiTheme.Text;
     public Action<int>? OnActivate { get; set; }
 
     public Func<int, Color4>? ItemColor { get; set; }
 
     private int _scrollOffset;
-    private static readonly Color4 SelectionBackground = new(0.25f, 0.25f, 0.35f, 0.9f);
+    private static readonly Color4 SelectionBackground = UiTheme.Selection;
 
     public ListView()
     {
@@ -63,7 +63,7 @@ public class ListView : Widget
                 ctx.DrawRect(x, y + row, Math.Min(length + 2, Width), 1, SelectionBackground);
             
             for (var c = 0; c < length; c++)
-                ctx.DrawGlyph(x + c, y + row, selected ? Color4.White : color, text[c]);
+                ctx.DrawGlyph(x + c, y + row, selected ? UiTheme.TextBright : color, text[c]);
         }
     }
     

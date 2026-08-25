@@ -5,7 +5,7 @@ namespace Entropy.Engine.UI.Widgets;
 public class Label : Widget
 {
     public string Text { get; set; } = "";
-    public Color4 Color { get; set; } = Color4.White;
+    public Color4 Color { get; set; } = UiTheme.Text;
 
     public override void Draw(DrawContext context, int offsetX, int offsetY)
     {

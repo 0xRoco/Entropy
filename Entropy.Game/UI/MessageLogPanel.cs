@@ -45,8 +45,8 @@ public class MessageLogPanel : Widget
 
         var x = X + offsetX;
         var y = Y + offsetY;
-        context.DrawRect(x, y, Width, Height, new Color4(0.1f, 0.1f, 0.15f, 0.85f));
-        context.DrawBorder(x, y, Width, Height, new Color4(0.3f, 0.3f, 0.35f, 0.8f));
+        context.DrawRect(x, y, Width, Height, UiTheme.LogBackground);
+        context.DrawBorder(x, y, Width, Height, UiTheme.LogBorder);
 
         base.Draw(context, offsetX, offsetY);
     }

@@ -8,24 +8,68 @@ public class Ui
     public Widget? Focused { get; private set; }
     public Vector2i ViewportTiles { get; set; }
     
+    public bool HasModal => _modals.Count > 0;
+    public Widget? ActiveModal => _modals.Count > 0 ? _modals.Peek().Root : null;
+    
     private readonly List<Widget> _roots = [];
+    private readonly Stack<ModalEntry> _modals = [];
     
     public void AddRoot(Widget widget)
     {
         if (widget.Parent != null)
-            throw new InvalidOperationException($"Root widget must not have a parent. Widget: {widget}");
+            throw new InvalidOperationException("Root widgets must not have a parent.");
+
+        if (_roots.Contains(widget))
+            return;
+
         _roots.Add(widget);
         StampUi(widget);
     }
 
     public void RemoveRoot(Widget widget)
-    { 
-        if (_roots.Remove(widget))
-        {
-            StampUi(widget, true);
+    {
+        if (IsModal(widget))
+            throw new InvalidOperationException("Use PopModal to remove modal widgets.");
+
+        if (!RemoveRootInternal(widget))
+            return;
+
+        if (IsDescendantOf(Focused, widget))
             SetFocus(null);
-        }
     }
+
+    public void PushModal(Widget root, Widget focus)
+    {
+        if (root.Parent != null)
+            throw new InvalidOperationException("Modal widgets must not have a parent.");
+
+        if (IsModal(root))
+            return;
+
+        _modals.Push(new ModalEntry(root, Focused));
+        AddRoot(root);
+        SetFocus(focus);
+    }
+
+    public bool PopModal(Widget? expectedRoot = null)
+    {
+        if (_modals.Count == 0)
+            return false;
+
+        var modal = _modals.Peek();
+
+        if (expectedRoot != null && !ReferenceEquals(modal.Root, expectedRoot))
+            return false;
+
+        _modals.Pop();
+        RemoveRootInternal(modal.Root);
+        SetFocus(modal.PreviousFocus);
+
+        return true;
+    }
+
+    public bool IsModal(Widget widget) =>
+        _modals.Any(modal => ReferenceEquals(modal.Root, widget));
 
     public void SetFocus(Widget? widget)
     {
@@ -40,14 +84,19 @@ public class Ui
     public bool HandleKey(Keys key)
     {
         var node = Focused;
+
         while (node != null)
         {
-            if (node.OnKey(key)) return true;
+            if (node.OnKey(key))
+                return true;
+
             node = node.Parent;
         }
 
-        return false;
+        // any unhandled key is still consumed while a modal is open.
+        return HasModal;
     }
+
 
     public void Draw(DrawContext context)
     {
@@ -59,11 +108,33 @@ public class Ui
         }
     }
 
+    private bool RemoveRootInternal(Widget widget)
+    {
+        if (!_roots.Remove(widget))
+            return false;
+        
+        StampUi(widget, true);
+        return true;
+    }
+
     private void StampUi(Widget widget, bool clear = false)
     {
         widget.Ui = clear ? null : this;
         foreach (var child in widget.Children)
             StampUi(child, clear);
+    }
+    
+    private static bool IsDescendantOf(Widget? widget, Widget ancestor)
+    {
+        while (widget != null)
+        {
+            if (ReferenceEquals(widget, ancestor))
+                return true;
+            
+            widget = widget.Parent;
+        }
+        
+        return false;
     }
 
     private void ResolveAnchor(Widget widget)
@@ -98,4 +169,6 @@ public class Ui
                 throw new ArgumentOutOfRangeException();
         }
     }
+    
+    private sealed record ModalEntry(Widget Root, Widget? PreviousFocus);
 }

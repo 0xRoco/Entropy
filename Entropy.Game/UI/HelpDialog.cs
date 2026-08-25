@@ -6,12 +6,12 @@ namespace Entropy.Game.UI;
 
 public class HelpDialog
 {
+    public bool IsOpen => _ui.IsModal(_panel);
+    
     private readonly Ui _ui;
     private readonly Panel _panel;
     private readonly ScrollView _scroll;
-
-    public bool IsOpen { get; private set; }
-
+    
     public HelpDialog(Ui ui)
     {
         _ui = ui;
@@ -69,35 +69,30 @@ public class HelpDialog
 
     public void Open()
     {
-        if (IsOpen) return;
+        if (IsOpen)
+            return;
 
-        IsOpen = true;
         _panel.Visible = true;
-        _ui.AddRoot(_panel);
-        _ui.SetFocus(_scroll);
+        _ui.PushModal(_panel, _scroll);
     }
 
     public void Close()
     {
-        if (!IsOpen) return;
+        if (!IsOpen)
+            return;
 
-        IsOpen = false;
         _panel.Visible = false;
-        _ui.RemoveRoot(_panel);
-        _ui.SetFocus(null);
+        _ui.PopModal(_panel);
     }
 
     public bool HandleKey(Keys key)
     {
-        if (!IsOpen) return false;
+        if (!IsOpen)
+            return false;
 
-        if (key == Keys.Escape || key == Keys.Slash)
-        {
-            Close();
-            return true;
-        }
-
-        _ui.HandleKey(key);
+        if (key is not (Keys.Escape or Keys.Slash)) return _ui.HandleKey(key);
+        Close();
         return true;
+
     }
 }

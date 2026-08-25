@@ -5,10 +5,12 @@ namespace Entropy.Engine.UI.Widgets;
 
 public class Panel : Widget
 {
-    public Color4 BorderColor { get; set; } = Color4.Gray;
-    public Color4 BackgroundColor { get; set; } = new(0.08f, 0.08f, 0.12f, 0.85f);
+    public Color4 BorderColor { get; set; } = UiTheme.PanelBorder;
+    public Color4 BackgroundColor { get; set; } = UiTheme.PanelBackground;
     
     public bool DrawBackground { get; set; } = true;
+    public bool DrawBorder { get; set; } = true;
+    
 
     public override void Draw(DrawContext context, int offsetX, int offsetY)
     {
@@ -18,7 +20,8 @@ public class Panel : Widget
         if (DrawBackground)
             context.DrawRect(x, y, Width, Height, BackgroundColor);
         
-        context.DrawBorder(x, y, Width, Height, BorderColor);
+        if (DrawBorder)
+            context.DrawBorder(x, y, Width, Height, BorderColor);
         
         base.Draw(context, offsetX, offsetY);
     }

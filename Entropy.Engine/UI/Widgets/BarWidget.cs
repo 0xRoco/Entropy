@@ -7,11 +7,10 @@ public class BarWidget : Widget
     public string Label { get; set; } = "";
     public float Fraction { get; set; } 
     public string ValueText { get; set; } = "";
-    
-    public Color4 BarColor { get; set; } = Color4.Green;
-    public Color4 FillColor => Fraction > 0.6f ? BarColor
-        : Fraction > 0.3f ? Color4.Yellow 
-        : Color4.Red;
+
+    public Color4 FillColor => Fraction > 0.6f ? UiTheme.BarGood
+        : Fraction > 0.3f ? UiTheme.BarWarn 
+        : UiTheme.BarBad;
     public const float BarThickness = 0.7f;
 
     public override void Draw(DrawContext context, int offsetX, int offsetY)
@@ -20,7 +19,7 @@ public class BarWidget : Widget
         var y = Y + offsetY;
         
         if (Label.Length > 0)
-            context.DrawText(x, y, Label, Color4.White);
+            context.DrawText(x, y, Label, UiTheme.Text);
         
         var labelWidth = Label.Length > 0 ? Label.Length + 1 : 0;
         var valueWidth = ValueText.Length > 0 ? ValueText.Length + 1 : 0;
@@ -30,7 +29,7 @@ public class BarWidget : Widget
         var barX = x + labelWidth;
         var centerY  = y + (1f - BarThickness) / 2f;
         
-        context.DrawRect(barX, centerY, barWidth, BarThickness,  new Color4(0.15f, 0.15f, 0.2f, 1f));
+        context.DrawRect(barX, centerY, barWidth, BarThickness, UiTheme.BarTrack);
         
         var fraction = Math.Clamp(Fraction, 0f, 1f);
         if (fraction > 0f)

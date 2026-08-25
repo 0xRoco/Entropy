@@ -8,7 +8,7 @@ public class DrawContext
     public required QuadBatcher Batcher { get; init; }
     public required GlyphAtlas Atlas { get; init; }
     
-    public Color4 DefaultForeground { get; init; } = Color4.White;
+    public Color4 DefaultForeground { get; init; } = UiTheme.Text;
     
     private readonly Stack<UiRect> _clips = new();
 

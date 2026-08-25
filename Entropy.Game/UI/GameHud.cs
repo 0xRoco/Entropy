@@ -11,9 +11,9 @@ public class GameHud
     private readonly StatusPanel _statusPanel;
     private readonly MessageLogPanel _logPanel;
     private readonly Panel _commandPanel;
-    private readonly Label _commandLabel;
     private readonly InventoryDialog _inventoryDialog;
     private readonly HelpDialog _helpDialog;
+    private readonly CommandBar _commandBar;
 
     public GameplayLayout Layout { get; private set; }
 
@@ -21,28 +21,26 @@ public class GameHud
     {
         _ui = new Ui { ViewportTiles = viewportTiles };
 
-        _statusPanel = new StatusPanel(context.World, context.Player, turnCount, seed)
-        {
-            Width = 26
-        };
+        _statusPanel = new StatusPanel(context.World, context.Player, turnCount, seed) { Width = 26};
 
         _logPanel = new MessageLogPanel
         {
             Log = context.Log
         };
+        
+        _commandBar = new CommandBar();
+        _commandBar.AddText("arrows move");
+        _commandBar.Hints.Add(('g', "et item"));
+        _commandBar.Hints.Add(('i', "nventory"));
+        _commandBar.Hints.Add(('?', "Help"));
 
         _commandPanel = new Panel
         {
             DrawBackground = true
         };
+        
 
-        _commandLabel = new Label
-        {
-            Text = "[g]et  [i]nventory  [arrows] move  [.] wait  [?] help",
-            Color = Color4.LightGray
-        };
-
-        _commandPanel.Add(_commandLabel);
+        _commandPanel.Add(_commandBar);
 
         _ui.AddRoot(_commandPanel);
         _ui.AddRoot(_logPanel);
@@ -90,9 +88,9 @@ public class GameHud
         ApplyBounds(_logPanel, Layout.Messages);
         ApplyBounds(_commandPanel, Layout.Commands);
 
-        _commandLabel.X = 1;
-        _commandLabel.Y = 1;
-        _commandLabel.Width = Math.Max(0, Layout.Commands.Width - 2);
+        _commandBar.X = 1;
+        _commandBar.Y = 1;
+        _commandBar.Width = Math.Max(0, Layout.Commands.Width - 2);
     }
 
     private static void ApplyBounds(Widget widget, UiRect bounds)

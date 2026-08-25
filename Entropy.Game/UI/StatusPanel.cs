@@ -2,7 +2,6 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
 using Entropy.Game.Components;
-using OpenTK.Mathematics;
 
 namespace Entropy.Game.UI;
 
@@ -26,10 +25,10 @@ public class StatusPanel : Panel
         
         const int innerX = 1;
         
-        _header = new Label { X = innerX, Y = 1, Width = 22, Text = "STATUS", Color = Color4.Yellow };
+        _header = new Label { X = innerX, Y = 1, Width = 22, Text = "STATUS", Color = UiTheme.Keybind };
         Add(_header);
         
-        _healthBar = new BarWidget { X = innerX, Y = 3, Width = 22, Label = "Health", BarColor = Color4.Red };
+        _healthBar = new BarWidget { X = innerX, Y = 3, Width = 22, Label = "Health" };
         Add(_healthBar);
         
         _wieldLabel = new Label { X = innerX, Y = 7, Width = 22, Text = "Wielding: Fists" };
