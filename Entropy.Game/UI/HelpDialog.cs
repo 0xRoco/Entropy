@@ -6,64 +6,84 @@ namespace Entropy.Game.UI;
 
 public class HelpDialog
 {
-    public bool IsOpen => _ui.IsModal(_panel);
-    
-    private readonly Ui _ui;
+private readonly Ui _ui;
     private readonly Panel _panel;
-    private readonly ScrollView _scroll;
-    
+    private readonly TabView _tabs;
+
+    public bool IsOpen => _ui.IsModal(_panel);
+
     public HelpDialog(Ui ui)
     {
         _ui = ui;
 
         _panel = new Panel
         {
-            Width = 42,
-            Height = 18,
+            Width = 58,
+            Height = 24,
             Anchor = Widget.UiAnchor.Center,
             Closable = true,
             Visible = false
         };
 
-        var text = new TextBlock
-        {
-            X = 0,
-            Y = 0,
-            Width = 38,
-            Text = """
-                   Help
-
-                   Arrow keys move the player. Press G to pick up items
-                   on your current tile. Press I to open inventory.
-
-                   In inventory, press Enter to open an item action menu.
-                   The available actions depend on the item itself. Weapons
-                   can be wielded, medical supplies can be used, and all
-                   carried items can be dropped or examined.
-
-                   Zombies detect by sight and smell. Break line of sight
-                   around a wall to make them investigate your last known
-                   position instead of tracking you directly.
-
-                   The status sidebar shows current health, wielded weapon,
-                   turn count, and the world seed.
-
-                   This text wraps and scrolls inside the dialog. Use the
-                   arrow keys or Page Up and Page Down to read more.
-                   """
-        };
-
-        _scroll = new ScrollView
+        _tabs = new TabView
         {
             X = 1,
             Y = 1,
-            Width = 40,
-            Height = 16
+            Width = 56,
+            Height = 22
         };
 
-        _scroll.SetContent(text);
-        _panel.Add(_scroll);
+        var controls = CreatePage(
+            """
+            Movement
 
+            Arrow keys move the player one tile at a time.
+
+            G picks up every item on your current tile. I opens your
+            inventory. Press Enter on an inventory item to open its
+            available actions.
+
+            Camera
+
+            Hold W, A, S, or D to pan the camera. Use the mouse wheel
+            to change zoom. Click inside the map viewport to examine a tile.
+
+            General
+
+            Press ? to open this help screen. Press Escape to close menus
+            or return to the previous dialog.
+            """);
+
+        var inventory = CreatePage(
+            """
+            Inventory
+
+            Press I to open inventory. Use Up and Down to select an item.
+
+            Press Enter to open that item's context menu. Available actions
+            depend on the item: weapons can be wielded, medical supplies can
+            be used, and carried items can be dropped or examined.
+
+            A wielded item is marked with cyan text and "(wielded)".
+            """);
+
+        var survival = CreatePage(
+            """
+            Survival
+
+            Zombies detect creatures through sight and smell. Breaking line
+            of sight behind terrain makes them search the last place they
+            saw you instead of directly tracking your current position.
+
+            Your health is shown in the sidebar. The health bar changes from
+            green to yellow to red as it drops.
+            """);
+
+        _tabs.AddTab("Controls", controls, controls);
+        _tabs.AddTab("Inventory", inventory, inventory);
+        _tabs.AddTab("Survival", survival, survival);
+
+        _panel.Add(_tabs);
         _panel.CloseRequested += Close;
     }
 
@@ -73,7 +93,7 @@ public class HelpDialog
             return;
 
         _panel.Visible = true;
-        _ui.PushModal(_panel, _scroll);
+        _ui.PushModal(_panel, _tabs.ActiveFocusTarget);
     }
 
     public void Close()
@@ -90,9 +110,34 @@ public class HelpDialog
         if (!IsOpen)
             return false;
 
-        if (key is not (Keys.Escape or Keys.Slash)) return _ui.HandleKey(key);
-        Close();
-        return true;
+        if (key is Keys.Escape or Keys.Slash)
+        {
+            Close();
+            return true;
+        }
 
+        return _ui.HandleKey(key);
+    }
+
+    private static ScrollView CreatePage(string text)
+    {
+        var textBlock = new TextBlock
+        {
+            X = 1,
+            Y = 0,
+            Width = 54,
+            Text = text
+        };
+
+        var scroll = new ScrollView
+        {
+            X = 0,
+            Y = 0,
+            Width = 56,
+            Height = 21
+        };
+
+        scroll.SetContent(textBlock);
+        return scroll;
     }
 }
