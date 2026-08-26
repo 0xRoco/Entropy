@@ -9,4 +9,5 @@ public interface IGameClient : IDisposable
     void Update(FrameEventArgs args);
     void Render(FrameEventArgs args);
     void Resize(int width, int height);
+    bool ExitRequested { get; }
 }

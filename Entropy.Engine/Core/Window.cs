@@ -50,6 +50,7 @@ public class Window(IGameClient client, WindowSettings settings) : GameWindow(Ga
     {
         base.OnUpdateFrame(args);
         client.Update(args);
+        if (client.ExitRequested) Close();
     }
     
     public new bool IsKeyDown(Keys key) => KeyboardState.IsKeyDown(key);

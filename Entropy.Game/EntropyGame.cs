@@ -3,7 +3,6 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.Rendering;
 using Entropy.Engine.UI;
-using Entropy.Engine.UI.Widgets;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
 using Entropy.Game.Definitions;
@@ -18,10 +17,16 @@ namespace Entropy.Game;
 
 public class EntropyGame : IGameClient
 {
+    public bool ExitRequested { get; private set; }
+    
+    
     private const int ViewRadius = 6;
     private int _turnCount;
     private Vector2i _clientSize;
 
+    private MainMenuScreen _mainMenu = null!;
+    private GameMode _mode = GameMode.MainMenu;
+    
     private Camera _camera = null!;
     private TileCamera _tileCamera = null!;
     private Shader _shader = null!;
@@ -43,6 +48,8 @@ public class EntropyGame : IGameClient
     private DrawContext _drawContext = null!;
     private GameHud _hud = null!;
 
+    private bool _disposed;
+
     
     public void Load(Vector2i clientSize, IGameInput input)
     {
@@ -57,32 +64,28 @@ public class EntropyGame : IGameClient
         _batcher = new QuadBatcher(_shader, _camera, _atlas);
         _tileBatcher = new QuadBatcher(_shader, _tileCamera, _atlas);
         _log = new MessageLog();
-        _drawContext = new DrawContext {Batcher = _tileBatcher, Atlas = _atlas};
-        
+        _drawContext = new DrawContext { Batcher = _tileBatcher, Atlas = _atlas };
+
         _definitions = new DefinitionRegistry();
         _definitions.LoadItems("Content/Json");
-        
-        var result = WorldSetup.StartNewGame(_rng, _log, _definitions, ViewRadius);
-        _map = result.Map;
-        _world = result.World;
-        _player = result.Player;
-        _visibility = result.Visibility;
-        _turnProcessor = result.Turns;
-        
-        _context = new GameContext
-        {
-            Map = _map, Log = _log, World = _world,Definitions = _definitions, Player = _player, Rng = _rng
-        };
-        
-        _hud = new GameHud(_context, () => _turnCount, _rng.Seed, ToTileSize(clientSize));
-        
-        ConfigureMapCamera();
-        
-        _camera.Position = _world.Get<Position>(_player).Value;
+
+        _mainMenu = new MainMenuScreen(ToTileSize(clientSize));
+        _mainMenu.NewGameRequested += StartNewGame;
+        _mainMenu.ExitRequested += () => ExitRequested = true;
     }
 
     public void Update(FrameEventArgs args)
     { 
+        if (_mode == GameMode.MainMenu)
+        {
+            var menuKey = _input.GetKeyPressed();
+
+            if (menuKey != null)
+                _mainMenu.HandleKey(menuKey.Value);
+
+            return;
+        }
+        
         _camera.Position += Controls.GetCameraPan(_input, (float)args.Time); 
         _camera.Zoom = Controls.GetZoomDelta(_input, _camera.Zoom);
 
@@ -111,6 +114,16 @@ public class EntropyGame : IGameClient
 
     public void Render(FrameEventArgs args)
     {
+        if (_mode == GameMode.MainMenu)
+        {
+            GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
+
+            _mainMenu.Draw(_drawContext);
+            _tileBatcher.Flush();
+
+            return;
+        }
+        
         ApplyMapViewport();
 
         TileRenderer.Draw(_map, _visibility, _camera, _batcher);
@@ -125,19 +138,44 @@ public class EntropyGame : IGameClient
     public void Resize(int width, int height)
     {
         _clientSize = new Vector2i(width, height);
+        _mainMenu?.Resize(ToTileSize(_clientSize));
 
-        _tileCamera.ViewportSize = _clientSize;
-        _hud.Resize(ToTileSize(_clientSize));
+        if (_mode == GameMode.Gameplay)
+        {
+            _tileCamera.ViewportSize = _clientSize;
+            _hud.Resize(ToTileSize(_clientSize));
+            ConfigureMapCamera();
+        }
+    }
+    
+    private void StartNewGame()
+    {
+        _log = new MessageLog();
+
+        var result = WorldSetup.StartNewGame(_rng, _log, _definitions, ViewRadius);
+
+        _map = result.Map;
+        _world = result.World;
+        _player = result.Player;
+        _visibility = result.Visibility;
+        _turnProcessor = result.Turns;
+
+        _context = new GameContext
+        {
+            Map = _map,
+            Log = _log,
+            World = _world,
+            Definitions = _definitions,
+            Player = _player,
+            Rng = _rng
+        };
+
+        _hud = new GameHud(_context, () => _turnCount, _rng.Seed, ToTileSize(_clientSize));
 
         ConfigureMapCamera();
-    }
+        _camera.Position = _world.Get<Position>(_player).Value;
 
-    public void Dispose()
-    {
-        _batcher.Dispose();
-        _tileBatcher.Dispose();
-        _shader.Dispose();
-        _atlas.Dispose();
+        _mode = GameMode.Gameplay;
     }
     
     private void ConfigureMapCamera()
@@ -198,4 +236,15 @@ public class EntropyGame : IGameClient
         new(
             pixels.X / (int)Camera.TilePixelSize,
             pixels.Y / (int)Camera.TilePixelSize); 
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        _batcher.Dispose();
+        _tileBatcher.Dispose();
+        _shader.Dispose();
+        _atlas.Dispose();
+    }
 }
