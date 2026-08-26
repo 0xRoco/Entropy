@@ -150,6 +150,7 @@ public class EntropyGame : IGameClient
     
     private void StartNewGame()
     {
+        _turnCount = 0;
         _log = new MessageLog();
 
         var result = WorldSetup.StartNewGame(_rng, _log, _definitions, ViewRadius);
@@ -171,11 +172,26 @@ public class EntropyGame : IGameClient
         };
 
         _hud = new GameHud(_context, () => _turnCount, _rng.Seed, ToTileSize(_clientSize));
+        
+        _hud.NewCharacterRequested += RestartGame;
+        _hud.MainMenuRequested += ReturnToMainMenu;
 
         ConfigureMapCamera();
         _camera.Position = _world.Get<Position>(_player).Value;
 
         _mode = GameMode.Gameplay;
+    }
+    
+    private void RestartGame()
+    {
+        _rng = new Rng(Random.Shared.Next(int.MinValue, int.MaxValue));
+        StartNewGame();
+        _log.Add($"Seed: {_rng.Seed}", Color4.LightGray);
+    }
+
+    private void ReturnToMainMenu()
+    {
+        _mode = GameMode.MainMenu;
     }
     
     private void ConfigureMapCamera()
