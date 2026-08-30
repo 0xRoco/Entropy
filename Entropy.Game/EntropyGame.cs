@@ -40,7 +40,7 @@ public class EntropyGame : IGameClient
     private DefinitionRegistry _definitions = null!;
     private Entity _player;
     private VisibilityMap _visibility = null!;
-    private Rng _rng = new(1337);
+    private Rng _rng = new(Random.Shared.Next(int.MinValue, int.MaxValue));
     private MessageLog _log = null!;
     private GameContext _context = null!;
     private TurnProcessor _turnProcessor = null!;
@@ -186,7 +186,6 @@ public class EntropyGame : IGameClient
     {
         _rng = new Rng(Random.Shared.Next(int.MinValue, int.MaxValue));
         StartNewGame();
-        _log.Add($"Seed: {_rng.Seed}", Color4.LightGray);
     }
 
     private void ReturnToMainMenu()
