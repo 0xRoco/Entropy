@@ -42,7 +42,7 @@ public class TurnProcessor
         {
             if (context.World.Get<Position>(entity).Value != target) continue;
 
-            if (!context.World.Has<Hostile>(entity))
+            if (!context.World.Has<Health>(entity))
             {
                 context.Log.Add("Something blocks your way", Color4.LightGray);
                 Spend(player);
@@ -58,13 +58,28 @@ public class TurnProcessor
                     damage = context.World.Get<Damage>(equipped).Amount;
             }
 
-            hp.Current -= damage;
-            context.Log.Add($"You hit the zombie for {damage} damage.");
-            if (hp.Current > 0) { Spend(player); return true; }
+            var victimName = context.World.Has<Named>(entity)
+                ? context.World.Get<Named>(entity).Name
+                : "something";
+            var location = new Vector2i(tx, ty);
 
-            context.Log.Add("The zombie has been killed!", Color4.Yellow);
-            context.World.Destroy(entity);
-            RemoveActor(entity);
+            hp.Current -= damage;
+            var killed = hp.Current <= 0;
+            context.Log.Add($"You hit {victimName} for {damage} damage.");
+
+            if (!context.World.Has<Hostile>(entity))
+                ConsequenceSystem.Report(context,
+                    killed ? "murder" : "assault",
+                    $"You {(!killed ? "attacked" : "killed")} {victimName}",
+                    location, player, entity);
+
+            if (killed)
+            {
+                context.Log.Add($"{victimName} has been killed!", Color4.Yellow);
+                context.World.Destroy(entity);
+                RemoveActor(entity);
+            }
+
             Spend(player);
             return true;
         }

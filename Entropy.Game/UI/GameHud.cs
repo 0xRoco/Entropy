@@ -32,7 +32,7 @@ public class GameHud
         _sidebar = new VStack { Anchor = Widget.UiAnchor.Absolute };
         _sidebar.Add(new TimePanel(context.Clock));
         _sidebar.Add(new StatusPanel(context.World, context.Player));
-        _sidebar.Add(new LifePanel(seed));
+        _sidebar.Add(new LifePanel(seed, context.World, context.Player));
         _ui.AddRoot(_sidebar);
         
         _logPanel = new MessageLogPanel

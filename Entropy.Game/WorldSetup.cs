@@ -2,7 +2,6 @@ using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.World;
-using Entropy.Game.Components;
 using Entropy.Game.Definitions;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
@@ -30,18 +29,19 @@ public class WorldSetup
         var player = EntitySpawner.CreatePlayer(world, spawn.X, spawn.Y);
         turns.AddActor(player);
 
-        var human = EntitySpawner.CreateHuman(world, spawn.X + 1, spawn.Y);
-        turns.AddActor(human);
-        
+        turns.AddActor(EntitySpawner.CreateHuman(world, spawn.X + 1, spawn.Y, "Dana"));
+        turns.AddActor(EntitySpawner.CreateHuman(world, spawn.X + 2, spawn.Y + 1, "Marcus"));
+        turns.AddActor(EntitySpawner.CreateHuman(world, spawn.X - 1, spawn.Y + 1, "Priya"));
+
         EntitySpawner.CreateItem(world, defs.Item("iron_sword"), spawn.X - 1, spawn.Y + 1);
         EntitySpawner.CreateItem(world, defs.Item("bandage"), spawn.X + 2, spawn.Y + 1, count: 2);
         EntitySpawner.CreateItem(world, defs.Item("crackers"), spawn.X, spawn.Y + 1, count: 3);
 
-        foreach (var roomCenter in roomCenters.Skip(1))
+        /*foreach (var roomCenter in roomCenters.Skip(1))
         {
             var zombie = EntitySpawner.CreateZombie(world, roomCenter.X + 1, roomCenter.Y);
             turns.AddActor(zombie);
-        }
+        }*/
 
         var visibility = new VisibilityMap(map.Width, map.Height);
         var playerPos = world.Get<Position>(player).Value;

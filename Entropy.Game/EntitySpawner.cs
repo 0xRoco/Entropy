@@ -22,19 +22,41 @@ public static class EntitySpawner
         return e;
     }
     
-    public static Entity CreateHuman(World world, int x, int y)
+    public static Entity CreateHuman(World world, int x, int y, string name)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Glyph { Character = 'h', Foreground = Color4.Blue })
+            .With(world, new Named { Name = name })
             .With(world, new Health { Current = 5, Max = 5 })
             .With(world, new Actor())
+            .With(world, new Speed { Value = 100 })
             .With(world, new Perception { SightRadius = 5, SmellRadius = 2 })
             .With(world, Awareness.Create())
+            .With(world, WitnessMemory.Create())
             .With(world, new AIState { Mode = AIMode.Idle })
             .With(world, new Behavior { Impl = new WanderBehavior() });
         
         Console.WriteLine($"Created human entity {e.Id} at position ({x}, {y})");
+        return e;
+    }
+    
+    public static Entity CreateCop(World world, int x, int y, Vector2i scene, Entity target)
+    {
+        var e = world.Create()
+            .With(world, new Position { Value = new Vector2(x, y) })
+            .With(world, new Glyph { Character = 'P', Foreground = Color4.LightBlue })
+            .With(world, new Named { Name = "Officer" })
+            .With(world, new Health { Current = 8, Max = 8 })
+            .With(world, new Actor())
+            .With(world, new Speed { Value = 100 })
+            .With(world, Awareness.Create())
+            .With(world, new Perception { SightRadius = 6, SmellRadius = 0 })
+            .With(world, WitnessMemory.Create())
+            .With(world, new AIState { Mode = AIMode.Idle })
+            .With(world, new Behavior { Impl = new RespondBehavior(target) });
+        
+        Console.WriteLine($"Created cop entity {e.Id} at position ({x}, {y})");
         return e;
     }
     

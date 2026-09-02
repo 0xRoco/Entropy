@@ -108,8 +108,8 @@ public class EntropyGame : IGameClient
         if (!ProcessPlayerAction()) return;
         
         _context.Clock.Advance(1);
-        _camera.Position = _world.Get<Position>(_player).Value;
         _turnProcessor.RunAITurns(_player, _context);
+        _camera.Position = _world.Get<Position>(_player).Value;
     }
 
     public void Render(FrameEventArgs args)
@@ -168,7 +168,10 @@ public class EntropyGame : IGameClient
             Definitions = _definitions,
             Player = _player,
             Rng = _rng,
-            Clock = _clock
+            Clock = _clock,
+            Turns = _turnProcessor,
+            Visibility = _visibility,
+            ViewRadius = ViewRadius
         };
 
         _hud = new GameHud(_context, _clock, _rng.Seed, ToTileSize(_clientSize));
