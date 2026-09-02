@@ -49,7 +49,8 @@ public static class EntitySpawner
             .With(world, new Behavior { Impl = new ZombieBehavior() })
             .With(world, new Perception { SightRadius = 7, SmellRadius = 3 })
             .With(world, Awareness.Create())
-            .With(world, new AIState { Mode = AIMode.Idle });
+            .With(world, new AIState { Mode = AIMode.Idle })
+            .With(world, new Speed {Value = 100});
         
         Console.WriteLine($"Created zombie entity {e.Id} at position ({x}, {y})");
         return e;
@@ -61,7 +62,8 @@ public static class EntitySpawner
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
             .With(world, new Item())
-            .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id });
+            .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id })
+            .With(world, new Speed {Value = 80});
 
         if (def.Stackable)
             e.With(world, new Stackable { Count = count, MaxStack = def.MaxStack });

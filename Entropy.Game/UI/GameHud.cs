@@ -1,3 +1,4 @@
+using Entropy.Engine.Core;
 using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
 using Entropy.Game.Components;
@@ -16,7 +17,7 @@ public class GameHud
     
     private readonly Ui _ui;
     private readonly DeathDialog _deathDialog;
-    private readonly StatusPanel _statusPanel;
+    private readonly VStack _sidebar;
     private readonly MessageLogPanel _logPanel;
     private readonly Panel _commandPanel;
     private readonly InventoryDialog _inventoryDialog;
@@ -24,12 +25,16 @@ public class GameHud
     private readonly CommandBar _commandBar;
     private readonly GameContext _context;
     
-    public GameHud(GameContext context, Func<int> turnCount, int seed, Vector2i viewportTiles)
+    public GameHud(GameContext context, WorldClock clock, int seed, Vector2i viewportTiles)
     {
         _context = context;
         _ui = new Ui { ViewportTiles = viewportTiles };
-        _statusPanel = new StatusPanel(context.World, context.Player, turnCount, seed) { Width = 26};
-
+        _sidebar = new VStack { Anchor = Widget.UiAnchor.Absolute };
+        _sidebar.Add(new TimePanel(context.Clock));
+        _sidebar.Add(new StatusPanel(context.World, context.Player));
+        _sidebar.Add(new LifePanel(seed));
+        _ui.AddRoot(_sidebar);
+        
         _logPanel = new MessageLogPanel
         {
             Log = context.Log
@@ -39,6 +44,7 @@ public class GameHud
         _commandBar.AddText("arrows move");
         _commandBar.Hints.Add(('g', "et item"));
         _commandBar.Hints.Add(('i', "nventory"));
+        _commandBar.Hints.Add(('.', "wait"));
         _commandBar.Hints.Add(('?', "Help"));
 
         _commandPanel = new Panel
@@ -51,12 +57,12 @@ public class GameHud
 
         _ui.AddRoot(_commandPanel);
         _ui.AddRoot(_logPanel);
-        _ui.AddRoot(_statusPanel);
-
+        ApplyBounds(_sidebar, Layout.Sidebar);
+        
         _inventoryDialog = new InventoryDialog(_ui, context);
         _helpDialog = new HelpDialog(_ui);
         
-        _deathDialog = new DeathDialog(_ui, context.World, context.Player, turnCount, () => seed);
+        _deathDialog = new DeathDialog(_ui, context.World, context.Player, clock, () => seed);
         _deathDialog.NewCharacterRequested += OnNewCharacterRequested;
         _deathDialog.MainMenuRequested += OnMainMenuRequested;
 
@@ -110,7 +116,7 @@ public class GameHud
         _ui.ViewportTiles = viewportTiles;
         Layout = GameplayLayout.Create(viewportTiles);
 
-        ApplyBounds(_statusPanel, Layout.Sidebar);
+        ApplyBounds(_sidebar, Layout.Sidebar);
         ApplyBounds(_logPanel, Layout.Messages);
         ApplyBounds(_commandPanel, Layout.Commands);
 

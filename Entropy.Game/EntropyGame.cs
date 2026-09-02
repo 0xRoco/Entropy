@@ -21,7 +21,6 @@ public class EntropyGame : IGameClient
     
     
     private const int ViewRadius = 6;
-    private int _turnCount;
     private Vector2i _clientSize;
 
     private MainMenuScreen _mainMenu = null!;
@@ -44,6 +43,7 @@ public class EntropyGame : IGameClient
     private MessageLog _log = null!;
     private GameContext _context = null!;
     private TurnProcessor _turnProcessor = null!;
+    private WorldClock _clock = null!;
 
     private DrawContext _drawContext = null!;
     private GameHud _hud = null!;
@@ -65,6 +65,7 @@ public class EntropyGame : IGameClient
         _tileBatcher = new QuadBatcher(_shader, _tileCamera, _atlas);
         _log = new MessageLog();
         _drawContext = new DrawContext { Batcher = _tileBatcher, Atlas = _atlas };
+        _clock = new WorldClock(2001, 3, 12, 7, 30);
 
         _definitions = new DefinitionRegistry();
         _definitions.LoadItems("Content/Json");
@@ -106,10 +107,9 @@ public class EntropyGame : IGameClient
         
         if (!ProcessPlayerAction()) return;
         
+        _context.Clock.Advance(1);
         _camera.Position = _world.Get<Position>(_player).Value;
         _turnProcessor.RunAITurns(_player, _context);
-        
-        _turnCount++;
     }
 
     public void Render(FrameEventArgs args)
@@ -150,7 +150,6 @@ public class EntropyGame : IGameClient
     
     private void StartNewGame()
     {
-        _turnCount = 0;
         _log = new MessageLog();
 
         var result = WorldSetup.StartNewGame(_rng, _log, _definitions, ViewRadius);
@@ -168,10 +167,11 @@ public class EntropyGame : IGameClient
             World = _world,
             Definitions = _definitions,
             Player = _player,
-            Rng = _rng
+            Rng = _rng,
+            Clock = _clock
         };
 
-        _hud = new GameHud(_context, () => _turnCount, _rng.Seed, ToTileSize(_clientSize));
+        _hud = new GameHud(_context, _clock, _rng.Seed, ToTileSize(_clientSize));
         
         _hud.NewCharacterRequested += RestartGame;
         _hud.MainMenuRequested += ReturnToMainMenu;
@@ -226,8 +226,8 @@ public class EntropyGame : IGameClient
             return _turnProcessor.ProcessPlayerTurn(_player, (Vector2i)move, _context, _visibility, ViewRadius);
 
         var key = _input.GetKeyPressed();
-        if (key == Keys.G)
-            return TryPickupAtPlayer();
+        if (key == Keys.G) return TryPickupAtPlayer();
+        if (key == Keys.Period) return true;
 
         return false;
     }

@@ -14,4 +14,5 @@ public sealed class GameContext
     public required DefinitionRegistry Definitions { get; init; }
     public required Rng Rng { get; init; }
     public required Entity Player { get; init; }
+    public required WorldClock Clock { get; init; }
 }
