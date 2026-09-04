@@ -105,7 +105,8 @@
     "category": "food",
     "weight": 200,
     "stackable": true,
-    "max_stack": 20
+    "max_stack": 20,
+    "effects": [ { "kind": "nourish", "amount": 120 } ]
   },
   {
     "//": "canned protein, keeps for years",
@@ -120,7 +121,8 @@
     "category": "food",
     "weight": 450,
     "stackable": true,
-    "max_stack": 8
+    "max_stack": 8,
+    "effects": [ { "kind": "nourish", "amount": 180 } ]
   },
   {
     "//": "bottled water, empty bottle after",
@@ -135,7 +137,8 @@
     "category": "food",
     "weight": 650,
     "stackable": true,
-    "max_stack": 4
+    "max_stack": 4,
+    "effects": [ { "kind": "hydrate", "amount": 240 } ]
   },
   {
     "//": "sheer fabric, crafting resource",

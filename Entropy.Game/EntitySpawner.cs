@@ -16,7 +16,11 @@ public static class EntitySpawner
             .With(world, new Glyph { Character = '@', Foreground = Color4.White })
             .With(world, new PlayerControlled())
             .With(world, new Health { Current = 10, Max = 10 })
-            .With(world, new Actor());
+            .With(world, new Actor())
+            .With(world, new Speed { Value = 100 })
+            .With(world, new Hunger { Current = 480, Max = 480 })
+            .With(world, new Thirst { Current = 240, Max = 240 })
+            .With(world, new Fatigue { Current = 960, Max = 960 });
         
         Console.WriteLine($"Created player entity {e.Id} at position ({x}, {y})");
         return e;
@@ -84,8 +88,7 @@ public static class EntitySpawner
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
             .With(world, new Item())
-            .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id })
-            .With(world, new Speed {Value = 80});
+            .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id });
 
         if (def.Stackable)
             e.With(world, new Stackable { Count = count, MaxStack = def.MaxStack });
@@ -93,6 +96,10 @@ public static class EntitySpawner
             e.With(world, new Healing { Amount = heal.Amount });
         if (def.Effect<ItemEffect.Damage>() is { } damage)
             e.With(world, new Damage { Amount = damage.Amount });
+        if (def.Effect<ItemEffect.Nourish>() is { } nourish)
+            e.With(world, new Nutrition() { Amount = nourish.Amount });
+        if (def.Effect<ItemEffect.Hydrate>() is { } hydrate)
+            e.With(world, new Hydration() { Amount = hydrate.Amount });
 
         return e;
     }

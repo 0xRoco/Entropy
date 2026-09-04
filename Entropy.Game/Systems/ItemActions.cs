@@ -19,6 +19,10 @@ public static class ItemActions
         
         if (world.Has<Healing>(item))
             actions.Add(new ItemAction("Use", 'u', Use));
+        else if (world.Has<Nutrition>(item))
+            actions.Add(new ItemAction("Eat", 'u', Use));
+        else if (world.Has<Hydration>(item))
+            actions.Add(new ItemAction("Drink", 'u', Use));
         
         actions.Add(new ItemAction("Drop", 'd', Drop));
         actions.Add(new ItemAction("Examine", 'e', Examine));

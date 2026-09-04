@@ -108,6 +108,7 @@ public class EntropyGame : IGameClient
         if (!ProcessPlayerAction()) return;
         
         _context.Clock.Advance(1);
+        NeedsSystem.Update(_context);
         _turnProcessor.RunAITurns(_player, _context);
         _camera.Position = _world.Get<Position>(_player).Value;
     }

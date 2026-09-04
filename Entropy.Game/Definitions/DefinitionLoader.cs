@@ -142,6 +142,14 @@ public static class DefinitionLoader
                 case "damage":
                     result.Add(new ItemEffect.Damage(GetRequiredInt(el, "amount", file)));
                     break;
+                
+                case "nourish":
+                    result.Add(new ItemEffect.Nourish(GetRequiredInt(el, "amount", file)));
+                    break;
+                
+                case "hydrate":
+                    result.Add(new ItemEffect.Hydrate(GetRequiredInt(el, "amount", file)));
+                    break;
 
                 default:
                     throw new InvalidOperationException(
