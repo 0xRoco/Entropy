@@ -2,6 +2,7 @@ using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.World;
+using Entropy.Game.Components;
 using Entropy.Game.Definitions;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
@@ -28,20 +29,36 @@ public class WorldSetup
         var spawn = roomCenters[0];
         var player = EntitySpawner.CreatePlayer(world, spawn.X, spawn.Y);
         turns.AddActor(player);
+        
+        var civilian = defs.Creature("human_civilian");
+        
+        var store = roomCenters[1];
+        var homeA = roomCenters[2];
+        var homeB = roomCenters.Count > 3 ? roomCenters[3] : roomCenters[2];
 
-        turns.AddActor(EntitySpawner.CreateHuman(world, spawn.X + 1, spawn.Y, "Dana"));
-        turns.AddActor(EntitySpawner.CreateHuman(world, spawn.X + 2, spawn.Y + 1, "Marcus"));
-        turns.AddActor(EntitySpawner.CreateHuman(world, spawn.X - 1, spawn.Y + 1, "Priya"));
+
+        var dana = EntitySpawner.CreateHuman(world, civilian, spawn.X + 1, spawn.Y, "Dana");
+        dana.With(world, new Home { Tile = homeA });
+        dana.With(world, new Workplace { Tile = store });
+        dana.With(world, ShiftWork(8 * 60, 17 * 60, 22 * 60, 7 * 60));
+        turns.AddActor(dana);
+        
+        var marcus = EntitySpawner.CreateHuman(world, civilian, spawn.X + 2, spawn.Y + 1, "Marcus");
+        marcus.With(world, new Home { Tile = homeB });
+        marcus.With(world, new Workplace { Tile = store });
+        marcus.With(world, ShiftWork(22 * 60, 6 * 60, 8 * 60, 16 * 60));
+        turns.AddActor(marcus);
+
+        var priya = EntitySpawner.CreateHuman(world, civilian, spawn.X - 1, spawn.Y + 1, "Priya");
+        priya.With(world, new Home { Tile = homeA });
+        priya.With(world, SleepOnly(23 * 60, 7 * 60));
+        turns.AddActor(priya);
+
 
         EntitySpawner.CreateItem(world, defs.Item("iron_sword"), spawn.X - 1, spawn.Y + 1);
         EntitySpawner.CreateItem(world, defs.Item("bandage"), spawn.X + 2, spawn.Y + 1, count: 2);
         EntitySpawner.CreateItem(world, defs.Item("crackers"), spawn.X, spawn.Y + 1, count: 3);
-
-        /*foreach (var roomCenter in roomCenters.Skip(1))
-        {
-            var zombie = EntitySpawner.CreateZombie(world, roomCenter.X + 1, roomCenter.Y);
-            turns.AddActor(zombie);
-        }*/
+        
 
         var visibility = new VisibilityMap(map.Width, map.Height);
         var playerPos = world.Get<Position>(player).Value;
@@ -51,6 +68,21 @@ public class WorldSetup
         log.Add("Welcome to Entropy!", Color4.Red);
 
         return new NewGameResult(map, world, player, visibility, turns);
+    }
+    
+    private static Schedule ShiftWork(int workStart, int workEnd, int sleepStart, int sleepEnd)
+    {
+        var s = Schedule.Create();
+        s.Entries.Add(new ScheduleEntry(null, workStart, workEnd, ScheduleActivity.Work));
+        s.Entries.Add(new ScheduleEntry(null, sleepStart, sleepEnd, ScheduleActivity.Sleep));
+        return s;
+    }
+
+    private static Schedule SleepOnly(int sleepStart, int sleepEnd)
+    {
+        var s = Schedule.Create();
+        s.Entries.Add(new ScheduleEntry(null, sleepStart, sleepEnd, ScheduleActivity.Sleep));
+        return s;
     }
 
 }

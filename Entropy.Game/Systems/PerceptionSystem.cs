@@ -24,6 +24,11 @@ public static class PerceptionSystem
         foreach (var perceiver in perceivers)
         {
             if (!world.IsAlive(perceiver)) continue;
+            if (!world.Has<Awareness>(perceiver))
+            {
+                Console.WriteLine($"Warning: Perceiver {perceiver} has no Awareness component.");
+                continue;
+            } 
             
             ref var perception = ref world.Get<Perception>(perceiver);
             ref var awareness = ref world.Get<Awareness>(perceiver);

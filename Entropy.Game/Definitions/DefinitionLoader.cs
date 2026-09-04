@@ -12,22 +12,59 @@ public static class DefinitionLoader
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(file));
             var root = doc.RootElement;
+            var elements = root.ValueKind == JsonValueKind.Array
+                ? root.EnumerateArray().ToList()
+                : [root];
 
-            switch (root.ValueKind)
+            foreach (var element in elements)
             {
-                case JsonValueKind.Array:
-                {
-                    foreach (var element in root.EnumerateArray())
-                        defs.Add(ParseItem(element, file));
-                    break;
-                }
-                case JsonValueKind.Object:
-                    defs.Add(ParseItem(root, file));
-                    break;
+                var type = GetString(element, "type", file);
+                if (type == "ITEM")
+                    defs.Add(ParseItem(element, file));
             }
         }
 
         return defs;
+    }
+
+    public static List<CreatureDefinition> LoadCreatures(string rootDirectory)
+    {
+        var defs = new List<CreatureDefinition>();
+        foreach (var file in Directory.GetFiles(rootDirectory, "*.json", SearchOption.AllDirectories))
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(file));
+            var root = doc.RootElement;
+            var elements = root.ValueKind == JsonValueKind.Array
+                ? root.EnumerateArray().ToList()
+                : [root];
+
+            foreach (var element in elements)
+            {
+                var type = GetString(element, "type", file);
+                if (type == "CREATURE")
+                    defs.Add(ParseCreature(element, file));
+            }
+        }
+
+        return defs;
+    }
+
+    private static CreatureDefinition ParseCreature(JsonElement element, string file)
+    {
+        var id = GetString(element, "id", file);
+        return new CreatureDefinition
+        {
+            Id = id,
+            Name = GetString(element, "name", file),
+            Symbol = ParseSymbol(element, file),
+            Color = ParseColor(element, id, file),
+            Health = GetIntOr(element, "health", 5),
+            Speed = GetIntOr(element, "speed", 100),
+            SightRadius = GetIntOr(element, "sight", 5),
+            SmellRadius = GetIntOr(element, "smell", 0),
+            Behavior = GetStringOr(element, "behavior", "wander"),
+            Hostile = GetBoolOr(element, "hostile", false)
+        };
     }
 
     private static ItemDefinition ParseItem(JsonElement element, string file)
@@ -138,15 +175,15 @@ public static class DefinitionLoader
                 case "heal":
                     result.Add(new ItemEffect.Heal(GetRequiredInt(el, "amount", file)));
                     break;
-                
+
                 case "damage":
                     result.Add(new ItemEffect.Damage(GetRequiredInt(el, "amount", file)));
                     break;
-                
+
                 case "nourish":
                     result.Add(new ItemEffect.Nourish(GetRequiredInt(el, "amount", file)));
                     break;
-                
+
                 case "hydrate":
                     result.Add(new ItemEffect.Hydrate(GetRequiredInt(el, "amount", file)));
                     break;

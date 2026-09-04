@@ -70,7 +70,8 @@ public static class ConsequenceSystem
     private static void Dispatch(GameContext ctx, SimEvent simEvent)
     {
         var edge = FindEdgeSpawn(ctx.Map, simEvent.Location, ctx.Rng);
-        var cop = EntitySpawner.CreateCop(ctx.World, edge.X, edge.Y, simEvent.Location, ctx.Player);
+        var cop = EntitySpawner.CreateCop(ctx.World, ctx.Definitions.Creature("human_cop"),
+            edge.X, edge.Y, ctx.Player);
         ctx.Turns.AddActor(cop);
         ctx.Log.Add("A police officer is responding.", Color4.LightGray);
     }

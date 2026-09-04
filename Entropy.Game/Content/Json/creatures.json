@@ -1,0 +1,39 @@
+[
+  {
+    "type": "CREATURE",
+    "id": "human_civilian",
+    "name": "Human",
+    "symbol": "h",
+    "color": "blue",
+    "health": 5,
+    "speed": 100,
+    "sight": 5,
+    "smell": 2,
+    "behavior": "schedule"
+  },
+  {
+    "type": "CREATURE",
+    "id": "human_cop",
+    "name": "Officer",
+    "symbol": "P",
+    "color": "light_blue",
+    "health": 8,
+    "speed": 100,
+    "sight": 6,
+    "smell": 0,
+    "behavior": "respond"
+  },
+  {
+    "type": "CREATURE",
+    "id": "zombie",
+    "name": "Zombie",
+    "symbol": "z",
+    "color": "green",
+    "health": 3,
+    "speed": 80,
+    "sight": 7,
+    "smell": 3,
+    "behavior": "zombie",
+    "hostile": true
+  }
+]

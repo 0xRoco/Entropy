@@ -79,5 +79,37 @@ public static class AiUtil
             return;
         }
     }
+    
+    /// <summary>Random adjacent step, but never beyond radius from the anchor.</summary>
+    public static void WanderNear(World world, Entity self, TileMap map, Rng rng,
+        Vector2i anchor, int radius, float chance)
+    {
+        if (!rng.Chance(chance)) return;
+
+        ref var pos = ref world.Get<Position>(self);
+        var start = ToTile(pos.Value);
+
+        var options = new List<Vector2i>
+        {
+            new(start.X, start.Y - 1), new(start.X, start.Y + 1),
+            new(start.X - 1, start.Y), new(start.X + 1, start.Y)
+        };
+
+        for (var i = options.Count - 1; i > 0; i--)
+        {
+            var j = rng.Next(i + 1);
+            (options[i], options[j]) = (options[j], options[i]);
+        }
+
+        foreach (var tile in options)
+        {
+            if (tile.X < 0 || tile.X >= map.Width || tile.Y < 0 || tile.Y >= map.Height) continue;
+            if (Math.Abs(tile.X - anchor.X) + Math.Abs(tile.Y - anchor.Y) > radius) continue;
+            if (!map[tile.X, tile.Y].Walkable) continue;
+            if (IsOccupied(world, self, tile)) continue;
+            pos.Value = new Vector2(tile.X, tile.Y);
+            return;
+        }
+    }
 
 }

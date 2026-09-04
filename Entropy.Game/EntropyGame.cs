@@ -69,6 +69,7 @@ public class EntropyGame : IGameClient
 
         _definitions = new DefinitionRegistry();
         _definitions.LoadItems("Content/Json");
+        _definitions.LoadCreatures("Content/Json");
 
         _mainMenu = new MainMenuScreen(ToTileSize(clientSize));
         _mainMenu.NewGameRequested += StartNewGame;
