@@ -21,8 +21,6 @@ public class DefinitionRegistry
             if (!_items.TryAdd(def.Id, def))
                 throw new InvalidOperationException($"Duplicate item definition ID '{def.Id}' found.");
         }
-
-        Console.WriteLine($"[DefinitionRegistry] Loaded {_items.Count} item definitions.");
     }
 
     public void LoadCreatures(string directory)
@@ -32,7 +30,6 @@ public class DefinitionRegistry
             if (!_creatures.TryAdd(def.Id, def))
                 throw new InvalidOperationException($"Duplicate creature definition ID '{def.Id}' found.");
         }
-        Console.WriteLine($"[DefinitionRegistry] Loaded {_creatures.Count} creature definitions.");
     }
     
     public void LoadBuildingTemplates(string directory)
@@ -45,9 +42,6 @@ public class DefinitionRegistry
                     $"Duplicate building template definition ID '{def.Id}' found.");
             }
         }
-
-        Console.WriteLine(
-            $"[DefinitionRegistry] Loaded {_buildingTemplates.Count} building templates.");
     }
 
     public void LoadTerrains(string directory)
@@ -62,7 +56,6 @@ public class DefinitionRegistry
             _terrainTiles[def.Id] = BuildTile(def, index);
             index++;
         }
-        Console.WriteLine($"[DefinitionRegistry] Loaded {_terrain.Count} terrain definitions.");
     }
 
     public void LoadTilesets(string directory)
@@ -72,7 +65,6 @@ public class DefinitionRegistry
             if (!_tilesets.TryAdd(def.Id, def))
                 throw new InvalidOperationException($"Duplicate tileset definition ID '{def.Id}' found.");
         }
-        Console.WriteLine($"[DefinitionRegistry] Loaded {_tilesets.Count} tileset definitions.");
     }
 
     public ItemDefinition Item(string id) => _items.TryGetValue(id, out var def)

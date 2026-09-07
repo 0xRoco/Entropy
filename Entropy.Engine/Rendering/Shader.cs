@@ -45,7 +45,6 @@ public class Shader : IDisposable
     {
         try
         {
-            Console.WriteLine($"Compiled {vertPath} + {fragPath}");
             return new Shader(File.ReadAllText(vertPath), File.ReadAllText(fragPath));
         }
         catch (Exception ex)

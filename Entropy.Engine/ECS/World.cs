@@ -22,8 +22,6 @@ public class World
         foreach (var storage in _storages.Values)
         {
             ((IComponentStorage)storage).Remove(entity.Id);
-            
-            Console.WriteLine($"Removed entity {entity.Id} from storage of type {storage.GetType().GetGenericArguments()[0].Name}");
         }
     }
 

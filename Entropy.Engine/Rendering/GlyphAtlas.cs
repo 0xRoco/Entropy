@@ -38,9 +38,6 @@ public class GlyphAtlas : IDisposable
 
         Width = image.Width;
         Height = image.Height;
-        
-        Console.WriteLine($"Loaded glyph atlas '{path}' with size {image.Width}x{image.Height} and cell size {cellCols}x{cellRows}");
-        
     }
 
     public (Vector2 tl, Vector2 tr, Vector2 br, Vector2 bl) GetUv(char c)

@@ -24,7 +24,6 @@ public static class Fov
             CastRay(origin, new Vector2i(min.X, y), radius, map, visibility);
             CastRay(origin, new Vector2i(max.X, y), radius, map, visibility);
         }
-        //Console.WriteLine($"FOV computed from origin ({origin.X}, {origin.Y}) with radius {radius}. Visible tiles: {visibility.VisibleCount()}");
     }
     
     private static void CastRay(Vector2i from, Vector2i to, int radius, TileMap map, VisibilityMap visibility)

@@ -65,7 +65,7 @@ public class EntropyGame : IGameClient
         _shader = Shader.FromFiles("Content/Shaders/quad.vert", "Content/Shaders/textured.frag");
         _camera = new Camera { ViewportSize = clientSize };
         _tileCamera = new TileCamera { ViewportSize = clientSize };
-        _atlas = new GlyphAtlas("Content/ascii.png");
+        _atlas = new GlyphAtlas("Content/tilesets/ascii.png");
         _batcher = new QuadBatcher(_shader, _camera, _atlas);
         _tileBatcher = new QuadBatcher(_shader, _tileCamera, _atlas);
         _log = new MessageLog();
@@ -88,8 +88,6 @@ public class EntropyGame : IGameClient
         _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
         
         var block = CityBlockGenerator.Generate(_definitions);
-        Console.WriteLine($"Block maps: {block.Maps.Maps.Count}");
-        Console.WriteLine($"Buildings: {block.Buildings.Count}");
 
         _mainMenu = new MainMenuScreen(ToTileSize(clientSize));
         _mainMenu.NewGameRequested += StartNewGame;

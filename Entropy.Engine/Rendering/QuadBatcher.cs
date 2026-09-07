@@ -47,21 +47,8 @@ public class QuadBatcher : IDisposable
         GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, 32, 24);
 
         GL.BindVertexArray(0);
-        
-        Console.WriteLine($"QuadBatcher initialized with MaxQuads: {MaxQuads}, MaxVertices: {MaxVertices}, MaxIndices: {MaxIndices}");
     }
 
-    public void AddQuad(float x, float y, float w, float h, Color4 color)
-    {
-        if (_vertexCount + 4 > MaxVertices) Flush();
-
-        _vertices[_vertexCount + 0] = new Vertex { Position = new Vector2(x, y), Color = color, Uv = Vector2.Zero };
-        _vertices[_vertexCount + 1] = new Vertex {Position = new Vector2(x + w, y), Color = color, Uv = Vector2.Zero};
-        _vertices[_vertexCount + 2] = new Vertex {Position = new Vector2(x + w, y + h), Color = color, Uv = Vector2.Zero};
-        _vertices[_vertexCount + 3] = new Vertex {Position = new Vector2(x, y + h), Color = color, Uv = Vector2.Zero};
-        _vertexCount += 4;
-    }
-    
     public void AddTexturedQuad(float x, float y, float w, float h, Color4 color, char glyph)
     {
         if (_vertexCount + 4 > MaxVertices) Flush();
@@ -139,7 +126,5 @@ public class QuadBatcher : IDisposable
         GL.DeleteBuffer(_vbo);
         GL.DeleteBuffer(_ebo);
         GL.DeleteVertexArray(_vao);
-        
-        Console.WriteLine("QuadBatcher disposed.");
     }
 }
