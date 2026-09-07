@@ -127,9 +127,18 @@ public class TurnProcessor
 
             context.MapId = transition.ToMap;
             context.Map = context.Maps[transition.ToMap];
+            context.Visibility = context.Visibilities[transition.ToMap];
 
-            Fov.Compute(transition.ToTile, viewRadius, context.Map, visibility);
-            Spend(player, context.Map[transition.ToTile.X, transition.ToTile.Y].MoveCost);
+            Fov.Compute(
+                transition.ToTile,
+                viewRadius,
+                context.Map,
+                context.Visibility);
+
+            Spend(
+                player,
+                context.Map[transition.ToTile.X, transition.ToTile.Y].MoveCost);
+
             return true;
         }
 
@@ -144,8 +153,18 @@ public class TurnProcessor
             if (!ctx.World.IsAlive(_actors[i]))
                 RemoveActor(_actors[i]);
 
-        var perceivers = ctx.World.Query<Position, Perception>().ToList();
-        var candidates = ctx.World.Query<Position, Actor>().ToList();
+        var perceivers = ctx.World.Query<Position, Perception>()
+            .Where(entity =>
+                ctx.World.Has<Location>(entity) &&
+                ctx.World.Get<Location>(entity).MapId == ctx.MapId)
+            .ToList();
+
+        var candidates = ctx.World.Query<Position, Actor>()
+            .Where(entity =>
+                ctx.World.Has<Location>(entity) &&
+                ctx.World.Get<Location>(entity).MapId == ctx.MapId)
+            .ToList();
+
         PerceptionSystem.Update(ctx.World, ctx.Map, perceivers, candidates);
 
         foreach (var actor in _actors)

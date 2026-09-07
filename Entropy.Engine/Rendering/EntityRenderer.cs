@@ -1,4 +1,3 @@
-using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.Rendering.Options;
 using Entropy.Engine.World;

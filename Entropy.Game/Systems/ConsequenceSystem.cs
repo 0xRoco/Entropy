@@ -18,9 +18,9 @@ public static class ConsequenceSystem
             description,
             ctx.MapId,
             location,
-            ctx.Clock.TotalMinutes);
+            ctx.Clock.MinuteOfDay);
         var witnesses = FindWitnesses(ctx, location, attacker);
-        if (witnesses.Count == 0) return;   // unseen crime
+        if (witnesses.Count == 0) return; // unseen crime
 
         var reported = false;
         foreach (var witness in witnesses)

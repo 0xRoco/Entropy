@@ -115,5 +115,49 @@ public static class AiUtil
             return;
         }
     }
+    
+    /// <summary>
+    /// Moves an NPC toward an anchor, crossing map transitions when necessary.
+    /// The player transition remains in TurnProcessor because it also changes
+    /// the active map/FOV/camera context.
+    /// </summary>
+    public static bool TravelToward(
+        World world,
+        Entity self,
+        GameContext context,
+        string destinationMapId,
+        Vector2i destinationTile)
+    {
+        if (!world.Has<Location>(self))
+            return false;
+
+        var currentMapId = world.Get<Location>(self).MapId;
+        var currentMap = context.Maps[currentMapId];
+
+        ref var position = ref world.Get<Position>(self);
+        var here = ToTile(position.Value);
+
+        if (currentMapId == destinationMapId)
+            return StepToward(world, self, currentMap, destinationTile);
+
+        var transition = context.Maps.NextTransitionToward(currentMapId, destinationMapId);
+        if (transition == null)
+            return false;
+
+        if (here == transition.FromTile)
+        {
+            ApplyTransition(world, self, transition);
+            return true;
+        }
+
+        return StepToward(world, self, currentMap, transition.FromTile);
+    }
+
+    public static void ApplyTransition(World world, Entity entity, MapTransition transition)
+    {
+        world.Set(entity, new Location { MapId = transition.ToMap });
+        world.Get<Position>(entity).Value =
+            new Vector2(transition.ToTile.X, transition.ToTile.Y);
+    }
 
 }

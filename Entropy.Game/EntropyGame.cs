@@ -8,6 +8,7 @@ using Entropy.Game.Components;
 using Entropy.Game.Definitions;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
+using Entropy.Game.WorldGen;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -39,6 +40,7 @@ public class EntropyGame : IGameClient
     private DefinitionRegistry _definitions = null!;
     private Entity _player;
     private VisibilityMap _visibility = null!;
+    private Dictionary<string, VisibilityMap> _visibilities = null!;
     private Rng _rng = new(Random.Shared.Next(int.MinValue, int.MaxValue));
     private MessageLog _log = null!;
     private GameContext _context = null!;
@@ -72,6 +74,11 @@ public class EntropyGame : IGameClient
         _definitions.LoadCreatures("Content/Json");
         _definitions.LoadTerrains("Content/Json");
         _definitions.LoadTilesets("Content/Json");
+        _definitions.LoadBuildingTemplates("Content/Json");
+        
+        var block = CityBlockGenerator.Generate(_definitions);
+        Console.WriteLine($"Block maps: {block.Maps.Maps.Count}");
+        Console.WriteLine($"Buildings: {block.Buildings.Count}");
 
         _mainMenu = new MainMenuScreen(ToTileSize(clientSize));
         _mainMenu.NewGameRequested += StartNewGame;
@@ -135,8 +142,8 @@ public class EntropyGame : IGameClient
         
         ApplyMapViewport();
 
-        TileRenderer.Draw(_context.Map, _visibility, _camera, _batcher);
-        EntityRenderer.Draw(_world, _context.MapId, _visibility, _batcher);
+        TileRenderer.Draw(_context.Map, _context.Visibility, _camera, _batcher);
+        EntityRenderer.Draw(_world, _context.MapId, _context.Visibility, _batcher);
 
         GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
 
@@ -147,14 +154,13 @@ public class EntropyGame : IGameClient
     public void Resize(int width, int height)
     {
         _clientSize = new Vector2i(width, height);
-        _mainMenu?.Resize(ToTileSize(_clientSize));
+        _mainMenu.Resize(ToTileSize(_clientSize));
 
-        if (_mode == GameMode.Gameplay)
-        {
-            _tileCamera.ViewportSize = _clientSize;
-            _hud.Resize(ToTileSize(_clientSize));
-            ConfigureMapCamera();
-        }
+        if (_mode != GameMode.Gameplay) return;
+        
+        _tileCamera.ViewportSize = _clientSize;
+        _hud.Resize(ToTileSize(_clientSize));
+        ConfigureMapCamera();
     }
     
     private void StartNewGame()
@@ -168,7 +174,8 @@ public class EntropyGame : IGameClient
         _maps = result.Maps;
         _world = result.World;
         _player = result.Player;
-        _visibility = result.Visibility;
+        _visibilities = result.Visibilities;
+        _visibility = _visibilities[result.MapId];
         _turnProcessor = result.Turns;
 
         _context = new GameContext
@@ -183,6 +190,7 @@ public class EntropyGame : IGameClient
             Rng = _rng,
             Clock = _clock,
             Turns = _turnProcessor,
+            Visibilities = result.Visibilities,
             Visibility = _visibility,
             ViewRadius = ViewRadius
         };
@@ -238,7 +246,12 @@ public class EntropyGame : IGameClient
     {
         var move = Controls.GetMoveDirection(_input);
         if (move != null)
-            return _turnProcessor.ProcessPlayerTurn(_player, (Vector2i)move, _context, _visibility, ViewRadius);
+            return _turnProcessor.ProcessPlayerTurn(
+                _player,
+                (Vector2i)move,
+                _context,
+                _context.Visibility,
+                ViewRadius);
 
         var key = _input.GetKeyPressed();
         

@@ -22,22 +22,45 @@ public class RespondBehavior : IBehavior
             return;
         }
 
-        ref var myPos = ref world.Get<Position>(self).Value;
-        var targetPos = world.Get<Position>(_target).Value;
+        var targetMapId = world.Get<Location>(_target).MapId;
+        var targetPosition = world.Get<Position>(_target).Value;
 
-        if (AiUtil.IsAdjacent(myPos, targetPos))
+        var selfMapId = world.Get<Location>(self).MapId;
+        var selfPosition = world.Get<Position>(self).Value;
+
+        if (selfMapId == targetMapId &&
+            AiUtil.IsAdjacent(selfPosition, targetPosition))
         {
-            var holding = ConsequenceSystem.FindHoldingTile(context.Map);
-            world.Get<Position>(_target).Value = new Vector2(holding.X, holding.Y);
-            Fov.Compute(holding, context.ViewRadius, context.Map, context.Visibility);
+            var holding = ConsequenceSystem.FindHoldingTile(context.Maps[targetMapId]);
+
+            world.Set(_target, new Location { MapId = targetMapId });
+            world.Get<Position>(_target).Value =
+                new Vector2(holding.X, holding.Y);
+
+            context.MapId = targetMapId;
+            context.Map = context.Maps[targetMapId];
+            context.Visibility = context.Visibilities[targetMapId];
+
+            Fov.Compute(
+                holding,
+                context.ViewRadius,
+                context.Map,
+                context.Visibility);
+
             world.Remove<Wanted>(_target);
+
             context.Log.Add("The officer grabs you. \"You're under arrest.\"", Color4.Red);
-            context.Log.Add("You are held at the station. (Prison later)", Color4.LightGray);
+            context.Log.Add("You are held at the station. (Prison arrives later.)", Color4.LightGray);
+
             world.Destroy(self);
             return;
         }
 
-        AiUtil.StepToward(world, self, context.Map,
-            new Vector2i((int)targetPos.X, (int)targetPos.Y));
+        AiUtil.TravelToward(
+            world,
+            self,
+            context,
+            targetMapId,
+            new Vector2i((int)targetPosition.X, (int)targetPosition.Y));
     }
 }

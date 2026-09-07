@@ -29,17 +29,25 @@ public static class DefinitionLoader
 
     public static List<CreatureDefinition> LoadCreatures(string rootDirectory)
     {
-        return LoadType<CreatureDefinition>(rootDirectory, "CREATURE", ParseCreature);
+        return LoadType(rootDirectory, "CREATURE", ParseCreature);
     }
 
     public static List<TerrainDefinition> LoadTerrains(string rootDirectory)
     {
-        return LoadType<TerrainDefinition>(rootDirectory, "TERRAIN", ParseTerrain);
+        return LoadType(rootDirectory, "TERRAIN", ParseTerrain);
     }
 
     public static List<TilesetDefinition> LoadTilesets(string rootDirectory)
     {
-        return LoadType<TilesetDefinition>(rootDirectory, "TILESET", ParseTileset);
+        return LoadType(rootDirectory, "TILESET", ParseTileset);
+    }
+    
+    public static List<BuildingTemplate> LoadBuildingTemplates(string rootDirectory)
+    {
+        return LoadType(
+            rootDirectory,
+            "BUILDING_TEMPLATE",
+            ParseBuildingTemplate);
     }
 
     private static List<T> LoadType<T>(string rootDirectory, string typeName,
@@ -63,6 +71,135 @@ public static class DefinitionLoader
         }
 
         return defs;
+    }
+
+    private static BuildingTemplate ParseBuildingTemplate(JsonElement element, string file)
+    {
+        var id = GetString(element, "id", file);
+        var grid = ParseGrid(element, id, file);
+        var legend = ParseLegend(element, id, file);
+        var anchors = ParseAnchors(element, id, file);
+
+        foreach (var marker in grid.SelectMany(row => row))
+        {
+            if (!legend.ContainsKey(marker))
+            {
+                throw new InvalidOperationException(
+                    $"{file}: building template '{id}' has grid marker '{marker}' with no legend entry.");
+            }
+        }
+
+        return new BuildingTemplate
+        {
+            Id = id,
+            Name = GetString(element, "name", file),
+            Grid = grid,
+            Legend = legend,
+            Anchors = anchors
+        };
+    }
+
+    private static List<string> ParseGrid(JsonElement element, string id, string file)
+    {
+        if (!element.TryGetProperty("grid", out var grid) ||
+            grid.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException(
+                $"{file}: building template '{id}' is missing array property 'grid'.");
+        }
+
+        var rows = new List<string>();
+
+        foreach (var row in grid.EnumerateArray())
+        {
+            if (row.ValueKind != JsonValueKind.String || string.IsNullOrEmpty(row.GetString()))
+            {
+                throw new InvalidOperationException(
+                    $"{file}: building template '{id}' has an empty or invalid grid row.");
+            }
+
+            rows.Add(row.GetString()!);
+        }
+
+        if (rows.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"{file}: building template '{id}' has no grid rows.");
+        }
+
+        var width = rows[0].Length;
+
+        if (rows.Any(row => row.Length != width))
+        {
+            throw new InvalidOperationException(
+                $"{file}: building template '{id}' has grid rows with inconsistent widths.");
+        }
+
+        return rows;
+    }
+
+    private static Dictionary<char, string> ParseLegend(JsonElement element, string id, string file)
+    {
+        if (!element.TryGetProperty("legend", out var legend) ||
+            legend.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException(
+                $"{file}: building template '{id}' is missing object property 'legend'.");
+        }
+
+        var result = new Dictionary<char, string>();
+
+        foreach (var property in legend.EnumerateObject())
+        {
+            if (property.Name.Length != 1 || property.Value.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidOperationException(
+                    $"{file}: building template '{id}' has invalid legend entry '{property.Name}'.");
+            }
+
+            result[property.Name[0]] = property.Value.GetString()!;
+        }
+
+        return result;
+    }
+
+    private static Dictionary<string, Vector2i> ParseAnchors(JsonElement element, string id, string file)
+    {
+        var result = new Dictionary<string, Vector2i>();
+
+        if (!element.TryGetProperty("anchors", out var anchors))
+            return result;
+
+        if (anchors.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException(
+                $"{file}: building template '{id}' has invalid 'anchors'; expected object.");
+        }
+
+        foreach (var property in anchors.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.Array ||
+                property.Value.GetArrayLength() != 2)
+            {
+                throw new InvalidOperationException(
+                    $"{file}: building template '{id}' anchor '{property.Name}' must be [x, y].");
+            }
+
+            var values = property.Value.EnumerateArray().ToArray();
+
+            if (values[0].ValueKind != JsonValueKind.Number ||
+                values[1].ValueKind != JsonValueKind.Number)
+            {
+                throw new InvalidOperationException(
+                    $"{file}: building template '{id}' anchor '{property.Name}' must contain integers.");
+            }
+
+            var point = new Vector2i(values[0].GetInt32(), values[1].GetInt32());
+
+            result[property.Name] = point;
+        }
+
+        return result;
     }
 
     private static TerrainDefinition ParseTerrain(JsonElement element, string file)
@@ -106,6 +243,7 @@ public static class DefinitionLoader
                     $"{file}: terrain '{id}' has unknown engine flag '{flag}' (valid: road, outdoor, indoor)");
             result.Add(flag);
         }
+
         return result;
     }
 

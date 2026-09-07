@@ -11,6 +11,8 @@ public class DefinitionRegistry
 
     private readonly Dictionary<string, ushort> _terrainIndex = new();
     private readonly Dictionary<string, Tile> _terrainTiles = new();
+    
+    private readonly Dictionary<string, BuildingTemplate> _buildingTemplates = new();
 
     public void LoadItems(string directory)
     {
@@ -31,6 +33,21 @@ public class DefinitionRegistry
                 throw new InvalidOperationException($"Duplicate creature definition ID '{def.Id}' found.");
         }
         Console.WriteLine($"[DefinitionRegistry] Loaded {_creatures.Count} creature definitions.");
+    }
+    
+    public void LoadBuildingTemplates(string directory)
+    {
+        foreach (var def in DefinitionLoader.LoadBuildingTemplates(directory))
+        {
+            if (!_buildingTemplates.TryAdd(def.Id, def))
+            {
+                throw new InvalidOperationException(
+                    $"Duplicate building template definition ID '{def.Id}' found.");
+            }
+        }
+
+        Console.WriteLine(
+            $"[DefinitionRegistry] Loaded {_buildingTemplates.Count} building templates.");
     }
 
     public void LoadTerrains(string directory)
@@ -81,9 +98,18 @@ public class DefinitionRegistry
     public Tile TileOf(string id) => _terrainTiles.TryGetValue(id, out var tile)
         ? tile
         : throw new KeyNotFoundException($"Terrain definition with ID '{id}' not found.");
+    
+    public BuildingTemplate BuildingTemplate(string id) =>
+        _buildingTemplates.TryGetValue(id, out var def)
+            ? def
+            : throw new KeyNotFoundException(
+                $"Building template definition with ID '{id}' not found.");
 
     public IReadOnlyCollection<ItemDefinition> Items => _items.Values;
     public IReadOnlyCollection<CreatureDefinition> Creatures => _creatures.Values;
+    public IReadOnlyCollection<TerrainDefinition> Terrains => _terrain.Values;
+    public IReadOnlyCollection<TilesetDefinition> Tilesets => _tilesets.Values;
+    public IReadOnlyCollection<BuildingTemplate> BuildingTemplates => _buildingTemplates.Values;
 
     private static Tile BuildTile(TerrainDefinition def, ushort index)
     {

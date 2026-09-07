@@ -23,7 +23,6 @@ public struct Tile(char glyph, Color4 foreground, Color4 background, bool walkab
     public readonly TileFlags Flags = flags;
     public readonly ushort MoveCost = moveCost;
 
-    // Legacy debug presets — retired when the city block generator lands (M5.4)
     public static readonly Tile Floor = new('.', Color4.White,
         new Color4(0.08f, 0.08f, 0.12f, 1f), true, false);
     public static readonly Tile Wall = new('#', Color4.LightGray,
