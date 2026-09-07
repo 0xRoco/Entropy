@@ -29,7 +29,23 @@ public static class DefinitionLoader
 
     public static List<CreatureDefinition> LoadCreatures(string rootDirectory)
     {
-        var defs = new List<CreatureDefinition>();
+        return LoadType<CreatureDefinition>(rootDirectory, "CREATURE", ParseCreature);
+    }
+
+    public static List<TerrainDefinition> LoadTerrains(string rootDirectory)
+    {
+        return LoadType<TerrainDefinition>(rootDirectory, "TERRAIN", ParseTerrain);
+    }
+
+    public static List<TilesetDefinition> LoadTilesets(string rootDirectory)
+    {
+        return LoadType<TilesetDefinition>(rootDirectory, "TILESET", ParseTileset);
+    }
+
+    private static List<T> LoadType<T>(string rootDirectory, string typeName,
+        Func<JsonElement, string, T> parse)
+    {
+        var defs = new List<T>();
         foreach (var file in Directory.GetFiles(rootDirectory, "*.json", SearchOption.AllDirectories))
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(file));
@@ -41,12 +57,70 @@ public static class DefinitionLoader
             foreach (var element in elements)
             {
                 var type = GetString(element, "type", file);
-                if (type == "CREATURE")
-                    defs.Add(ParseCreature(element, file));
+                if (type == typeName)
+                    defs.Add(parse(element, file));
             }
         }
 
         return defs;
+    }
+
+    private static TerrainDefinition ParseTerrain(JsonElement element, string file)
+    {
+        var id = GetString(element, "id", file);
+        return new TerrainDefinition
+        {
+            Id = id,
+            Name = GetString(element, "name", file),
+            Symbol = ParseSymbol(element, file),
+            Color = ParseColor(element, id, file),
+            Background = ParseBackground(element, id, file),
+            Walkable = GetBoolOr(element, "walkable", true),
+            Opaque = GetBoolOr(element, "opaque", false),
+            MoveCost = GetIntOr(element, "move_cost", 100),
+            Flags = ParseTerrainFlags(element, id, file)
+        };
+    }
+
+    private static TilesetDefinition ParseTileset(JsonElement element, string file)
+    {
+        return new TilesetDefinition
+        {
+            Id = GetString(element, "id", file),
+            Mode = GetStringOr(element, "mode", "ascii"),
+            Atlas = GetStringOr(element, "atlas", string.Empty),
+            CellSize = GetIntOr(element, "cell_size", 16)
+        };
+    }
+
+    private static HashSet<string> ParseTerrainFlags(JsonElement e, string id, string file)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!e.TryGetProperty("flags", out var arr)) return result;
+
+        foreach (var f in arr.EnumerateArray())
+        {
+            var flag = f.GetString()!;
+            if (!ValidTerrainFlags.Contains(flag))
+                throw new InvalidOperationException(
+                    $"{file}: terrain '{id}' has unknown engine flag '{flag}' (valid: road, outdoor, indoor)");
+            result.Add(flag);
+        }
+        return result;
+    }
+
+    private static readonly HashSet<string> ValidTerrainFlags =
+        new(StringComparer.OrdinalIgnoreCase) { "road", "outdoor", "indoor" };
+
+    private static Color4 ParseBackground(JsonElement e, string id, string file)
+    {
+        if (!e.TryGetProperty("background", out var v) || v.ValueKind != JsonValueKind.String)
+            return Color4.Black;
+
+        var name = v.GetString()!.ToLowerInvariant();
+        return Colors.TryGetValue(name, out var color)
+            ? color
+            : throw new InvalidOperationException($"{file}: terrain '{id}' has unknown background color '{name}'");
     }
 
     private static CreatureDefinition ParseCreature(JsonElement element, string file)

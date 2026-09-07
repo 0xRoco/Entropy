@@ -9,7 +9,9 @@ namespace Entropy.Game;
 
 public sealed class GameContext
 {
-    public required TileMap Map { get; init; }
+    public required TileMap Map { get; set; } // current map
+    public required string MapId { get; set; } // current map id
+    public required MapGraph Maps { get; init; } // the whole connected world
     public required MessageLog Log { get; init; }
     public required World World { get; init; }
     public required DefinitionRegistry Definitions { get; init; }

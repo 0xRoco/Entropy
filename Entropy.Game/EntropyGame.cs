@@ -19,7 +19,6 @@ public class EntropyGame : IGameClient
 {
     public bool ExitRequested { get; private set; }
     
-    
     private const int ViewRadius = 6;
     private Vector2i _clientSize;
 
@@ -36,6 +35,7 @@ public class EntropyGame : IGameClient
     private IGameInput _input = null!;
     private TileMap _map = null!;
     private World _world = null!;
+    private MapGraph _maps = null!;
     private DefinitionRegistry _definitions = null!;
     private Entity _player;
     private VisibilityMap _visibility = null!;
@@ -70,6 +70,8 @@ public class EntropyGame : IGameClient
         _definitions = new DefinitionRegistry();
         _definitions.LoadItems("Content/Json");
         _definitions.LoadCreatures("Content/Json");
+        _definitions.LoadTerrains("Content/Json");
+        _definitions.LoadTilesets("Content/Json");
 
         _mainMenu = new MainMenuScreen(ToTileSize(clientSize));
         _mainMenu.NewGameRequested += StartNewGame;
@@ -96,8 +98,13 @@ public class EntropyGame : IGameClient
         {
             var tx = (int)inspectedTile.Value.X;
             var ty = (int)inspectedTile.Value.Y;
-            if (tx >= 0 && tx < _map.Width && ty >= 0 && ty < _map.Height)
-                _log.Add($"You squint your eyes and see a tile at ({tx}, {ty}) with glyph '{_map[tx, ty].Glyph}'", Color4.LightGray);
+            if (tx >= 0 && tx < _context.Map.Width &&
+                ty >= 0 && ty < _context.Map.Height)
+            {
+                _log.Add(
+                    $"You squint your eyes and see a tile at ({tx}, {ty}) with glyph '{_context.Map[tx, ty].Glyph}'",
+                    Color4.LightGray);
+            }
         }
 
         var key = _input.GetKeyPressed(); 
@@ -128,8 +135,8 @@ public class EntropyGame : IGameClient
         
         ApplyMapViewport();
 
-        TileRenderer.Draw(_map, _visibility, _camera, _batcher);
-        EntityRenderer.Draw(_world, _visibility, _batcher);
+        TileRenderer.Draw(_context.Map, _visibility, _camera, _batcher);
+        EntityRenderer.Draw(_world, _context.MapId, _visibility, _batcher);
 
         GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
 
@@ -152,11 +159,13 @@ public class EntropyGame : IGameClient
     
     private void StartNewGame()
     {
+        _clock = new WorldClock(2001, 3, 12, 7, 30);
         _log = new MessageLog();
 
         var result = WorldSetup.StartNewGame(_rng, _log, _definitions, ViewRadius);
 
         _map = result.Map;
+        _maps = result.Maps;
         _world = result.World;
         _player = result.Player;
         _visibility = result.Visibility;
@@ -164,7 +173,9 @@ public class EntropyGame : IGameClient
 
         _context = new GameContext
         {
-            Map = _map,
+            Map = result.Map,
+            MapId = result.MapId,
+            Maps = result.Maps,
             Log = _log,
             World = _world,
             Definitions = _definitions,
@@ -177,7 +188,6 @@ public class EntropyGame : IGameClient
         };
 
         _hud = new GameHud(_context, _clock, _rng.Seed, ToTileSize(_clientSize));
-        
         _hud.NewCharacterRequested += RestartGame;
         _hud.MainMenuRequested += ReturnToMainMenu;
 
@@ -231,16 +241,19 @@ public class EntropyGame : IGameClient
             return _turnProcessor.ProcessPlayerTurn(_player, (Vector2i)move, _context, _visibility, ViewRadius);
 
         var key = _input.GetKeyPressed();
-        if (key == Keys.G) return TryPickupAtPlayer();
-        if (key == Keys.Period) return true;
-
-        return false;
+        
+        return key switch
+        {
+            Keys.G => TryPickupAtPlayer(),
+            Keys.Period => true,
+            _ => false
+        };
     }
 
     private bool TryPickupAtPlayer()
     {
         var pos = _world.Get<Position>(_player).Value;
-        var items = ItemSystem.ItemsAt(_world, pos);
+        var items = ItemSystem.ItemsAt(_world, _context.MapId, pos);
         if (items.Count == 0) return false;
 
         foreach (var item in items)

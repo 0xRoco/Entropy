@@ -9,10 +9,11 @@ namespace Entropy.Game;
 
 public static class EntitySpawner
 {
-    public static Entity CreatePlayer(World world, int x, int y)
+    public static Entity CreatePlayer(World world, string mapId, int x, int y)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
+            .With(world, new Location { MapId = mapId })
             .With(world, new Glyph { Character = '@', Foreground = Color4.White })
             .With(world, new PlayerControlled())
             .With(world, new Health { Current = 10, Max = 10 })
@@ -21,22 +22,22 @@ public static class EntitySpawner
             .With(world, new Hunger { Current = 480, Max = 480 })
             .With(world, new Thirst { Current = 240, Max = 240 })
             .With(world, new Fatigue { Current = 960, Max = 960 });
-        
-        Console.WriteLine($"Created player entity {e.Id} at position ({x}, {y})");
+
         return e;
     }
-    
-    public static Entity CreateHuman(World world, CreatureDefinition def, int x, int y, string name)
+
+    public static Entity CreateHuman(World world, string mapId, CreatureDefinition def, int x, int y, string name)
     {
-        var e = BuildCreature(world, def, x, y);
+        var e = BuildCreature(world, mapId, def, x, y);
         e.With(world, new Named { Name = name });
         return e;
     }
 
-    public static Entity CreateCop(World world, CreatureDefinition def, int x, int y, Entity target)
+    public static Entity CreateCop(World world, string mapId, CreatureDefinition def, int x, int y, Entity target)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
+            .With(world, new Location { MapId = mapId })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
             .With(world, new Named { Name = "Officer" })
             .With(world, new Health { Current = def.Health, Max = def.Health })
@@ -48,29 +49,12 @@ public static class EntitySpawner
             .With(world, new Behavior { Impl = new RespondBehavior(target) });
         return e;
     }
-    
-    public static Entity CreateZombie(World world, int x, int y)
+
+    public static Entity CreateItem(World world, string mapId, ItemDefinition def, int x, int y, int count = 1)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
-            .With(world, new Glyph { Character = 'z', Foreground = Color4.Green })
-            .With(world, new Hostile())
-            .With(world, new Health { Current = 3, Max = 3 })
-            .With(world, new Actor())
-            .With(world, new Behavior { Impl = new ZombieBehavior() })
-            .With(world, new Perception { SightRadius = 7, SmellRadius = 3 })
-            .With(world, Awareness.Create())
-            .With(world, new AIState { Mode = AIMode.Idle })
-            .With(world, new Speed {Value = 100});
-        
-        Console.WriteLine($"Created zombie entity {e.Id} at position ({x}, {y})");
-        return e;
-    }
-    
-    public static Entity CreateItem(World world, ItemDefinition def, int x, int y, int count = 1)
-    {
-        var e = world.Create()
-            .With(world, new Position { Value = new Vector2(x, y) })
+            .With(world, new Location { MapId = mapId })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
             .With(world, new Item())
             .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id });
@@ -89,10 +73,11 @@ public static class EntitySpawner
         return e;
     }
     
-    private static Entity BuildCreature(World world, CreatureDefinition def, int x, int y)
+    private static Entity BuildCreature(World world, string mapId, CreatureDefinition def, int x, int y)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
+            .With(world, new Location { MapId = mapId })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
             .With(world, new Health { Current = def.Health, Max = def.Health })
             .With(world, new Actor())

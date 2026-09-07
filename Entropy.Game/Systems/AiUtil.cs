@@ -17,13 +17,17 @@ public static class AiUtil
     public static bool IsAdjacent(Vector2 a, Vector2 b) => Manhattan(a, b) == 1;
     
     /// <summary>
-    /// Any other Actor occupying the tile (creatures block creatures)
+    /// Any other Actor on the same map occupying the tile (creatures block
+    /// creatures). Map is derived from the mover's own Location.
     /// </summary>
     public static bool IsOccupied(World world, Entity self, Vector2i tile)
     {
+        var mapId = world.Get<Location>(self).MapId;
+
         foreach (var e in world.Query<Position, Actor>())
         {
             if (e.Equals(self)) continue;
+            if (!world.Has<Location>(e) || world.Get<Location>(e).MapId != mapId) continue;
             var p = world.Get<Position>(e).Value;
             if ((int)p.X == tile.X && (int)p.Y == tile.Y) return true;
         }

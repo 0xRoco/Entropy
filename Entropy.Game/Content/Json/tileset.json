@@ -1,0 +1,7 @@
+{
+  "type": "TILESET",
+  "id": "default",
+  "mode": "ascii",
+  "atlas": "Content/ascii.png",
+  "cell_size": 16
+}

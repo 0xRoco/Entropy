@@ -39,12 +39,26 @@ public static class PerceptionSystem
             
             var pos = world.Get<Position>(perceiver).Value;
             var posI = new Vector2i((int)pos.X, (int)pos.Y);
+            var perceiverMap = world.Has<Location>(perceiver) ? world.Get<Location>(perceiver).MapId : "";
+            var perceiverMapId = world.Has<Location>(perceiver)
+                ? world.Get<Location>(perceiver).MapId
+                : "";
 
             var sightComputed = false;
 
             foreach (var (candidate, candidatePos) in candidatePosition)
             {
                 if (candidate.Equals(perceiver)) continue; // don't perceive self
+                
+                if (world.Has<Location>(candidate) &&
+                    world.Get<Location>(candidate).MapId != perceiverMapId)
+                {
+                    continue;
+                }
+
+                // perception never crosses maps
+                if (world.Has<Location>(candidate)
+                    && world.Get<Location>(candidate).MapId != perceiverMap) continue;
                 
                 var manhattan = MathF.Abs(candidatePos.X - posI.X) 
                                 + MathF.Abs(candidatePos.Y - posI.Y);
@@ -69,16 +83,9 @@ public static class PerceptionSystem
                     awareness.Detected[candidate] = true;
                     awareness.LastKnownPositions[candidate] = candidatePos;
                     awareness.TurnsSinceDetected[candidate] = 0;
-                }else if (awareness.Detected.Remove(candidate))
+                }else if (awareness.Detected.Remove(candidate) || awareness.LastKnownPositions.ContainsKey(candidate))
                 {
                     awareness.TurnsSinceDetected[candidate] = awareness.TurnsSinceDetected.TryGetValue(candidate, out var turns) ? turns + 1 : 1;
-                }
-                else
-                {
-                    // never detected or already lost - keep counting if we have memory
-                    
-                    if (awareness.LastKnownPositions.ContainsKey(candidate))
-                        awareness.TurnsSinceDetected[candidate] = awareness.TurnsSinceDetected.TryGetValue(candidate, out var turns) ? turns + 1 : 1;
                 }
             }
         }

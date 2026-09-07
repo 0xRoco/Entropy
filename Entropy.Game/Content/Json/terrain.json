@@ -1,0 +1,100 @@
+[
+  {
+    "//": "street layer",
+    "type": "TERRAIN",
+    "id": "road_asphalt",
+    "name": "Asphalt Road",
+    "symbol": "=",
+    "color": "dark_gray",
+    "background": "black",
+    "walkable": true,
+    "opaque": false,
+    "move_cost": 80,
+    "flags": [ "road", "outdoor" ]
+  },
+  {
+    "type": "TERRAIN",
+    "id": "sidewalk",
+    "name": "Sidewalk",
+    "symbol": ".",
+    "color": "gray",
+    "background": "black",
+    "walkable": true,
+    "opaque": false,
+    "move_cost": 90,
+    "flags": [ "outdoor" ]
+  },
+  {
+    "type": "TERRAIN",
+    "id": "grass",
+    "name": "Grass",
+    "symbol": "\"",
+    "color": "dark_green",
+    "background": "black",
+    "walkable": true,
+    "opaque": false,
+    "move_cost": 130,
+    "flags": [ "outdoor" ]
+  },
+  {
+    "//": "building shells",
+    "type": "TERRAIN",
+    "id": "wall_brick",
+    "name": "Brick Wall",
+    "symbol": "#",
+    "color": "brown",
+    "background": "black",
+    "walkable": false,
+    "opaque": true,
+    "move_cost": 100
+  },
+  {
+    "type": "TERRAIN",
+    "id": "wall_concrete",
+    "name": "Concrete Wall",
+    "symbol": "#",
+    "color": "light_gray",
+    "background": "black",
+    "walkable": false,
+    "opaque": true,
+    "move_cost": 100
+  },
+  {
+    "//": "interiors",
+    "type": "TERRAIN",
+    "id": "floor_wood",
+    "name": "Wood Floor",
+    "symbol": ".",
+    "color": "brown",
+    "background": "black",
+    "walkable": true,
+    "opaque": false,
+    "move_cost": 100,
+    "flags": [ "indoor" ]
+  },
+  {
+    "type": "TERRAIN",
+    "id": "floor_linoleum",
+    "name": "Linoleum Floor",
+    "symbol": ".",
+    "color": "white",
+    "background": "black",
+    "walkable": true,
+    "opaque": false,
+    "move_cost": 100,
+    "flags": [ "indoor" ]
+  },
+  {
+    "//": "transitions",
+    "type": "TERRAIN",
+    "id": "door",
+    "name": "Door",
+    "symbol": "+",
+    "color": "yellow",
+    "background": "black",
+    "walkable": true,
+    "opaque": false,
+    "move_cost": 100,
+    "flags": [ "indoor" ]
+  }
+]

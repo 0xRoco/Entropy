@@ -7,16 +7,27 @@ namespace Entropy.Game.Systems;
 
 public static class ItemSystem
 {
-    public static List<Entity> ItemsAt(World world, Vector2 tile)
+    public static List<Entity> ItemsAt(World world, string mapId, Vector2 tile)
     {
         var result = new List<Entity>();
+
         foreach (var entity in world.Query<Position, Item>())
         {
-            var p = world.Get<Position>(entity).Value;
-            if ((int)p.X == (int)tile.X && (int)p.Y == (int)tile.Y)
+            if (!world.Has<Location>(entity) ||
+                world.Get<Location>(entity).MapId != mapId)
+            {
+                continue;
+            }
+
+            var pos = world.Get<Position>(entity).Value;
+
+            if ((int)pos.X == (int)tile.X &&
+                (int)pos.Y == (int)tile.Y)
+            {
                 result.Add(entity);
+            }
         }
-        
+
         return result;
     }
 

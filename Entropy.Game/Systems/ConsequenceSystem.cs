@@ -13,26 +13,44 @@ public static class ConsequenceSystem
 
     public static void Report(GameContext ctx, string type, string description, Vector2i location, Entity attacker, Entity victim)
     {
-        var simEvent = new SimEvent(type, description, location, ctx.Clock.TotalMinutes);
+        var simEvent = new SimEvent(
+            type,
+            description,
+            ctx.MapId,
+            location,
+            ctx.Clock.TotalMinutes);
         var witnesses = FindWitnesses(ctx, location, attacker);
         if (witnesses.Count == 0) return;   // unseen crime
 
         var reported = false;
         foreach (var witness in witnesses)
         {
-            ctx.World.Get<WitnessMemory>(witness).Witnessed.Add(simEvent);
+            foreach (var entity in ctx.World.Query<Position, Perception>())
+            {
+                if (entity.Equals(attacker) || !ctx.World.IsAlive(entity))
+                    continue;
+
+                if (!ctx.World.Has<WitnessMemory>(entity))
+                    continue;
+
+                if (!ctx.World.Has<Location>(entity) ||
+                    ctx.World.Get<Location>(entity).MapId != ctx.MapId)
+                    continue;
+
+                ctx.World.Get<WitnessMemory>(witness).Witnessed.Add(simEvent);
             
-            if (witness.Equals(victim)) continue; // victim doesn't report
+                if (witness.Equals(victim)) continue; // victim doesn't report
 
-            if (reported || ctx.World.Has<Hostile>(witness)) continue;
+                if (reported || ctx.World.Has<Hostile>(witness)) continue;
 
-            reported = true;
-            var name = ctx.World.Has<Named>(witness)
-                ? ctx.World.Get<Named>(witness).Name
-                : "Someone";
-            ctx.Log.Add($"{name} witnessed the {type} and calls the police!", Color4.Yellow);
+                reported = true;
+                var name = ctx.World.Has<Named>(witness)
+                    ? ctx.World.Get<Named>(witness).Name
+                    : "Someone";
+                ctx.Log.Add($"{name} witnessed the {type} and calls the police!", Color4.Yellow);
 
-            ctx.World.Set(attacker, new Wanted { Crime = simEvent });
+                ctx.World.Set(attacker, new Wanted { Crime = simEvent });
+            }
         }
 
         if (reported)
@@ -50,6 +68,9 @@ public static class ConsequenceSystem
         {
             if (entity.Equals(attacker) || !ctx.World.IsAlive(entity)) continue;
             if (!ctx.World.Has<WitnessMemory>(entity)) continue;
+            // witnesses never cross maps
+            if (!ctx.World.Has<Location>(entity)
+                || ctx.World.Get<Location>(entity).MapId != ctx.MapId) continue;
 
             var pos = ctx.World.Get<Position>(entity).Value;
             var posI = new Vector2i((int)pos.X, (int)pos.Y);
@@ -70,8 +91,13 @@ public static class ConsequenceSystem
     private static void Dispatch(GameContext ctx, SimEvent simEvent)
     {
         var edge = FindEdgeSpawn(ctx.Map, simEvent.Location, ctx.Rng);
-        var cop = EntitySpawner.CreateCop(ctx.World, ctx.Definitions.Creature("human_cop"),
-            edge.X, edge.Y, ctx.Player);
+        var cop = EntitySpawner.CreateCop(
+            ctx.World,
+            ctx.MapId,
+            ctx.Definitions.Creature("human_cop"),
+            edge.X,
+            edge.Y,
+            ctx.Player);
         ctx.Turns.AddActor(cop);
         ctx.Log.Add("A police officer is responding.", Color4.LightGray);
     }
