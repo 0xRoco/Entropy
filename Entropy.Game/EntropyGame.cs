@@ -32,6 +32,9 @@ public class EntropyGame : IGameClient
     private QuadBatcher _batcher = null!;
     private QuadBatcher _tileBatcher = null!;
     private GlyphAtlas _atlas = null!;
+    private TilesetDefinition _tileset = null!;
+    private GlyphAtlas _terrainAtlas = null!;
+    private QuadBatcher _terrainBatcher = null!;
 
     private IGameInput _input = null!;
     private TileMap _map = null!;
@@ -75,6 +78,14 @@ public class EntropyGame : IGameClient
         _definitions.LoadTerrains("Content/Json");
         _definitions.LoadTilesets("Content/Json");
         _definitions.LoadBuildingTemplates("Content/Json");
+        
+        _tileset = _definitions.Tileset("entropy_art");
+
+        _terrainAtlas = _tileset.Mode == "art"
+            ? new GlyphAtlas(_tileset.Atlas)
+            : _atlas;
+
+        _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
         
         var block = CityBlockGenerator.Generate(_definitions);
         Console.WriteLine($"Block maps: {block.Maps.Maps.Count}");
@@ -142,8 +153,25 @@ public class EntropyGame : IGameClient
         
         ApplyMapViewport();
 
-        TileRenderer.Draw(_context.Map, _context.Visibility, _camera, _batcher);
-        EntityRenderer.Draw(_world, _context.MapId, _context.Visibility, _batcher);
+        TileRenderer.Draw(
+            _context.Map,
+            _context.Visibility,
+            _camera,
+            _terrainBatcher,
+            tilesetMode: _tileset.Mode,
+            artAtlas: _terrainAtlas,
+            artCellSize: (int)Camera.TilePixelSize);
+
+        EntityRenderer.Draw(
+            _world,
+            _context.MapId,
+            _context.Visibility,
+            _batcher,
+            _terrainBatcher,
+            SpriteKeyOf,
+            _tileset.Sprites,
+            _terrainAtlas,
+            _tileset.CellSize);
 
         GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
 
@@ -278,10 +306,19 @@ public class EntropyGame : IGameClient
         return true;
     }
     
+    private string? SpriteKeyOf(Entity entity)
+    {
+        if (_world.Has<CreatureIdentity>(entity))
+            return "creature:" + _world.Get<CreatureIdentity>(entity).DefinitionId;
+        if (_world.Has<Item>(entity) && _world.Has<ItemIdentity>(entity))
+            return "item:" + _world.Get<ItemIdentity>(entity).DefinitionId;
+        return null;
+    }
+
     private static Vector2i ToTileSize(Vector2i pixels) =>
         new(
             pixels.X / (int)Camera.TilePixelSize,
-            pixels.Y / (int)Camera.TilePixelSize); 
+            pixels.Y / (int)Camera.TilePixelSize);
     
     public void Dispose()
     {
@@ -290,6 +327,7 @@ public class EntropyGame : IGameClient
         
         _batcher.Dispose();
         _tileBatcher.Dispose();
+        _terrainBatcher.Dispose();
         _shader.Dispose();
         _atlas.Dispose();
     }

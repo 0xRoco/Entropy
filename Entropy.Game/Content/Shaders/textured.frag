@@ -9,6 +9,5 @@ uniform sampler2D uAtlas;
 void main()
 {
     vec4 tex = texture(uAtlas, vUv);
-    float alpha = tex.g;
-    FragColor = vec4(vColor.rgb, vColor.a * alpha);
+    FragColor = tex * vColor;
 }

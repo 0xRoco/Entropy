@@ -221,12 +221,33 @@ public static class DefinitionLoader
 
     private static TilesetDefinition ParseTileset(JsonElement element, string file)
     {
+        var sprites = new Dictionary<string, Vector2i>();
+        if (element.TryGetProperty("sprites", out var spriteObj) && spriteObj.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var entry in spriteObj.EnumerateObject())
+            {
+                if (entry.Value.ValueKind != JsonValueKind.Array ||
+                    entry.Value.GetArrayLength() != 2 ||
+                    entry.Value[0].ValueKind != JsonValueKind.Number ||
+                    entry.Value[1].ValueKind != JsonValueKind.Number)
+                {
+                    throw new InvalidOperationException(
+                        $"{file}: tileset sprite '{entry.Name}' must be a [col, row] array.");
+                }
+
+                sprites[entry.Name] = new Vector2i(
+                    entry.Value[0].GetInt32(),
+                    entry.Value[1].GetInt32());
+            }
+        }
+
         return new TilesetDefinition
         {
             Id = GetString(element, "id", file),
             Mode = GetStringOr(element, "mode", "ascii"),
             Atlas = GetStringOr(element, "atlas", string.Empty),
-            CellSize = GetIntOr(element, "cell_size", 16)
+            CellSize = GetIntOr(element, "cell_size", 16),
+            Sprites = sprites
         };
     }
 

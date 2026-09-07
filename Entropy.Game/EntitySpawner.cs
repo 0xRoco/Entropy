@@ -19,6 +19,7 @@ public static class EntitySpawner
             .With(world, new Health { Current = 10, Max = 10 })
             .With(world, new Actor())
             .With(world, new Speed { Value = 100 })
+            .With(world, new CreatureIdentity { DefinitionId = "player" })
             .With(world, new Hunger { Current = 480, Max = 480 })
             .With(world, new Thirst { Current = 240, Max = 240 })
             .With(world, new Fatigue { Current = 960, Max = 960 });
@@ -30,6 +31,7 @@ public static class EntitySpawner
     {
         var e = BuildCreature(world, mapId, def, x, y);
         e.With(world, new Named { Name = name });
+        e.With(world, new CreatureIdentity { DefinitionId = def.Id });
         return e;
     }
 
@@ -43,6 +45,7 @@ public static class EntitySpawner
             .With(world, new Health { Current = def.Health, Max = def.Health })
             .With(world, new Actor())
             .With(world, new Speed { Value = def.Speed })
+            .With(world, new CreatureIdentity { DefinitionId = def.Id })
             .With(world, new Perception { SightRadius = def.SightRadius, SmellRadius = def.SmellRadius })
             .With(world, Awareness.Create())
             .With(world, WitnessMemory.Create())

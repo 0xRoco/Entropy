@@ -73,6 +73,18 @@ public class QuadBatcher : IDisposable
         _vertices[_vertexCount + 3] = new Vertex { Position = new Vector2(x, y + h),     Color = color, Uv = bl };
         _vertexCount += 4;
     }
+    
+    public void AddTexturedQuad(float x, float y, float w, float h, Color4 color,
+        Vector2 uvMin, Vector2 uvMax)
+    {
+        if (_vertexCount + 4 > MaxVertices) Flush();
+
+        _vertices[_vertexCount + 0] = new Vertex { Position = new Vector2(x, y),         Color = color, Uv = uvMin };
+        _vertices[_vertexCount + 1] = new Vertex { Position = new Vector2(x + w, y),     Color = color, Uv = new Vector2(uvMax.X, uvMin.Y) };
+        _vertices[_vertexCount + 2] = new Vertex { Position = new Vector2(x + w, y + h), Color = color, Uv = uvMax };
+        _vertices[_vertexCount + 3] = new Vertex { Position = new Vector2(x, y + h),     Color = color, Uv = new Vector2(uvMin.X, uvMax.Y) };
+        _vertexCount += 4;
+    }
 
     public void AddRect(float x, float y, float w, float h, Color4 color)
     {

@@ -160,10 +160,6 @@ public class WorldSetup
             store.Anchors["shelf"].Y,
             count: 3);
 
-        world.Get<Glyph>(dana).Character = 'D';
-        world.Get<Glyph>(marcus).Character = 'M';
-        world.Get<Glyph>(priya).Character = 'P';
-
         Fov.Compute(
             playerStart,
             viewRadius,

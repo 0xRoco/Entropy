@@ -9,6 +9,9 @@ public class GlyphAtlas : IDisposable
     public int Handle { get; }
     public int CellRows { get; }
     public int CellCols { get; }
+    
+    public int Width { get; }
+    public int Height { get; }
 
     public GlyphAtlas(string path, int cellRows = 16, int cellCols = 16)
     {
@@ -28,6 +31,13 @@ public class GlyphAtlas : IDisposable
         GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 
             image.Width, image.Height, 0, 
             PixelFormat.Rgba, PixelType.UnsignedByte, image.Data);
+        
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, 1, 1,
+            PixelFormat.Rgba, PixelType.UnsignedByte,
+            new byte[] { 255, 255, 255, 255 });
+
+        Width = image.Width;
+        Height = image.Height;
         
         Console.WriteLine($"Loaded glyph atlas '{path}' with size {image.Width}x{image.Height} and cell size {cellCols}x{cellRows}");
         
