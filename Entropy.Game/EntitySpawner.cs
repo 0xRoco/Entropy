@@ -9,17 +9,17 @@ namespace Entropy.Game;
 
 public static class EntitySpawner
 {
-    public static Entity CreatePlayer(World world, string mapId, int x, int y)
+    public static Entity CreatePlayer(World world, string mapId, CreatureDefinition def, int x, int y)
     {
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Location { MapId = mapId })
-            .With(world, new Glyph { Character = '@', Foreground = Color4.White })
+            .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
             .With(world, new PlayerControlled())
-            .With(world, new Health { Current = 10, Max = 10 })
+            .With(world, new Health { Current = def.Health, Max = def.Health })
             .With(world, new Actor())
-            .With(world, new Speed { Value = 100 })
-            .With(world, new CreatureIdentity { DefinitionId = "player" })
+            .With(world, new Speed { Value = def.Speed })
+            .With(world, new CreatureIdentity { DefinitionId = def.Id })
             .With(world, new Hunger { Current = 480, Max = 480 })
             .With(world, new Thirst { Current = 240, Max = 240 })
             .With(world, new Fatigue { Current = 960, Max = 960 });

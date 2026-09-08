@@ -1,6 +1,18 @@
 [
   {
     "type": "CREATURE",
+    "id": "player",
+    "name": "Player",
+    "symbol": "@",
+    "color": "white",
+    "health": 10,
+    "speed": 100,
+    "sight": 6,
+    "smell": 0,
+    "behavior": "none"
+  },
+  {
+    "type": "CREATURE",
     "id": "human_civilian",
     "name": "Human",
     "symbol": "h",

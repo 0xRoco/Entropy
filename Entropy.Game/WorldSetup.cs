@@ -42,6 +42,7 @@ public class WorldSetup
         var player = EntitySpawner.CreatePlayer(
             world,
             block.StreetMapId,
+            defs.Creature("player"),
             playerStart.X,
             playerStart.Y);
 
