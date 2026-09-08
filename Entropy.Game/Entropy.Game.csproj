@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Entropy.Engine\Entropy.Engine.csproj" />
+        <ProjectReference Include="..\Entropy.Content\Entropy.Content.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -63,3 +63,7 @@ Backup*/
 UpgradeLog*.XML
 UpgradeLog*.htm
 ServiceFabricBackup/
+
+# Temporarly blocked
+Assets
+Docs

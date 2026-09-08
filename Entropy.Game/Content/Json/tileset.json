@@ -5,7 +5,8 @@
     "mode": "ascii",
     "atlas": "Content/ascii.png",
     "cell_size": 16
-  }, {
+  },
+  {
     "//": "full art tileset",
     "type": "TILESET",
     "id": "entropy_art",
@@ -13,6 +14,14 @@
     "atlas": "Content/Tilesets/art.png",
     "cell_size": 16,
     "sprites": {
+      "terrain:road_asphalt": [0, 0],
+      "terrain:sidewalk": [1, 0],
+      "terrain:grass": [2, 0],
+      "terrain:wall_brick": [3, 0],
+      "terrain:wall_concrete": [4, 0],
+      "terrain:floor_wood": [5, 0],
+      "terrain:floor_linoleum": [6, 0],
+      "terrain:door": [7, 0],
       "creature:player": [0, 1],
       "creature:human_civilian": [1, 1],
       "creature:human_cop": [2, 1],

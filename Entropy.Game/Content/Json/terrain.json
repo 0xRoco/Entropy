@@ -7,10 +7,13 @@
     "symbol": "=",
     "color": "dark_gray",
     "background": "black",
+    "flags": [
+      "road",
+      "outdoor"
+    ],
     "walkable": true,
     "opaque": false,
-    "move_cost": 80,
-    "flags": [ "road", "outdoor" ]
+    "move_cost": 80
   },
   {
     "type": "TERRAIN",
@@ -19,22 +22,26 @@
     "symbol": ".",
     "color": "gray",
     "background": "black",
+    "flags": [
+      "outdoor"
+    ],
     "walkable": true,
     "opaque": false,
-    "move_cost": 90,
-    "flags": [ "outdoor" ]
+    "move_cost": 90
   },
   {
     "type": "TERRAIN",
     "id": "grass",
     "name": "Grass",
-    "symbol": "\"",
-    "color": "dark_green",
+    "symbol": "\u0022",
+    "color": "green",
     "background": "black",
+    "flags": [
+      "outdoor"
+    ],
     "walkable": true,
     "opaque": false,
-    "move_cost": 130,
-    "flags": [ "outdoor" ]
+    "move_cost": 130
   },
   {
     "//": "building shells",
@@ -67,10 +74,12 @@
     "symbol": ".",
     "color": "brown",
     "background": "black",
+    "flags": [
+      "indoor"
+    ],
     "walkable": true,
     "opaque": false,
-    "move_cost": 100,
-    "flags": [ "indoor" ]
+    "move_cost": 100
   },
   {
     "type": "TERRAIN",
@@ -79,22 +88,26 @@
     "symbol": ".",
     "color": "white",
     "background": "black",
+    "flags": [
+      "indoor"
+    ],
     "walkable": true,
     "opaque": false,
-    "move_cost": 100,
-    "flags": [ "indoor" ]
+    "move_cost": 100
   },
   {
     "//": "transitions",
     "type": "TERRAIN",
     "id": "door",
     "name": "Door",
-    "symbol": "+",
+    "symbol": "\u002B",
     "color": "yellow",
     "background": "black",
+    "flags": [
+      "indoor"
+    ],
     "walkable": true,
     "opaque": false,
-    "move_cost": 100,
-    "flags": [ "indoor" ]
+    "move_cost": 100
   }
 ]

@@ -7,14 +7,21 @@
     "symbol": "!",
     "color": "pink",
     "description": "A strip of sterile cloth for dressing wounds. Better than nothing.",
-    "material": [ "cotton" ],
-    "flags": [ "soft" ],
     "category": "medical",
+    "material": [
+      "Cotton"
+    ],
+    "flags": [
+      "soft"
+    ],
     "weight": 50,
     "stackable": true,
     "max_stack": 10,
     "effects": [
-      { "kind": "heal", "amount": 5 }
+      {
+        "kind": "heal",
+        "amount": 5
+      }
     ]
   },
   {
@@ -22,17 +29,24 @@
     "type": "ITEM",
     "id": "first_aid_kit",
     "name": "First Aid Kit",
-    "symbol": "+",
+    "symbol": "\u002B",
     "color": "red",
     "description": "A comprehensive field kit: gauze, antiseptic, sutures. Someone thought ahead.",
-    "material": [ "plastic" ],
-    "flags": [ "soft" ],
     "category": "medical",
+    "material": [
+      "Plastic"
+    ],
+    "flags": [
+      "soft"
+    ],
     "weight": 900,
     "stackable": true,
     "max_stack": 3,
     "effects": [
-      { "kind": "heal", "amount": 15 }
+      {
+        "kind": "heal",
+        "amount": 15
+      }
     ]
   },
   {
@@ -42,12 +56,21 @@
     "symbol": "/",
     "color": "light_gray",
     "description": "A straight iron blade, nicked from use. It still bites.",
-    "material": [ "iron" ],
-    "flags": [ "sharp", "weapon_melee", "rigid" ],
     "category": "melee",
+    "material": [
+      "Iron"
+    ],
+    "flags": [
+      "sharp",
+      "weapon_melee",
+      "rigid"
+    ],
     "weight": 1200,
     "effects": [
-      { "kind": "damage", "amount": 3 }
+      {
+        "kind": "damage",
+        "amount": 3
+      }
     ]
   },
   {
@@ -58,11 +81,24 @@
     "symbol": "/",
     "color": "brown",
     "description": "A felling axe with a wooden haft. Heavy, but it splits more than firewood.",
-    "material": [ "wood", "iron" ],
-    "flags": [ "sharp", "weapon_melee", "tool_chop", "rigid" ],
     "category": "melee",
+    "material": [
+      "Wood",
+      "Iron"
+    ],
+    "flags": [
+      "sharp",
+      "weapon_melee",
+      "tool_chop",
+      "rigid"
+    ],
     "weight": 2500,
-    "effects": [ { "kind": "damage", "amount": 4 } ]
+    "effects": [
+      {
+        "kind": "damage",
+        "amount": 4
+      }
+    ]
   },
   {
     "//": "improvised bludgeon",
@@ -72,11 +108,22 @@
     "symbol": "/",
     "color": "brown",
     "description": "An aluminum bat. Swing for the fences.",
-    "material": [ "wood" ],
-    "flags": [ "weapon_melee", "tool_smash", "rigid" ],
     "category": "melee",
+    "material": [
+      "Wood"
+    ],
+    "flags": [
+      "weapon_melee",
+      "tool_smash",
+      "rigid"
+    ],
     "weight": 1000,
-    "effects": [ { "kind": "damage", "amount": 2 } ]
+    "effects": [
+      {
+        "kind": "damage",
+        "amount": 2
+      }
+    ]
   },
   {
     "//": "kitchen staple, cuts both ways",
@@ -85,12 +132,24 @@
     "name": "Kitchen Knife",
     "symbol": "/",
     "color": "light_gray",
-    "description": "A chef's knife, still sharp. Chops vegetables and other things.",
-    "material": [ "steel" ],
-    "flags": [ "sharp", "weapon_melee", "tool_cut", "rigid" ],
+    "description": "A chef\u0027s knife, still sharp. Chops vegetables and other things.",
     "category": "melee",
+    "material": [
+      "Steel"
+    ],
+    "flags": [
+      "sharp",
+      "weapon_melee",
+      "tool_cut",
+      "rigid"
+    ],
     "weight": 300,
-    "effects": [ { "kind": "damage", "amount": 2 } ]
+    "effects": [
+      {
+        "kind": "damage",
+        "amount": 2
+      }
+    ]
   },
   {
     "//": "dry sustenance",
@@ -100,13 +159,22 @@
     "symbol": "%",
     "color": "light_yellow",
     "description": "Dry crackers in a crinkled sleeve. Tastes like cardboard, keeps forever.",
-    "material": [ "cotton" ],
-    "flags": [ "edible" ],
     "category": "food",
+    "material": [
+      "Cotton"
+    ],
+    "flags": [
+      "edible"
+    ],
     "weight": 200,
     "stackable": true,
     "max_stack": 20,
-    "effects": [ { "kind": "nourish", "amount": 120 } ]
+    "effects": [
+      {
+        "kind": "nourish",
+        "amount": 120
+      }
+    ]
   },
   {
     "//": "canned protein, keeps for years",
@@ -116,13 +184,23 @@
     "symbol": "%",
     "color": "brown",
     "description": "A sealed tin of beans. The label promises a family of four.",
-    "material": [ "steel" ],
-    "flags": [ "edible", "sealed" ],
     "category": "food",
+    "material": [
+      "Steel"
+    ],
+    "flags": [
+      "edible",
+      "sealed"
+    ],
     "weight": 450,
     "stackable": true,
     "max_stack": 8,
-    "effects": [ { "kind": "nourish", "amount": 180 } ]
+    "effects": [
+      {
+        "kind": "nourish",
+        "amount": 180
+      }
+    ]
   },
   {
     "//": "bottled water, empty bottle after",
@@ -132,13 +210,22 @@
     "symbol": "!",
     "color": "light_blue",
     "description": "Clear water in a plastic bottle. The bottle will be useful after.",
-    "material": [ "plastic" ],
-    "flags": [ "drinkable" ],
     "category": "food",
+    "material": [
+      "Plastic"
+    ],
+    "flags": [
+      "drinkable"
+    ],
     "weight": 650,
     "stackable": true,
     "max_stack": 4,
-    "effects": [ { "kind": "hydrate", "amount": 240 } ]
+    "effects": [
+      {
+        "kind": "hydrate",
+        "amount": 240
+      }
+    ]
   },
   {
     "//": "sheer fabric, crafting resource",
@@ -148,9 +235,13 @@
     "symbol": ",",
     "color": "white",
     "description": "A square of cotton cloth. Soaks up blood, water, and oil alike.",
-    "material": [ "cotton" ],
-    "flags": [ "soft" ],
     "category": "resources",
+    "material": [
+      "Cotton"
+    ],
+    "flags": [
+      "soft"
+    ],
     "weight": 80,
     "stackable": true,
     "max_stack": 30
@@ -163,9 +254,13 @@
     "symbol": ",",
     "color": "dark_gray",
     "description": "A jagged piece of steel. Raw material for something better.",
-    "material": [ "steel" ],
-    "flags": [ "rigid" ],
     "category": "resources",
+    "material": [
+      "Steel"
+    ],
+    "flags": [
+      "rigid"
+    ],
     "weight": 400,
     "stackable": true,
     "max_stack": 25
@@ -178,9 +273,13 @@
     "symbol": "!",
     "color": "red",
     "description": "A box of wooden matches. Fire, once, at a time.",
-    "material": [ "wood" ],
-    "flags": [ "tool_firestart" ],
     "category": "tools",
+    "material": [
+      "Wood"
+    ],
+    "flags": [
+      "tool_firestart"
+    ],
     "weight": 20,
     "stackable": true,
     "max_stack": 50
@@ -193,9 +292,13 @@
     "symbol": ".",
     "color": "dark_gray",
     "description": "A black briquette of compressed charcoal. Burns hot and clean.",
-    "material": [ "wood" ],
-    "flags": [ "fuel" ],
     "category": "resources",
+    "material": [
+      "Wood"
+    ],
+    "flags": [
+      "fuel"
+    ],
     "weight": 120,
     "stackable": true,
     "max_stack": 30
@@ -205,12 +308,17 @@
     "type": "ITEM",
     "id": "candle",
     "name": "Candle",
-    "symbol": "\"",
+    "symbol": "\u0022",
     "color": "light_yellow",
     "description": "A stub of tallow candle. Light, for a while.",
-    "material": [ "plastic" ],
-    "flags": [ "light_source", "fuel" ],
     "category": "tools",
+    "material": [
+      "Plastic"
+    ],
+    "flags": [
+      "light_source",
+      "fuel"
+    ],
     "weight": 100,
     "stackable": true,
     "max_stack": 12
@@ -221,11 +329,15 @@
     "id": "backpack",
     "name": "Backpack",
     "symbol": "[",
-    "color": "dark_green",
+    "color": "green",
     "description": "A rugged backpack with padded straps. Carries a life.",
-    "material": [ "cotton" ],
-    "flags": [ "container_wearable" ],
     "category": "containers",
+    "material": [
+      "Cotton"
+    ],
+    "flags": [
+      "container_wearable"
+    ],
     "weight": 700
   },
   {
@@ -236,9 +348,14 @@
     "symbol": "[",
     "color": "white",
     "description": "A crinkly plastic bag. Better than arms full.",
-    "material": [ "plastic" ],
-    "flags": [ "container_wearable", "soft" ],
     "category": "containers",
+    "material": [
+      "Plastic"
+    ],
+    "flags": [
+      "container_wearable",
+      "soft"
+    ],
     "weight": 30
   }
 ]

@@ -1,4 +1,4 @@
-namespace Entropy.Game.Definitions;
+namespace Entropy.Content;
 
 public enum Material
 {

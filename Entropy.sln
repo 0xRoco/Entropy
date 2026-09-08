@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Game", "Entropy.Gam
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Engine", "Entropy.Engine\Entropy.Engine.csproj", "{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Editor", "Entropy.Editor\Entropy.Editor.csproj", "{EA1F9555-4243-482D-8D8D-DE08FBBE8106}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Content", "Entropy.Content\Entropy.Content.csproj", "{6D5C7974-BFE8-4EC8-93A1-178812F85D68}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,13 @@ Global
 		{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA8D4B29-3E2F-48A7-8B1E-24A3170518F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA1F9555-4243-482D-8D8D-DE08FBBE8106}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA1F9555-4243-482D-8D8D-DE08FBBE8106}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA1F9555-4243-482D-8D8D-DE08FBBE8106}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA1F9555-4243-482D-8D8D-DE08FBBE8106}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D5C7974-BFE8-4EC8-93A1-178812F85D68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D5C7974-BFE8-4EC8-93A1-178812F85D68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D5C7974-BFE8-4EC8-93A1-178812F85D68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D5C7974-BFE8-4EC8-93A1-178812F85D68}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

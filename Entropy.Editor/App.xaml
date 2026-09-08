@@ -1,0 +1,14 @@
+﻿<Application x:Class="Entropy.Editor.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Entropy.Editor"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <local:CharConverter x:Key="Char"/>
+        <local:ColorNameConverter x:Key="ColorName"/>
+        <local:Color4ToBrushConverter x:Key="Color4Brush"/>
+        <local:MaterialsConverter x:Key="Materials"/>
+        <local:FlagsConverter x:Key="Flags"/>
+    </Application.Resources>
+</Application>

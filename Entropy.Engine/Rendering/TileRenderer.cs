@@ -14,7 +14,9 @@ public static class TileRenderer
         TileRenderOptions? option = null,
         string tilesetMode = "ascii",
         GlyphAtlas? artAtlas = null,
-        int artCellSize = 16)
+        int artCellSize = 16,
+        IReadOnlyDictionary<string, Vector2i>? spriteMap = null,
+        IReadOnlyList<string?>? terrainSpriteKeys = null)
     {
         var options = option ?? new TileRenderOptions();
         var artMode = tilesetMode == "art" && artAtlas != null;
@@ -46,7 +48,8 @@ public static class TileRenderer
                     ? Color4.White
                     : Color4.White.Scaled(options.MemoryDim);
 
-                DrawArtTile(batcher, artAtlas!, tile, x, y, tint, artCellSize);
+                DrawArtTile(batcher, artAtlas!, tile, x, y, tint, artCellSize,
+                    spriteMap, terrainSpriteKeys);
                 continue;
             }
 
@@ -67,7 +70,9 @@ public static class TileRenderer
         int x,
         int y,
         Color4 tint,
-        int cellSize)
+        int cellSize,
+        IReadOnlyDictionary<string, Vector2i>? spriteMap,
+        IReadOnlyList<string?>? terrainSpriteKeys)
     {
         // index 0 = legacy/default tiles with no art sprite
         if (tile.TerrainDefIndex == 0)
@@ -77,10 +82,34 @@ public static class TileRenderer
         }
 
         var index = tile.TerrainDefIndex - 1;
-        var cellsAcross = Math.Max(1, atlas.Width / cellSize);
-        var col = index % cellsAcross;
-        var row = index / cellsAcross;
 
+        // Preferred: named sprite ("terrain:<id>") from the tileset's sprite
+        // map, resolved via the terrain def's ordered sprite-key list.
+        if (spriteMap is not null && terrainSpriteKeys is not null &&
+            index < terrainSpriteKeys.Count &&
+            terrainSpriteKeys[index] is { } key &&
+            spriteMap.TryGetValue(key, out var cell))
+        {
+            AddAtlasQuad(batcher, atlas, cell.X, cell.Y, cellSize, x, y, tint);
+            return;
+        }
+
+        // Fallback: legacy sequential layout (def order, row-major).
+        var cellsAcross = Math.Max(1, atlas.Width / cellSize);
+        AddAtlasQuad(batcher, atlas, index % cellsAcross, index / cellsAcross,
+            cellSize, x, y, tint);
+    }
+
+    private static void AddAtlasQuad(
+        QuadBatcher batcher,
+        GlyphAtlas atlas,
+        int col,
+        int row,
+        int cellSize,
+        int x,
+        int y,
+        Color4 tint)
+    {
         var uMin = new Vector2(col * cellSize / (float)atlas.Width,
                                row * cellSize / (float)atlas.Height);
         var uMax = new Vector2((col + 1) * cellSize / (float)atlas.Width,

@@ -1,6 +1,8 @@
+using Entropy.Content;
+using Entropy.Content.Loading;
 using Entropy.Engine.World;
 
-namespace Entropy.Game.Definitions;
+namespace Entropy.Game.Systems;
 
 public class DefinitionRegistry
 {
@@ -11,6 +13,7 @@ public class DefinitionRegistry
 
     private readonly Dictionary<string, ushort> _terrainIndex = new();
     private readonly Dictionary<string, Tile> _terrainTiles = new();
+    private readonly List<string?> _terrainSpriteKeys = new();
     
     private readonly Dictionary<string, BuildingTemplate> _buildingTemplates = new();
 
@@ -47,6 +50,7 @@ public class DefinitionRegistry
     public void LoadTerrains(string directory)
     {
         ushort index = 1;   // 0 reserved for legacy/default tiles
+        _terrainSpriteKeys.Clear();
         foreach (var def in DefinitionLoader.LoadTerrains(directory))
         {
             if (!_terrain.TryAdd(def.Id, def))
@@ -54,6 +58,7 @@ public class DefinitionRegistry
 
             _terrainIndex[def.Id] = index;
             _terrainTiles[def.Id] = BuildTile(def, index);
+            _terrainSpriteKeys.Add("terrain:" + def.Id);
             index++;
         }
     }
@@ -102,6 +107,8 @@ public class DefinitionRegistry
     public IReadOnlyCollection<TerrainDefinition> Terrains => _terrain.Values;
     public IReadOnlyCollection<TilesetDefinition> Tilesets => _tilesets.Values;
     public IReadOnlyCollection<BuildingTemplate> BuildingTemplates => _buildingTemplates.Values;
+
+    public IReadOnlyList<string?> TerrainSpriteKeys => _terrainSpriteKeys;
 
     private static Tile BuildTile(TerrainDefinition def, ushort index)
     {

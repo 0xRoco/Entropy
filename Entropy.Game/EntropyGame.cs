@@ -5,7 +5,7 @@ using Entropy.Engine.Rendering;
 using Entropy.Engine.UI;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
-using Entropy.Game.Definitions;
+using Entropy.Content;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using Entropy.Game.WorldGen;
@@ -158,7 +158,9 @@ public class EntropyGame : IGameClient
             _terrainBatcher,
             tilesetMode: _tileset.Mode,
             artAtlas: _terrainAtlas,
-            artCellSize: (int)Camera.TilePixelSize);
+            artCellSize: (int)Camera.TilePixelSize,
+            spriteMap: _tileset.Sprites,
+            terrainSpriteKeys: _definitions.TerrainSpriteKeys);
 
         EntityRenderer.Draw(
             _world,

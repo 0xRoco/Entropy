@@ -2,7 +2,7 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Game.Behaviors;
 using Entropy.Game.Components;
-using Entropy.Game.Definitions;
+using Entropy.Content;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game;

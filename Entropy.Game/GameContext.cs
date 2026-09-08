@@ -1,7 +1,7 @@
 using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.World;
-using Entropy.Game.Definitions;
+using Entropy.Content;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 

@@ -1,5 +1,6 @@
 using Entropy.Engine.World;
-using Entropy.Game.Definitions;
+using Entropy.Content;
+using Entropy.Game.Systems;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game.WorldGen;
@@ -62,7 +63,7 @@ public static class CityBlockGenerator
         int exteriorY)
     {
         var template = defs.BuildingTemplate(templateId);
-        var interior = template.BuildMap(defs);
+        var interior = BuildInterior(template, defs);
 
         maps.AddMap(mapId, interior);
         
@@ -96,6 +97,20 @@ public static class CityBlockGenerator
                 mapId,
                 exteriorDoor,
                 template.Anchors));
+    }
+
+    private static TileMap BuildInterior(BuildingTemplate template, DefinitionRegistry defs)
+    {
+        var map = new TileMap(template.Width, template.Height);
+
+        for (var y = 0; y < template.Height; y++)
+        for (var x = 0; x < template.Width; x++)
+        {
+            var marker = template.Grid[y][x];
+            map.SetTile(x, y, defs.TileOf(template.Legend[marker]));
+        }
+
+        return map;
     }
 
     private static void Fill(TileMap map, Tile tile)
