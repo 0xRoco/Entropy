@@ -13,6 +13,7 @@ public class DefinitionRegistry
 
     private readonly Dictionary<string, ushort> _terrainIndex = new();
     private readonly Dictionary<string, Tile> _terrainTiles = new();
+    private readonly Dictionary<ushort, TerrainDefinition> _terrainByIndex = new();
     private readonly List<string?> _terrainSpriteKeys = new();
     
     private readonly Dictionary<string, BuildingTemplate> _buildingTemplates = new();
@@ -51,6 +52,7 @@ public class DefinitionRegistry
     {
         ushort index = 1;   // 0 reserved for legacy/default tiles
         _terrainSpriteKeys.Clear();
+        _terrainByIndex.Clear();
         foreach (var def in DefinitionLoader.LoadTerrains(directory))
         {
             if (!_terrain.TryAdd(def.Id, def))
@@ -58,6 +60,7 @@ public class DefinitionRegistry
 
             _terrainIndex[def.Id] = index;
             _terrainTiles[def.Id] = BuildTile(def, index);
+            _terrainByIndex[index] = def;
             _terrainSpriteKeys.Add("terrain:" + def.Id);
             index++;
         }
@@ -95,6 +98,13 @@ public class DefinitionRegistry
     public Tile TileOf(string id) => _terrainTiles.TryGetValue(id, out var tile)
         ? tile
         : throw new KeyNotFoundException($"Terrain definition with ID '{id}' not found.");
+    
+    public Tile TileForIndex(ushort index)
+    {
+        if (index == 0 || !_terrainByIndex.TryGetValue(index, out var def))
+            throw new KeyNotFoundException($"No terrain definition with index {index}.");
+        return BuildTile(def, index);
+    }
     
     public BuildingTemplate BuildingTemplate(string id) =>
         _buildingTemplates.TryGetValue(id, out var def)

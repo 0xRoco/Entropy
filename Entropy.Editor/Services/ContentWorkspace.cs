@@ -29,19 +29,8 @@ public partial class ContentWorkspace : ObservableObject
 
     public bool IsLoaded => FolderPath is not null;
     
-    public static string? TryFindContentFolder(string startDir)
-    {
-        var dir = new DirectoryInfo(startDir);
-        while (dir is not null)
-        {
-            var candidate = Path.Combine(
-                dir.FullName, "Entropy.Game", "Content", "Json");
-            if (Directory.Exists(candidate))
-                return candidate;
-            dir = dir.Parent;
-        }
-        return null;
-    }
+    public static string? TryFindContentFolder(string startDir) =>
+        ContentPaths.TryFindJsonFolder(startDir);
 
     public ImageSource? GetPreviewImage(string spriteKey)
     {

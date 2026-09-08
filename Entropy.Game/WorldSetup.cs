@@ -19,7 +19,8 @@ public class WorldSetup
         Dictionary<string, VisibilityMap> Visibilities,
         World World,
         Entity Player,
-        TurnProcessor Turns);
+        TurnProcessor Turns,
+        IReadOnlyDictionary<string, BuildingInstance> Buildings);
 
     public static NewGameResult StartNewGame(
         Rng rng,
@@ -176,7 +177,8 @@ public class WorldSetup
             visibilities,
             world,
             player,
-            turns);
+            turns,
+            block.Buildings);
     }
 
     private static Schedule ShiftWork(

@@ -6,6 +6,7 @@ using Entropy.Engine.UI;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
 using Entropy.Content;
+using Entropy.Content.Validation;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using Entropy.Game.WorldGen;
@@ -34,12 +35,14 @@ public class EntropyGame : IGameClient
     private GlyphAtlas _atlas = null!;
     private TilesetDefinition _tileset = null!;
     private GlyphAtlas _terrainAtlas = null!;
+    private string _contentRoot = null!;
     private QuadBatcher _terrainBatcher = null!;
 
     private IGameInput _input = null!;
     private TileMap _map = null!;
     private World _world = null!;
     private MapGraph _maps = null!;
+    private IReadOnlyDictionary<string, BuildingInstance> _buildings = null!;
     private DefinitionRegistry _definitions = null!;
     private Entity _player;
     private VisibilityMap _visibility = null!;
@@ -62,27 +65,36 @@ public class EntropyGame : IGameClient
         GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         _clientSize = clientSize;
         _input = input;
-        _shader = Shader.FromFiles("Content/Shaders/quad.vert", "Content/Shaders/textured.frag");
+
+        _contentRoot = ContentPaths.TryFindContentRoot(AppContext.BaseDirectory)
+            ?? throw new InvalidOperationException(
+                "Could not locate the Content folder (no source tree and no deployed Content directory found).");
+        var gameRoot = Path.GetDirectoryName(_contentRoot)!;
+
+        _shader = Shader.FromFiles(
+            Path.Combine(_contentRoot, "Shaders", "quad.vert"),
+            Path.Combine(_contentRoot, "Shaders", "textured.frag"));
         _camera = new Camera { ViewportSize = clientSize };
         _tileCamera = new TileCamera { ViewportSize = clientSize };
-        _atlas = new GlyphAtlas("Content/tilesets/ascii.png");
+        _atlas = new GlyphAtlas(Path.Combine(_contentRoot, "tilesets", "ascii.png"));
         _batcher = new QuadBatcher(_shader, _camera, _atlas);
         _tileBatcher = new QuadBatcher(_shader, _tileCamera, _atlas);
         _log = new MessageLog();
         _drawContext = new DrawContext { Batcher = _tileBatcher, Atlas = _atlas };
         _clock = new WorldClock(2001, 3, 12, 7, 30);
 
+        var jsonFolder = Path.Combine(_contentRoot, "Json");
         _definitions = new DefinitionRegistry();
-        _definitions.LoadItems("Content/Json");
-        _definitions.LoadCreatures("Content/Json");
-        _definitions.LoadTerrains("Content/Json");
-        _definitions.LoadTilesets("Content/Json");
-        _definitions.LoadBuildingTemplates("Content/Json");
-        
+        _definitions.LoadItems(jsonFolder);
+        _definitions.LoadCreatures(jsonFolder);
+        _definitions.LoadTerrains(jsonFolder);
+        _definitions.LoadTilesets(jsonFolder);
+        _definitions.LoadBuildingTemplates(jsonFolder);
+
         _tileset = _definitions.Tileset("entropy_art");
 
         _terrainAtlas = _tileset.Mode == "art"
-            ? new GlyphAtlas(_tileset.Atlas)
+            ? new GlyphAtlas(Path.Combine(gameRoot, _tileset.Atlas.Replace('/', Path.DirectorySeparatorChar)))
             : _atlas;
 
         _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
@@ -123,7 +135,12 @@ public class EntropyGame : IGameClient
             }
         }
 
-        var key = _input.GetKeyPressed(); 
+        var key = _input.GetKeyPressed();
+        if (key == Keys.F5)
+        {
+            ReloadContent();
+            return;
+        }
         if (key != null && _hud.HandleKey(key.Value)) return;
         
         if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
@@ -200,6 +217,7 @@ public class EntropyGame : IGameClient
 
         _map = result.Map;
         _maps = result.Maps;
+        _buildings = result.Buildings;
         _world = result.World;
         _player = result.Player;
         _visibilities = result.Visibilities;
@@ -306,6 +324,89 @@ public class EntropyGame : IGameClient
         return true;
     }
     
+    private void ReloadContent()
+    {
+        try
+        {
+            var jsonFolder = Path.Combine(_contentRoot, "Json");
+            var fresh = new DefinitionRegistry();
+            fresh.LoadItems(jsonFolder);
+            fresh.LoadCreatures(jsonFolder);
+            fresh.LoadTerrains(jsonFolder);
+            fresh.LoadTilesets(jsonFolder);
+            fresh.LoadBuildingTemplates(jsonFolder);
+
+            var errors = DefinitionValidator.Validate(
+                fresh.Items, fresh.Creatures, fresh.Terrains,
+                fresh.Tilesets, fresh.BuildingTemplates);
+            if (errors.Count > 0)
+            {
+                _log.Add($"Content reload blocked, {errors.Count} validation error(s):", Color4.Red);
+                foreach (var error in errors.Take(3))
+                    _log.Add("  " + error, Color4.Red);
+                return;
+            }
+
+            _definitions = fresh;
+            _tileset = _definitions.Tileset("entropy_art");
+
+            _terrainAtlas.Dispose();
+            _terrainAtlas = _tileset.Mode == "art"
+                ? new GlyphAtlas(Path.Combine(
+                    Path.GetDirectoryName(_contentRoot)!,
+                    _tileset.Atlas.Replace('/', Path.DirectorySeparatorChar)))
+                : _atlas;
+            _terrainBatcher.Dispose();
+            _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
+
+            foreach (var map in _maps.Maps.Values)
+                RestampTerrainTiles(map);
+                
+            var restamped = 0;
+            foreach (var building in _buildings.Values)
+            {
+                var template = _definitions.BuildingTemplate(building.TemplateId);
+                var map = _maps[building.MapId];
+                if (map.Width != template.Width || map.Height != template.Height)
+                {
+                    _log.Add(
+                        $"  '{building.Id}' changed size. restart to apply.",
+                        Color4.Yellow);
+                    continue;
+                }
+
+                for (var y = 0; y < template.Height; y++)
+                for (var x = 0; x < template.Width; x++)
+                {
+                    var marker = template.Grid[y][x];
+                    map.SetTile(x, y, _definitions.TileOf(template.Legend[marker]));
+                }
+                restamped++;
+            }
+
+            _log.Add(
+                $"Content reloaded: {_definitions.Terrains.Count} terrains, " +
+                $"{_definitions.Items.Count} items, {_definitions.Creatures.Count} creatures, " +
+                $"{restamped} building interior(s) restamped.",
+                Color4.LightGray);
+        }
+        catch (Exception ex)
+        {
+            _log.Add($"Content reload failed: {ex.Message}", Color4.Red);
+        }
+    }
+
+    private void RestampTerrainTiles(TileMap map)
+    {
+        for (var y = 0; y < map.Height; y++)
+        for (var x = 0; x < map.Width; x++)
+        {
+            var tile = map[x, y];
+            if (tile.TerrainDefIndex == 0) continue;
+            map.SetTile(x, y, _definitions.TileForIndex(tile.TerrainDefIndex));
+        }
+    }
+
     private string? SpriteKeyOf(Entity entity)
     {
         if (_world.Has<CreatureIdentity>(entity))

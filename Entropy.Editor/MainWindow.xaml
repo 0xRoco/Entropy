@@ -55,17 +55,7 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Buildings">
-                <Grid Margin="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="240"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <ListBox ItemsSource="{Binding Defs}" SelectedItem="{Binding Selected}"
-                             DisplayMemberPath="Id" Margin="0,0,8,0"/>
-                    <TextBlock Grid.Column="1" Text="Building editor coming soon."
-                               Foreground="#888" VerticalAlignment="Center"
-                               HorizontalAlignment="Center"/>
-                </Grid>
+                <views:BuildingEditorControl DataContext="{Binding Buildings}"/>
             </TabItem>
         </TabControl>
     </DockPanel>

@@ -11,7 +11,7 @@ namespace Entropy.Editor.ViewModels;
 public abstract partial class DefListViewModel<T>(ContentWorkspace workspace) : ObservableObject
     where T : class
 {
-    protected ContentWorkspace Workspace { get; } = workspace;
+    public ContentWorkspace Workspace { get; } = workspace;
 
     public ObservableCollection<T> Defs { get; } = new();
     [ObservableProperty] private T? _selected;
@@ -222,22 +222,50 @@ public partial class BuildingsViewModel(ContentWorkspace workspace) : DefListVie
 {
     public override string TypeName => "Building";
 
+    [ObservableProperty] private TerrainDefinition? _selectedTerrain;
+
+    [ObservableProperty] private string? _placingAnchor;
+
+    [ObservableProperty] private int _zoom = 1;
+
+    public int CellPixels => 28 * Zoom;
+    public double GlyphPixels => 8 + 8 * Zoom;
+
+    partial void OnZoomChanged(int value)
+    {
+        OnPropertyChanged(nameof(CellPixels));
+        OnPropertyChanged(nameof(GlyphPixels));
+    }
+
+    private const string LegendCharset =
+        "#.d,;:o*+~=xX-abcdefgijklmnopqrstuvwxyzABCDEFHIJKLMNOPQRSTUVWXYZ0123456789";
+
     protected override string? SpriteKeyOf(BuildingTemplate def) => null; // preview not applicable
 
     protected override BuildingTemplate CreateNew() => new()
     {
         Id = UniqueId(Defs.Select(d => d.Id), "new_building"),
         Name = "New Building",
-        Grid = ["#####", "#...#", "##d##"],
+        Grid =
+        [
+            "############",
+            "#..........#",
+            "#..........#",
+            "#..........#",
+            "#..........#",
+            "#..........#",
+            "#..........#",
+            "######d#####"
+        ],
         Legend = new Dictionary<char, string>
         {
             ['#'] = "wall_brick",
-            ['.'] = "floor_wood",
+            ['.'] = "floor_linoleum",
             ['d'] = "door"
         },
         Anchors = new Dictionary<string, Vector2i>
         {
-            ["entry"] = new(4, 2)
+            ["entry"] = new(6, 7)
         }
     };
 
@@ -250,4 +278,95 @@ public partial class BuildingsViewModel(ContentWorkspace workspace) : DefListVie
         Legend = new Dictionary<char, string>(source.Legend),
         Anchors = new Dictionary<string, Vector2i>(source.Anchors)
     };
+
+    public void PaintCell(int x, int y, TerrainDefinition? terrain)
+    {
+        if (Selected is null || terrain is null) return;
+        if (y < 0 || y >= Selected.Grid.Count) return;
+        var row = Selected.Grid[y];
+        if (x < 0 || x >= row.Length) return;
+
+        var marker = LegendMarkerFor(Selected, terrain.Id);
+        if (row[x] == marker) return;
+
+        var old = row[x];
+        Selected.Grid[y] = row[..x] + marker + row[(x + 1)..];
+        PruneUnusedLegend(Selected);
+    }
+
+    public void Resize(int width, int height)
+    {
+        if (Selected is null || Selected.Grid.Count == 0) return;
+        width = Math.Clamp(width, 3, 64);
+        height = Math.Clamp(height, 3, 64);
+
+        var pad = Selected.Grid
+            .SelectMany(r => r)
+            .GroupBy(c => c)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault(Selected.Legend.Keys.FirstOrDefault('#'));
+
+        var rows = new List<string>();
+        for (var y = 0; y < height; y++)
+        {
+            var source = y < Selected.Grid.Count ? Selected.Grid[y] : string.Empty;
+            rows.Add(source.Length >= width
+                ? source[..width]
+                : source + new string(pad, width - source.Length));
+        }
+        Selected.Grid = rows;
+
+        var clamped = Selected.Anchors.ToDictionary(
+            a => a.Key,
+            a => new Vector2i(
+                Math.Clamp(a.Value.X, 0, width - 1),
+                Math.Clamp(a.Value.Y, 0, height - 1)));
+        Selected.Anchors.Clear();
+        foreach (var (name, pos) in clamped)
+            Selected.Anchors[name] = pos;
+
+        PruneUnusedLegend(Selected);
+    }
+
+    public void PlaceAnchor(string name, int x, int y)
+    {
+        if (Selected is null || Selected.Grid.Count == 0) return;
+        x = Math.Clamp(x, 0, Selected.Grid[0].Length - 1);
+        y = Math.Clamp(y, 0, Selected.Grid.Count - 1);
+        Selected.Anchors[name] = new Vector2i(x, y);
+    }
+
+    public bool AddAnchor(string name)
+    {
+        if (Selected is null || string.IsNullOrWhiteSpace(name) || Selected.Anchors.ContainsKey(name))
+            return false;
+        Selected.Anchors[name] = new Vector2i(0, 0);
+        return true;
+    }
+
+    public void DeleteAnchor(string name) => Selected?.Anchors.Remove(name);
+
+    private char LegendMarkerFor(BuildingTemplate def, string terrainId)
+    {
+        foreach (var (marker, id) in def.Legend)
+            if (string.Equals(id, terrainId, StringComparison.OrdinalIgnoreCase))
+                return marker;
+
+        foreach (var candidate in LegendCharset)
+        {
+            if (def.Legend.ContainsKey(candidate)) continue;
+            def.Legend[candidate] = terrainId;
+            return candidate;
+        }
+
+        throw new InvalidOperationException($"Building template '{def.Id}' exhausted the legend charset.");
+    }
+
+    private static void PruneUnusedLegend(BuildingTemplate def)
+    {
+        var used = def.Grid.SelectMany(r => r).ToHashSet();
+        foreach (var marker in def.Legend.Keys.Where(m => !used.Contains(m)).ToList())
+            def.Legend.Remove(marker);
+    }
 }

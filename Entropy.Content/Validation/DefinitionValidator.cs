@@ -16,7 +16,7 @@ public static class DefinitionValidator
         errors.AddRange(ValidateTerrains(terrains));
         errors.AddRange(ValidateTilesets(tilesets,
             ItemIds(items), CreatureIds(creatures), TerrainIds(terrains)));
-        errors.AddRange(ValidateBuildingTemplates(buildings));
+        errors.AddRange(ValidateBuildingTemplates(buildings, TerrainIds(terrains)));
 
         return errors;
     }
@@ -146,7 +146,9 @@ public static class DefinitionValidator
         return errors;
     }
     
-    public static List<string> ValidateBuildingTemplates(IEnumerable<BuildingTemplate> buildings)
+    public static List<string> ValidateBuildingTemplates(
+        IEnumerable<BuildingTemplate> buildings,
+        IReadOnlyCollection<string>? terrainIds = null)
     {
         var errors = new List<string>();
         var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -163,6 +165,49 @@ public static class DefinitionValidator
 
             if (def.Grid.Select(r => r.Length).Distinct().Count() > 1)
                 errors.Add($"Building template '{def.Id}' has grid rows with inconsistent widths.");
+
+            errors.AddRange(ValidateBuildingLegend(def, terrainIds));
+            errors.AddRange(ValidateBuildingAnchors(def));
+        }
+
+        return errors;
+    }
+
+    private static List<string> ValidateBuildingLegend(
+        BuildingTemplate def,
+        IReadOnlyCollection<string>? terrainIds)
+    {
+        var errors = new List<string>();
+
+        foreach (var (marker, terrainId) in def.Legend)
+        {
+            if (terrainIds?.Contains(terrainId, StringComparer.OrdinalIgnoreCase) == false)
+                errors.Add($"Building template '{def.Id}' legend maps '{marker}' to unknown terrain id '{terrainId}'.");
+        }
+
+        foreach (var row in def.Grid)
+        {
+            foreach (var marker in row)
+            {
+                if (!def.Legend.ContainsKey(marker))
+                    errors.Add($"Building template '{def.Id}' grid uses marker '{marker}' with no legend entry.");
+            }
+        }
+
+        return errors;
+    }
+
+    private static List<string> ValidateBuildingAnchors(BuildingTemplate def)
+    {
+        var errors = new List<string>();
+        if (def.Grid.Count == 0) return errors;
+
+        var width = def.Grid.Max(r => r.Length);
+
+        foreach (var (name, pos) in def.Anchors)
+        {
+            if (pos.X < 0 || pos.Y < 0 || pos.X >= width || pos.Y >= def.Grid.Count)
+                errors.Add($"Building template '{def.Id}' anchor '{name}' ({pos.X}, {pos.Y}) is outside the grid.");
         }
 
         return errors;
