@@ -62,7 +62,8 @@ public static class ConsequenceSystem
         var result = new List<Entity>();
         var map = ctx.Map;
 
-        _scratch ??= new VisibilityMap(map.Width, map.Height);
+        if (_scratch is null || _scratch.Width != map.Width || _scratch.Height != map.Height)
+            _scratch = new VisibilityMap(map.Width, map.Height);
 
         foreach (var entity in ctx.World.Query<Position, Perception>())
         {

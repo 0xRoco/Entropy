@@ -20,12 +20,11 @@ public class InventoryDialog
 
     private readonly Panel _panel;
     private readonly ListView _list;
-    private readonly Panel _contextMenuPanel;
-    private readonly ListView _contextMenuList;
+    private readonly ContextMenu _contextMenu;
 
     private List<ItemAction> _currentActions = [];
     private Entity _contextMenuItem;
-    private bool IsContextMenuOpen => _ui.IsModal(_contextMenuPanel);
+    private bool IsContextMenuOpen => _contextMenu.IsOpen;
     public InventoryDialog(Ui ui, GameContext context)
     {
         _ui = ui;
@@ -42,18 +41,7 @@ public class InventoryDialog
         _list.OnActivate += OpenContextMenuFor;
         _panel.CloseRequested += Close;
 
-        _contextMenuPanel = new Panel { Width = 16, Anchor = Widget.UiAnchor.Absolute, Closable = true };
-        _contextMenuList = new ListView { X = 1, Y = 1, Width = 14, Height = 6 };
-
-        _contextMenuPanel.Add(_contextMenuList);
-
-        _contextMenuList.OnActivate += index =>
-        {
-            if (index >= 0 && index < _currentActions.Count)
-                ExecuteAction(_currentActions[index]);
-        };
-
-        _contextMenuPanel.CloseRequested += CloseContextMenu;
+        _contextMenu = new ContextMenu(ui);
     }
 
     public void Open()
@@ -71,7 +59,7 @@ public class InventoryDialog
             return;
 
         if (IsContextMenuOpen)
-            CloseContextMenu();
+            _contextMenu.Hide();
 
         _ui.PopModal(_panel);
     }
@@ -82,22 +70,7 @@ public class InventoryDialog
             return false;
 
         if (IsContextMenuOpen)
-        {
-            if (key == Keys.Escape)
-            {
-                CloseContextMenu();
-                return true;
-            }
-
-            var ch = KeyToChar(key);
-            if (ch == null) return _ui.HandleKey(key);
-            var action = _currentActions.FirstOrDefault(a => a.Hotkey == ch.Value);
-
-            if (action == null) return _ui.HandleKey(key);
-            ExecuteAction(action);
-            return true;
-
-        }
+            return _contextMenu.HandleKey(key);
 
         if (key is not (Keys.I or Keys.Escape)) return _ui.HandleKey(key);
         Close();
@@ -117,34 +90,17 @@ public class InventoryDialog
         _contextMenuItem = _rowEntities[itemIndex];
         _currentActions = ItemActions.AvailableFor(_context, _contextMenuItem);
 
-        _contextMenuList.Items.Clear();
+        var actions = _currentActions
+            .Select(action => (action.Label, Run: (Action)(() => ExecuteAction(action))))
+            .ToList();
 
-        foreach (var action in _currentActions)
-            _contextMenuList.Items.Add($"({char.ToUpper(action.Hotkey)}) {action.Label}");
-
-        _contextMenuList.SelectedIndex = 0;
-
-        _contextMenuPanel.X = _panel.X + _panel.Width + 1;
-        _contextMenuPanel.Y = _panel.Y + 3 + row.Value;
-        _contextMenuPanel.Height = _currentActions.Count + 2;
-        _contextMenuPanel.Visible = true;
-
-        _ui.PushModal(_contextMenuPanel, _contextMenuList);
-    }
-
-    private void CloseContextMenu()
-    {
-        if (!IsContextMenuOpen)
-            return;
-
-        _contextMenuPanel.Visible = false;
-        _ui.PopModal(_contextMenuPanel);
+        var title = _context.World.Get<ItemIdentity>(_contextMenuItem).Name;
+        _contextMenu.Show(_panel.X + _panel.Width + 1, _panel.Y + 3 + row.Value, title, actions);
     }
 
     private void ExecuteAction(ItemAction action)
     {
         action.Execute(_context, _player, _contextMenuItem);
-        CloseContextMenu();
         Refresh();
     }
 
@@ -193,13 +149,5 @@ public class InventoryDialog
 
         var wielded = _context.World.Get<Equipped>(_player).Item;
         return _rowEntities[index].Equals(wielded) ? UiTheme.Info : UiTheme.Text;
-    }
-
-    private static char? KeyToChar(Keys key)
-    {
-        var value = (int)key;
-        return value is >= 65 and <= 90
-            ? char.ToLower((char)value)
-            : null;
     }
 }

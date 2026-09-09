@@ -52,12 +52,13 @@ public static class ItemActions
     private static void Drop(GameContext context, Entity player, Entity item)
     {
         var pos = context.World.Get<Position>(player).Value;
+        var mapId = context.World.Get<Location>(player).MapId;
         var name = context.World.Get<ItemIdentity>(item).Name;
 
         if (context.World.Has<Equipped>(player) && context.World.Get<Equipped>(player).Item.Equals(item))
             context.World.Remove<Equipped>(player);
 
-        ItemSystem.Drop(context.World, item, (int)pos.X, (int)pos.Y);
+        ItemSystem.Drop(context.World, mapId, item, (int)pos.X, (int)pos.Y);
         context.Log.Add($"You drop the {name}.");
     }
 

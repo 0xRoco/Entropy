@@ -6,7 +6,7 @@ public class Camera
 {
     public Vector2 Position;
     public Vector2i ViewportOrigin;
-    public float Zoom = 1f;
+    public float Zoom = 6f;
     public Vector2i ViewportSize;
     public const float TilePixelSize = 16f;
     

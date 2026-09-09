@@ -30,6 +30,11 @@ public static class DefinitionLoader
         return LoadType(rootDirectory, "BUILDING_TEMPLATE", ParseBuildingTemplate);
     }
 
+    public static List<WorldObjectDefinition> LoadWorldObjects(string rootDirectory)
+    {
+        return LoadType(rootDirectory, "WORLD_OBJECT", ParseWorldObject);
+    }
+
     private static List<T> LoadType<T>(string rootDirectory, string typeName,
         Func<JsonElement, string, T> parse)
     {
@@ -274,6 +279,37 @@ public static class DefinitionLoader
         return result;
     }
 
+
+    private static WorldObjectDefinition ParseWorldObject(JsonElement element, string file)
+    {
+        var id = GetString(element, "id", file);
+        return new WorldObjectDefinition
+        {
+            Comment = GetStringOr(element, "//", null),
+            Id = id,
+            Name = GetString(element, "name", file),
+            Symbol = ParseSymbol(element, file),
+            Color = ParseColor(element, id, file),
+            Description = GetStringOr(element, "description", string.Empty),
+            Flags = ParseFlags(element),
+            ContainerSlots = GetIntOr(element, "container_slots", 0),
+            StarterItems = ParseStringList(element, "starter_items")
+        };
+    }
+
+    private static List<string> ParseStringList(JsonElement e, string name)
+    {
+        var result = new List<string>();
+        if (!e.TryGetProperty(name, out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+
+        foreach (var entry in arr.EnumerateArray())
+        {
+            if (entry.ValueKind == JsonValueKind.String)
+                result.Add(entry.GetString()!);
+        }
+        return result;
+    }
 
     private static string GetString(JsonElement e, string name, string file) => e.TryGetProperty(name, out var v)
         && v.ValueKind == JsonValueKind.String

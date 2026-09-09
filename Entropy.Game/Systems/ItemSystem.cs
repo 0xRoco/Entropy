@@ -35,20 +35,32 @@ public static class ItemSystem
     {
         if (!world.IsAlive(item) || !world.Has<Item>(item)) return false;
         if (world.Has<InContainer>(item)) return false;
-        
-        if (!world.Has<Container>(picker)) world.Set(picker, Container.Create());
-        ref var container = ref world.Get<Container>(picker);
-        
-        world.Set(item, new InContainer {Parent = picker});
+
+        return Transfer(world, item, picker);
+    }
+
+    public static bool Transfer(World world, Entity item, Entity destination)
+    {
+        if (!world.IsAlive(item) || !world.IsAlive(destination)) return false;
+
+        if (!world.Has<Container>(destination))
+            world.Set(destination, Container.Create());
+
+        ref var destinationContainer = ref world.Get<Container>(destination);
+        if (destinationContainer.Items.Count >= destinationContainer.Slots) return false;
+
+        RemoveFromContainer(world, item);
+        world.Set(item, new InContainer { Parent = destination });
         world.Remove<Position>(item);
-        AddToContainer(world, picker, item);
+        AddToContainer(world, destination, item);
         return true;
     }
 
-    public static void Drop(World world, Entity item, int x, int y)
+    public static void Drop(World world, string mapId, Entity item, int x, int y)
     {
         RemoveFromContainer(world, item);
         world.Set(item, new Position { Value = new Vector2(x, y) });
+        world.Set(item, new Location { MapId = mapId });
     }
 
     public static List<Entity> GetItems(World world, Entity container)

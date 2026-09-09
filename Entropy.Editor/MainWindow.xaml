@@ -54,6 +54,9 @@
                                HorizontalAlignment="Center"/>
                 </Grid>
             </TabItem>
+            <TabItem Header="World Objects">
+                <views:WorldObjectEditorControl DataContext="{Binding WorldObjects}"/>
+            </TabItem>
             <TabItem Header="Buildings">
                 <views:BuildingEditorControl DataContext="{Binding Buildings}"/>
             </TabItem>

@@ -90,6 +90,7 @@ public class EntropyGame : IGameClient
         _definitions.LoadTerrains(jsonFolder);
         _definitions.LoadTilesets(jsonFolder);
         _definitions.LoadBuildingTemplates(jsonFolder);
+        _definitions.LoadWorldObjects(jsonFolder);
 
         _tileset = _definitions.Tileset("entropy_art");
 
@@ -118,8 +119,11 @@ public class EntropyGame : IGameClient
             return;
         }
         
-        _camera.Position += Controls.GetCameraPan(_input, (float)args.Time); 
-        _camera.Zoom = Controls.GetZoomDelta(_input, _camera.Zoom);
+        if (!_hud.HasOpenModal)
+        {
+            _camera.Position += Controls.GetCameraPan(_input, (float)args.Time);
+            _camera.Zoom = Controls.GetZoomDelta(_input, _camera.Zoom);
+        }
 
         var inspectedTile = Controls.GetInspectedTile(_input, _camera);
         if (inspectedTile != null)
@@ -129,9 +133,20 @@ public class EntropyGame : IGameClient
             if (tx >= 0 && tx < _context.Map.Width &&
                 ty >= 0 && ty < _context.Map.Height)
             {
-                _log.Add(
-                    $"You squint your eyes and see a tile at ({tx}, {ty}) with glyph '{_context.Map[tx, ty].Glyph}'",
-                    Color4.LightGray);
+                InteractionSystem.ExamineAt(_context, new Vector2i(tx, ty));
+            }
+        }
+
+        var rightClicked = Controls.GetClickedTile(_input, _camera, MouseButton.Right);
+        if (rightClicked != null && !_hud.HasOpenModal)
+        {
+            var tx = (int)rightClicked.Value.X;
+            var ty = (int)rightClicked.Value.Y;
+            if (tx >= 0 && tx < _context.Map.Width &&
+                ty >= 0 && ty < _context.Map.Height &&
+                _context.Visibility.IsVisible(tx, ty))
+            {
+                _hud.OpenWorldMenu(new Vector2i(tx, ty));
             }
         }
 
@@ -142,16 +157,13 @@ public class EntropyGame : IGameClient
             return;
         }
         if (key != null && _hud.HandleKey(key.Value)) return;
-        
+
         if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
         Controls.GetMoveDirection(_input);
-        
+
         if (!ProcessPlayerAction()) return;
-        
-        _context.Clock.Advance(1);
-        NeedsSystem.Update(_context);
-        _turnProcessor.RunAITurns(_player, _context);
-        _camera.Position = _world.Get<Position>(_player).Value;
+
+        AdvanceTurn();
     }
 
     public void Render(FrameEventArgs args)
@@ -244,6 +256,7 @@ public class EntropyGame : IGameClient
         _hud = new GameHud(_context, _clock, _rng.Seed, ToTileSize(_clientSize));
         _hud.NewCharacterRequested += RestartGame;
         _hud.MainMenuRequested += ReturnToMainMenu;
+        _hud.TurnRequested += AdvanceTurn;
 
         ConfigureMapCamera();
         _camera.Position = _world.Get<Position>(_player).Value;
@@ -288,6 +301,14 @@ public class EntropyGame : IGameClient
             size.Y);
     }
     
+    private void AdvanceTurn()
+    {
+        _context.Clock.Advance(1);
+        NeedsSystem.Update(_context);
+        _turnProcessor.RunAITurns(_player, _context);
+        _camera.Position = _world.Get<Position>(_player).Value;
+    }
+
     private bool ProcessPlayerAction()
     {
         var move = Controls.GetMoveDirection(_input);
@@ -304,9 +325,31 @@ public class EntropyGame : IGameClient
         return key switch
         {
             Keys.G => TryPickupAtPlayer(),
+            Keys.E => OpenInteractMenu(),
             Keys.Period => true,
             _ => false
         };
+    }
+
+    private bool OpenInteractMenu()
+    {
+        if (_hud.HasOpenModal)
+            return false;
+
+        var pos = _world.Get<Position>(_player).Value;
+        var facing = _world.Has<Facing>(_player)
+            ? _world.Get<Facing>(_player).Direction
+            : new Vector2i(1, 0);
+
+        var target = new Vector2i((int)pos.X + facing.X, (int)pos.Y + facing.Y);
+        if (target.X < 0 || target.X >= _context.Map.Width ||
+            target.Y < 0 || target.Y >= _context.Map.Height)
+        {
+            target = new Vector2i((int)pos.X, (int)pos.Y);
+        }
+
+        _hud.OpenWorldMenu(target);
+        return false;
     }
 
     private bool TryPickupAtPlayer()
@@ -335,10 +378,11 @@ public class EntropyGame : IGameClient
             fresh.LoadTerrains(jsonFolder);
             fresh.LoadTilesets(jsonFolder);
             fresh.LoadBuildingTemplates(jsonFolder);
+            fresh.LoadWorldObjects(jsonFolder);
 
             var errors = DefinitionValidator.Validate(
                 fresh.Items, fresh.Creatures, fresh.Terrains,
-                fresh.Tilesets, fresh.BuildingTemplates);
+                fresh.Tilesets, fresh.BuildingTemplates, fresh.WorldObjects);
             if (errors.Count > 0)
             {
                 _log.Add($"Content reload blocked, {errors.Count} validation error(s):", Color4.Red);
@@ -409,6 +453,8 @@ public class EntropyGame : IGameClient
 
     private string? SpriteKeyOf(Entity entity)
     {
+        if (_world.Has<WorldObjectIdentity>(entity))
+            return "furniture:" + _world.Get<WorldObjectIdentity>(entity).DefinitionId;
         if (_world.Has<CreatureIdentity>(entity))
             return "creature:" + _world.Get<CreatureIdentity>(entity).DefinitionId;
         if (_world.Has<Item>(entity) && _world.Has<ItemIdentity>(entity))

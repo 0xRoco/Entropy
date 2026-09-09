@@ -13,8 +13,9 @@ public class GameHud
     public GameplayLayout Layout { get; private set; }
     public event Action? NewCharacterRequested;
     public event Action? MainMenuRequested;
+    public event Action? TurnRequested;
 
-    
+
     private readonly Ui _ui;
     private readonly DeathDialog _deathDialog;
     private readonly VStack _sidebar;
@@ -22,6 +23,8 @@ public class GameHud
     private readonly Panel _commandPanel;
     private readonly InventoryDialog _inventoryDialog;
     private readonly HelpDialog _helpDialog;
+    private readonly WorldMenu _worldMenu;
+    private readonly ContainerDialog _containerDialog;
     private readonly CommandBar _commandBar;
     private readonly GameContext _context;
     
@@ -43,6 +46,7 @@ public class GameHud
         _commandBar = new CommandBar();
         _commandBar.AddText("arrows move");
         _commandBar.Hints.Add(('g', "et item"));
+        _commandBar.Hints.Add(('e', "xamine facing"));
         _commandBar.Hints.Add(('i', "nventory"));
         _commandBar.Hints.Add(('.', "wait"));
         _commandBar.Hints.Add(('?', "Help"));
@@ -61,7 +65,14 @@ public class GameHud
         
         _inventoryDialog = new InventoryDialog(_ui, context);
         _helpDialog = new HelpDialog(_ui);
-        
+
+        _containerDialog = new ContainerDialog(_ui);
+        _containerDialog.TurnRequested += OnTurnRequested;
+
+        _worldMenu = new WorldMenu(_ui);
+        _worldMenu.ContainerRequested += (ctx, container) => _containerDialog.Open(ctx, ctx.Player, container);
+        _worldMenu.TurnRequested += OnTurnRequested;
+
         _deathDialog = new DeathDialog(_ui, context.World, context.Player, clock, () => seed);
         _deathDialog.NewCharacterRequested += OnNewCharacterRequested;
         _deathDialog.MainMenuRequested += OnMainMenuRequested;
@@ -71,12 +82,18 @@ public class GameHud
 
     public bool HandleKey(Keys key)
     {
+        if (_worldMenu.IsOpen)
+            return _worldMenu.HandleKey(key);
+
+        if (_containerDialog.IsOpen)
+            return _containerDialog.HandleKey(key);
+
         if (_helpDialog.IsOpen)
             return _helpDialog.HandleKey(key);
 
         if (_inventoryDialog.IsOpen)
             return _inventoryDialog.HandleKey(key);
-        
+
         if (_deathDialog.IsOpen)
             return _deathDialog.HandleKey(key);
 
@@ -94,6 +111,15 @@ public class GameHud
 
         return false;
     }
+
+    public bool HasOpenModal => _ui.HasModal;
+
+    public void OpenWorldMenu(Vector2i tile)
+    {
+        _worldMenu.Open(_context, _context.Player, tile, Layout.Map);
+    }
+
+    private void OnTurnRequested() => TurnRequested?.Invoke();
 
     public void Draw(DrawContext drawContext)
     {

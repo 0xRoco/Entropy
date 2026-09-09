@@ -46,6 +46,22 @@
         7,
         0
       ],
+      "furniture:shelf": [
+        4,
+        1
+      ],
+      "furniture:register": [
+        5,
+        1
+      ],
+      "furniture:bed": [
+        6,
+        1
+      ],
+      "furniture:fridge": [
+        7,
+        1
+      ],
       "creature:player": [
         0,
         1

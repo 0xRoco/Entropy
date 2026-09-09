@@ -46,7 +46,12 @@ public static class Controls
 
     public static Vector2? GetInspectedTile(IGameInput input, Camera camera)
     {
-        if (input.IsMouseButtonPressed(MouseButton.Left))
+        return GetClickedTile(input, camera, MouseButton.Left);
+    }
+
+    public static Vector2? GetClickedTile(IGameInput input, Camera camera, MouseButton button)
+    {
+        if (input.IsMouseButtonPressed(button))
         {
             var mouseScreen = input.MousePosition;
             if (!camera.ContainsScreenPoint(mouseScreen))
@@ -54,10 +59,10 @@ public static class Controls
             var mouseWorld = camera.ScreenToWorld(mouseScreen);
             var tx = (int)Math.Floor(mouseWorld.X);
             var ty = (int)Math.Floor(mouseWorld.Y);
-            
+
             return new Vector2(tx, ty);
         }
-        
+
         return null;
     }
 }

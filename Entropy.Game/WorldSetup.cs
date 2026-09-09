@@ -49,6 +49,25 @@ public class WorldSetup
 
         turns.AddActor(player);
 
+        foreach (var building in block.Buildings.Values)
+        {
+            foreach (var (anchorName, tile) in building.Anchors)
+            {
+                if (!defs.TryWorldObject(anchorName, out var objectDef))
+                    continue;
+
+                var spawned = EntitySpawner.CreateWorldObject(
+                    world,
+                    building.MapId,
+                    objectDef,
+                    tile.X,
+                    tile.Y);
+
+                foreach (var itemId in objectDef.StarterItems)
+                    EntitySpawner.SpawnIntoContainer(world, spawned, defs.Item(itemId));
+            }
+        }
+
         var civilian = defs.Creature("human_civilian");
 
         var store = block.Buildings["corner_store"];

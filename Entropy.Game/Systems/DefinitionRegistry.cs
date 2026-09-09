@@ -17,6 +17,7 @@ public class DefinitionRegistry
     private readonly List<string?> _terrainSpriteKeys = new();
     
     private readonly Dictionary<string, BuildingTemplate> _buildingTemplates = new();
+    private readonly Dictionary<string, WorldObjectDefinition> _worldObjects = new();
 
     public void LoadItems(string directory)
     {
@@ -75,6 +76,16 @@ public class DefinitionRegistry
         }
     }
 
+    public void LoadWorldObjects(string directory)
+    {
+        foreach (var def in DefinitionLoader.LoadWorldObjects(directory))
+        {
+            if (!_worldObjects.TryAdd(def.Id, def))
+                throw new InvalidOperationException(
+                    $"Duplicate world object definition ID '{def.Id}' found.");
+        }
+    }
+
     public ItemDefinition Item(string id) => _items.TryGetValue(id, out var def)
         ? def
         : throw new KeyNotFoundException($"Item definition with ID '{id}' not found.");
@@ -107,16 +118,31 @@ public class DefinitionRegistry
     }
     
     public BuildingTemplate BuildingTemplate(string id) =>
-        _buildingTemplates.TryGetValue(id, out var def)
-            ? def
+        _buildingTemplates.TryGetValue(id, out var template)
+            ? template
             : throw new KeyNotFoundException(
                 $"Building template definition with ID '{id}' not found.");
+
+    public WorldObjectDefinition WorldObject(string id) => _worldObjects.TryGetValue(id, out var def)
+        ? def
+        : throw new KeyNotFoundException($"World object definition with ID '{id}' not found.");
+
+    public bool TryWorldObject(string id, out WorldObjectDefinition def) =>
+        _worldObjects.TryGetValue(id, out def!);
+
+    public TerrainDefinition TerrainForIndex(ushort index)
+    {
+        if (index == 0 || !_terrainByIndex.TryGetValue(index, out var def))
+            throw new KeyNotFoundException($"No terrain definition with index {index}.");
+        return def;
+    }
 
     public IReadOnlyCollection<ItemDefinition> Items => _items.Values;
     public IReadOnlyCollection<CreatureDefinition> Creatures => _creatures.Values;
     public IReadOnlyCollection<TerrainDefinition> Terrains => _terrain.Values;
     public IReadOnlyCollection<TilesetDefinition> Tilesets => _tilesets.Values;
     public IReadOnlyCollection<BuildingTemplate> BuildingTemplates => _buildingTemplates.Values;
+    public IReadOnlyCollection<WorldObjectDefinition> WorldObjects => _worldObjects.Values;
 
     public IReadOnlyList<string?> TerrainSpriteKeys => _terrainSpriteKeys;
 

@@ -60,6 +60,23 @@ public class Color4ToBrushConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>List of item ids to and from "crackers, canned_beans".</summary>
+public class ItemIdsConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is IEnumerable<string> ids ? string.Join(", ", ids) : string.Empty;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var result = new List<string>();
+        if (value is not string text) return result;
+
+        foreach (var part in text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            result.Add(part);
+        return result;
+    }
+}
+
 /// <summary>string hashset to and from "soft, rigid".</summary>
 public class FlagsConverter : IValueConverter
 {

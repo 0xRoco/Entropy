@@ -110,10 +110,13 @@ public static class TileRenderer
         int y,
         Color4 tint)
     {
-        var uMin = new Vector2(col * cellSize / (float)atlas.Width,
-                               row * cellSize / (float)atlas.Height);
-        var uMax = new Vector2((col + 1) * cellSize / (float)atlas.Width,
-                               (row + 1) * cellSize / (float)atlas.Height);
+        var insetX = 0.5f / atlas.Width;
+        var insetY = 0.5f / atlas.Height;
+
+        var uMin = new Vector2(col * cellSize / (float)atlas.Width + insetX,
+                               row * cellSize / (float)atlas.Height + insetY);
+        var uMax = new Vector2((col + 1) * cellSize / (float)atlas.Width - insetX,
+                               (row + 1) * cellSize / (float)atlas.Height - insetY);
 
         batcher.AddTexturedQuad(x, y, 1, 1, tint, uMin, uMax);
     }

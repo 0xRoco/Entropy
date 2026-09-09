@@ -47,72 +47,45 @@ public class TurnProcessor
             return false;
 
         var playerMapId = context.World.Get<Location>(player).MapId;
+        var playerNameOf = (Entity entity) => context.World.Has<Named>(entity)
+            ? context.World.Get<Named>(entity).Name
+            : "something";
 
-        // Only actors on the player's current map can block or be attacked.
         foreach (var entity in context.World.Query<Position, Actor>())
         {
-            if (context.World.Get<Position>(entity).Value != target)
-                continue;
-
+            if (entity.Equals(player)) continue;
+            if (context.World.Get<Position>(entity).Value != target) continue;
             if (!context.World.Has<Location>(entity) ||
                 context.World.Get<Location>(entity).MapId != playerMapId)
                 continue;
 
-            if (!context.World.Has<Health>(entity))
+            if (context.World.Has<Hostile>(entity))
             {
-                context.Log.Add("Something blocks your way", Color4.LightGray);
+                InteractionSystem.Attack(context, player, entity);
                 Spend(player);
                 return true;
             }
 
-            ref var hp = ref context.World.Get<Health>(entity);
-            var damage = 1;
+            context.Log.Add($"The {playerNameOf(entity)} blocks your way", Color4.LightGray);
+            Spend(player);
+            return true;
+        }
 
-            if (context.World.Has<Equipped>(player))
-            {
-                var equipped = context.World.Get<Equipped>(player).Item;
+        foreach (var entity in context.World.Query<Position, Solid>())
+        {
+            if (!context.World.Get<Solid>(entity).Blocks) continue;
+            if (context.World.Get<Position>(entity).Value != target) continue;
+            if (!context.World.Has<Location>(entity) ||
+                context.World.Get<Location>(entity).MapId != playerMapId)
+                continue;
 
-                if (context.World.IsAlive(equipped) &&
-                    context.World.Has<Damage>(equipped))
-                {
-                    damage = context.World.Get<Damage>(equipped).Amount;
-                }
-            }
-
-            var victimName = context.World.Has<Named>(entity)
-                ? context.World.Get<Named>(entity).Name
-                : "something";
-
-            var location = new Vector2i(tx, ty);
-
-            hp.Current -= damage;
-            var killed = hp.Current <= 0;
-
-            context.Log.Add($"You hit {victimName} for {damage} damage.");
-
-            if (!context.World.Has<Hostile>(entity))
-            {
-                ConsequenceSystem.Report(
-                    context,
-                    killed ? "murder" : "assault",
-                    $"You {(!killed ? "attacked" : "killed")} {victimName}",
-                    location,
-                    player,
-                    entity);
-            }
-
-            if (killed)
-            {
-                context.Log.Add($"{victimName} has been killed!", Color4.Yellow);
-                context.World.Destroy(entity);
-                RemoveActor(entity);
-            }
-
+            context.Log.Add($"The {playerNameOf(entity)} blocks your way", Color4.LightGray);
             Spend(player);
             return true;
         }
 
         pos.Value = target;
+        context.World.Set(player, new Facing { Direction = new Vector2i(move.X, move.Y) });
 
         var transition = context.Maps.TransitionAt(playerMapId, new Vector2i(tx, ty));
 

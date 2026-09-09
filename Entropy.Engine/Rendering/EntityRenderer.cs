@@ -41,12 +41,15 @@ public static class EntityRenderer
 
                 if (key != null && sprites!.TryGetValue(key, out var cell))
                 {
-                    var tint = visible ? Color4.White : Color4.White.Scaled(options.MemoryDim);                    var uvMin = new Vector2(
-                        cell.X * spriteCellSize / (float)spriteAtlas!.Width,
-                        cell.Y * spriteCellSize / (float)spriteAtlas!.Height);
+                    var tint = visible ? Color4.White : Color4.White.Scaled(options.MemoryDim);
+                    var insetX = 0.5f / spriteAtlas!.Width;
+                    var insetY = 0.5f / spriteAtlas.Height;
+                    var uvMin = new Vector2(
+                        cell.X * spriteCellSize / (float)spriteAtlas.Width + insetX,
+                        cell.Y * spriteCellSize / (float)spriteAtlas.Height + insetY);
                     var uvMax = new Vector2(
-                        (cell.X + 1) * spriteCellSize / (float)spriteAtlas.Width,
-                        (cell.Y + 1) * spriteCellSize / (float)spriteAtlas.Height);
+                        (cell.X + 1) * spriteCellSize / (float)spriteAtlas.Width - insetX,
+                        (cell.Y + 1) * spriteCellSize / (float)spriteAtlas.Height - insetY);
 
                     spriteBatcher!.AddTexturedQuad(
                         position.Value.X,

@@ -370,3 +370,35 @@ public partial class BuildingsViewModel(ContentWorkspace workspace) : DefListVie
             def.Legend.Remove(marker);
     }
 }
+
+public partial class WorldObjectsViewModel(ContentWorkspace workspace) : DefListViewModel<WorldObjectDefinition>(workspace)
+{
+    public override string TypeName => "World Object";
+
+    protected override string? SpriteKeyOf(WorldObjectDefinition def) => "furniture:" + def.Id;
+
+    protected override WorldObjectDefinition CreateNew() => new()
+    {
+        Id = UniqueId(Defs.Select(d => d.Id), "new_object"),
+        Name = "New Object",
+        Symbol = '&',
+        Color = ColorNames.Parse("gray"),
+        Description = "",
+        Flags = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+        ContainerSlots = 0,
+        StarterItems = []
+    };
+
+    protected override WorldObjectDefinition Clone(WorldObjectDefinition source) => new()
+    {
+        Comment = source.Comment,
+        Id = UniqueId(Defs.Select(d => d.Id), source.Id),
+        Name = source.Name,
+        Symbol = source.Symbol,
+        Color = source.Color,
+        Description = source.Description,
+        Flags = new HashSet<string>(source.Flags, StringComparer.OrdinalIgnoreCase),
+        ContainerSlots = source.ContainerSlots,
+        StarterItems = new List<string>(source.StarterItems)
+    };
+}

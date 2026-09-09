@@ -13,21 +13,24 @@ namespace Entropy.Editor.Services;
 
 public partial class ContentWorkspace : ObservableObject
 {
-    private BitmapImage? _artImage;
-    private string? _artImagePath;
 
-    [ObservableProperty] private string? _folderPath;
-    [ObservableProperty] private string? _statusText = "Open a content folder to begin.";
 
     public ObservableCollection<ItemDefinition> Items { get; } = new();
     public ObservableCollection<CreatureDefinition> Creatures { get; } = new();
     public ObservableCollection<TerrainDefinition> Terrains { get; } = new();
     public ObservableCollection<TilesetDefinition> Tilesets { get; } = new();
     public ObservableCollection<BuildingTemplate> Buildings { get; } = new();
+    public ObservableCollection<WorldObjectDefinition> WorldObjects { get; } = new();
 
     public TilesetDefinition? ArtTileset => Tilesets.FirstOrDefault(t => t.Mode == "art");
 
     public bool IsLoaded => FolderPath is not null;
+    
+    private BitmapImage? _artImage;
+    private string? _artImagePath;
+
+    [ObservableProperty] private string? _folderPath;
+    [ObservableProperty] private string? _statusText = "Open a content folder to begin.";
     
     public static string? TryFindContentFolder(string startDir) =>
         ContentPaths.TryFindJsonFolder(startDir);
@@ -72,6 +75,7 @@ public partial class ContentWorkspace : ObservableObject
         Replace(Terrains, DefinitionLoader.LoadTerrains(folder));
         Replace(Tilesets, DefinitionLoader.LoadTilesets(folder));
         Replace(Buildings, DefinitionLoader.LoadBuildingTemplates(folder));
+        Replace(WorldObjects, DefinitionLoader.LoadWorldObjects(folder));
 
         _artImage = null;
         _artImagePath = null;
@@ -88,16 +92,18 @@ public partial class ContentWorkspace : ObservableObject
         var terrainPath = Path.Combine(FolderPath, "terrain.json");
         var tilesetPath = Path.Combine(FolderPath, "tileset.json");
         var buildingsPath = Path.Combine(FolderPath, "building_templates.json");
+        var worldObjectsPath = Path.Combine(FolderPath, "world_objects.json");
 
         DefinitionWriter.WriteItems(itemsPath, Items);
         DefinitionWriter.WriteCreatures(creaturesPath, Creatures);
         DefinitionWriter.WriteTerrains(terrainPath, Terrains);
         DefinitionWriter.WriteTilesets(tilesetPath, Tilesets);
         DefinitionWriter.WriteBuildingTemplates(buildingsPath, Buildings);
+        DefinitionWriter.WriteWorldObjects(worldObjectsPath, WorldObjects);
     }
 
     public List<string> Validate() =>
-        DefinitionValidator.Validate(Items, Creatures, Terrains, Tilesets, Buildings);
+        DefinitionValidator.Validate(Items, Creatures, Terrains, Tilesets, Buildings, WorldObjects);
 
     private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> source)
     {

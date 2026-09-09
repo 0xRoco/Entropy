@@ -2,6 +2,7 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Game.Behaviors;
 using Entropy.Game.Components;
+using Entropy.Game.Systems;
 using Entropy.Content;
 using OpenTK.Mathematics;
 
@@ -20,6 +21,7 @@ public static class EntitySpawner
             .With(world, new Actor())
             .With(world, new Speed { Value = def.Speed })
             .With(world, new CreatureIdentity { DefinitionId = def.Id })
+            .With(world, new Facing { Direction = new Vector2i(1, 0) })
             .With(world, new Hunger { Current = 480, Max = 480 })
             .With(world, new Thirst { Current = 240, Max = 240 })
             .With(world, new Fatigue { Current = 960, Max = 960 });
@@ -76,6 +78,31 @@ public static class EntitySpawner
         return e;
     }
     
+    public static Entity CreateWorldObject(World world, string mapId, WorldObjectDefinition def, int x, int y)
+    {
+        var e = world.Create()
+            .With(world, new Position { Value = new Vector2(x, y) })
+            .With(world, new Location { MapId = mapId })
+            .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
+            .With(world, new Named { Name = def.Name })
+            .With(world, new WorldObjectIdentity { Name = def.Name, DefinitionId = def.Id })
+            .With(world, new Solid { Blocks = !def.HasFlag("walkable") });
+
+        if (def.IsContainer)
+            e.With(world, Container.WithSlots(def.ContainerSlots));
+
+        return e;
+    }
+
+    public static Entity SpawnIntoContainer(World world, Entity container, ItemDefinition def, int count = 1)
+    {
+        var location = world.Get<Location>(container).MapId;
+        var position = world.Get<Position>(container).Value;
+        var item = CreateItem(world, location, def, (int)position.X, (int)position.Y, count);
+        ItemSystem.Transfer(world, item, container);
+        return item;
+    }
+
     private static Entity BuildCreature(World world, string mapId, CreatureDefinition def, int x, int y)
     {
         var e = world.Create()

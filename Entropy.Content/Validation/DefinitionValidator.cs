@@ -7,7 +7,8 @@ public static class DefinitionValidator
         IReadOnlyCollection<CreatureDefinition> creatures,
         IReadOnlyCollection<TerrainDefinition> terrains,
         IReadOnlyCollection<TilesetDefinition> tilesets,
-        IReadOnlyCollection<BuildingTemplate> buildings)
+        IReadOnlyCollection<BuildingTemplate> buildings,
+        IReadOnlyCollection<WorldObjectDefinition> worldObjects)
     {
         var errors = new List<string>();
 
@@ -15,8 +16,9 @@ public static class DefinitionValidator
         errors.AddRange(ValidateCreatures(creatures));
         errors.AddRange(ValidateTerrains(terrains));
         errors.AddRange(ValidateTilesets(tilesets,
-            ItemIds(items), CreatureIds(creatures), TerrainIds(terrains)));
+            ItemIds(items), CreatureIds(creatures), TerrainIds(terrains), WorldObjectIds(worldObjects)));
         errors.AddRange(ValidateBuildingTemplates(buildings, TerrainIds(terrains)));
+        errors.AddRange(ValidateWorldObjects(worldObjects, ItemIds(items)));
 
         return errors;
     }
@@ -122,7 +124,8 @@ public static class DefinitionValidator
         IEnumerable<TilesetDefinition> tilesets,
         IReadOnlyCollection<string>? itemIds = null,
         IReadOnlyCollection<string>? creatureIds = null,
-        IReadOnlyCollection<string>? terrainIds = null)
+        IReadOnlyCollection<string>? terrainIds = null,
+        IReadOnlyCollection<string>? worldObjectIds = null)
     {
         var errors = new List<string>();
         var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -140,7 +143,7 @@ public static class DefinitionValidator
             if (def.Mode == "art" && string.IsNullOrWhiteSpace(def.Atlas))
                 errors.Add($"Tileset '{def.Id}' is art mode but has no atlas path.");
 
-            errors.AddRange(ValidateSpriteKeys(def, itemIds, creatureIds, terrainIds));
+            errors.AddRange(ValidateSpriteKeys(def, itemIds, creatureIds, terrainIds, worldObjectIds));
         }
 
         return errors;
@@ -217,7 +220,8 @@ public static class DefinitionValidator
         TilesetDefinition def,
         IReadOnlyCollection<string>? itemIds,
         IReadOnlyCollection<string>? creatureIds,
-        IReadOnlyCollection<string>? terrainIds)
+        IReadOnlyCollection<string>? terrainIds,
+        IReadOnlyCollection<string>? worldObjectIds = null)
     {
         var errors = new List<string>();
 
@@ -233,7 +237,7 @@ public static class DefinitionValidator
             var kind = key[..prefixEnd];
             var id = key[(prefixEnd + 1)..];
 
-            if (kind is not ("item" or "creature" or "terrain"))
+            if (kind is not ("item" or "creature" or "terrain" or "furniture"))
             {
                 errors.Add($"Tileset '{def.Id}' sprite key '{key}' has unknown kind '{kind}'.");
                 continue;
@@ -243,6 +247,7 @@ public static class DefinitionValidator
             {
                 "item" => itemIds?.Contains(id, StringComparer.OrdinalIgnoreCase),
                 "creature" => creatureIds?.Contains(id, StringComparer.OrdinalIgnoreCase),
+                "furniture" => worldObjectIds?.Contains(id, StringComparer.OrdinalIgnoreCase),
                 _ => terrainIds?.Contains(id, StringComparer.OrdinalIgnoreCase)
             };
 
@@ -256,8 +261,44 @@ public static class DefinitionValidator
         return errors;
     }
 
+    public static List<string> ValidateWorldObjects(
+        IEnumerable<WorldObjectDefinition> worldObjects,
+        IReadOnlyCollection<string>? itemIds = null)
+    {
+        var errors = new List<string>();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var def in worldObjects)
+        {
+            if (string.IsNullOrWhiteSpace(def.Id))
+                errors.Add("World object with empty id.");
+            else if (!seenIds.Add(def.Id))
+                errors.Add($"Duplicate world object id '{def.Id}'.");
+
+            if (string.IsNullOrWhiteSpace(def.Name))
+                errors.Add($"World object '{def.Id}' has no name.");
+
+            if (ColorNames.NameOf(def.Color) is null)
+                errors.Add($"World object '{def.Id}' has a color with no palette name.");
+
+            if (def.ContainerSlots < 0)
+                errors.Add($"World object '{def.Id}' has negative container_slots.");
+
+            foreach (var itemId in def.StarterItems)
+            {
+                if (itemIds?.Contains(itemId, StringComparer.OrdinalIgnoreCase) == false)
+                    errors.Add($"World object '{def.Id}' starts with unknown item id '{itemId}'.");
+            }
+        }
+
+        return errors;
+    }
+
     private static IReadOnlyCollection<string> ItemIds(IEnumerable<ItemDefinition> items) =>
         items.Select(d => d.Id).ToList();
+
+    private static IReadOnlyCollection<string> WorldObjectIds(IEnumerable<WorldObjectDefinition> worldObjects) =>
+        worldObjects.Select(d => d.Id).ToList();
 
     private static IReadOnlyCollection<string> CreatureIds(IEnumerable<CreatureDefinition> creatures) =>
         creatures.Select(d => d.Id).ToList();

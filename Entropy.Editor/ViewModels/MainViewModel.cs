@@ -15,6 +15,7 @@ public partial class MainViewModel : ObservableObject
     public TerrainViewModel Terrain { get; }
     public TilesetsViewModel Tilesets { get; }
     public BuildingsViewModel Buildings { get; }
+    public WorldObjectsViewModel WorldObjects { get; }
 
     [ObservableProperty] private string _statusText = "Open a content folder to begin.";
     [ObservableProperty] private ObservableCollection<string> _validationErrors = new();
@@ -28,6 +29,7 @@ public partial class MainViewModel : ObservableObject
         Terrain = new TerrainViewModel(Workspace);
         Tilesets = new TilesetsViewModel(Workspace);
         Buildings = new BuildingsViewModel(Workspace);
+        WorldObjects = new WorldObjectsViewModel(Workspace);
 
         var detected = ContentWorkspace.TryFindContentFolder(AppContext.BaseDirectory);
         if (detected is not null)
@@ -45,6 +47,7 @@ public partial class MainViewModel : ObservableObject
             Terrain.Reload(Workspace.Terrains);
             Tilesets.Reload(Workspace.Tilesets);
             Buildings.Reload(Workspace.Buildings);
+            WorldObjects.Reload(Workspace.WorldObjects);
 
             HasContent = true;
             ClearErrors();

@@ -195,6 +195,44 @@ public static class DefinitionWriter
     }
 
 
+    public static void WriteWorldObjects(string path, IReadOnlyCollection<WorldObjectDefinition> worldObjects)
+    {
+        using var stream = File.Create(path);
+        using var writer = new Utf8JsonWriter(stream, Options);
+
+        writer.WriteStartArray();
+
+        foreach (var def in worldObjects)
+        {
+            writer.WriteStartObject();
+
+            WriteComment(writer, def.Comment);
+            writer.WriteString("type", "WORLD_OBJECT");
+            writer.WriteString("id", def.Id);
+            writer.WriteString("name", def.Name);
+            writer.WriteString("symbol", def.Symbol.ToString());
+            writer.WriteString("color", ColorName(def.Color, def.Id));
+
+            if (def.Description.Length > 0) writer.WriteString("description", def.Description);
+
+            WriteFlags(writer, def.Flags);
+            if (def.ContainerSlots > 0) writer.WriteNumber("container_slots", def.ContainerSlots);
+
+            if (def.StarterItems.Count > 0)
+            {
+                writer.WritePropertyName("starter_items");
+                writer.WriteStartArray();
+                foreach (var itemId in def.StarterItems)
+                    writer.WriteStringValue(itemId);
+                writer.WriteEndArray();
+            }
+
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+    }
+
     private static void WriteComment(Utf8JsonWriter writer, string? comment)
     {
         if (!string.IsNullOrEmpty(comment))

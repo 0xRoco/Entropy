@@ -28,13 +28,9 @@ public class GlyphAtlas : IDisposable
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
         
-        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 
-            image.Width, image.Height, 0, 
+        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba,
+            image.Width, image.Height, 0,
             PixelFormat.Rgba, PixelType.UnsignedByte, image.Data);
-        
-        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, 1, 1,
-            PixelFormat.Rgba, PixelType.UnsignedByte,
-            new byte[] { 255, 255, 255, 255 });
 
         Width = image.Width;
         Height = image.Height;

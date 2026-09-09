@@ -10,5 +10,6 @@
         <local:Color4ToBrushConverter x:Key="Color4Brush"/>
         <local:MaterialsConverter x:Key="Materials"/>
         <local:FlagsConverter x:Key="Flags"/>
+        <local:ItemIdsConverter x:Key="ItemIds"/>
     </Application.Resources>
 </Application>
