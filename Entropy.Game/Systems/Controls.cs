@@ -39,7 +39,7 @@ public static class Controls
         if (wheel != 0)
         {
             cameraZoom *= wheel > 0 ? 1.1f : 1/1.1f;
-            cameraZoom = Math.Clamp(cameraZoom, 0.25f, 4f);
+            cameraZoom = Math.Clamp(cameraZoom, 0.25f, 6f);
         }
         return cameraZoom;
     }

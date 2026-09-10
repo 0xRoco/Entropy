@@ -23,12 +23,20 @@ public static class InteractionSystem
             if (!OccupiesTile(world, entity, mapId, tile)) continue;
 
             var identity = world.Get<WorldObjectIdentity>(entity);
+            var def = context.Definitions.WorldObject(identity.DefinitionId);
             var adjacent = IsAdjacent(world.Get<Position>(player).Value, tile);
             if (world.Has<Container>(entity) && adjacent)
             {
                 var target = entity;
                 verbs.Add(new WorldVerb($"Open the {identity.Name}", true,
                     (ctx, _) => openContainer.Invoke(ctx, target)));
+            }
+
+            if (adjacent && def.HasFlag("bed"))
+            {
+                var bed = entity;
+                verbs.Add(new WorldVerb($"Sleep on the {identity.Name}", true,
+                    (ctx, p) => SleepSystem.FallAsleep(ctx, p, bed)));
             }
 
             verbs.Add(new WorldVerb($"Examine the {identity.Name}", false,

@@ -119,6 +119,26 @@ public class EntropyGame : IGameClient
             return;
         }
         
+        if (_world.Has<Sleeping>(_player))
+        {
+            if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0)
+            {
+                _world.Remove<Sleeping>(_player);
+                return;
+            }
+
+            AdvanceTurn();
+            SleepSystem.Recover(_context, _player);
+
+            var reason = SleepSystem.WakeReason(_context, _player);
+            if (reason is not null)
+                SleepSystem.Wake(_context, _player, reason);
+            else if (_input.GetKeyPressed() != null)
+                SleepSystem.Wake(_context, _player, "You wake up.");
+
+            return;
+        }
+
         if (!_hud.HasOpenModal)
         {
             _camera.Position += Controls.GetCameraPan(_input, (float)args.Time);
