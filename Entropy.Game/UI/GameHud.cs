@@ -1,4 +1,5 @@
 using Entropy.Engine.Core;
+using Entropy.Engine.ECS;
 using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
 using Entropy.Game.Components;
@@ -9,12 +10,10 @@ namespace Entropy.Game.UI;
 
 public class GameHud
 {
-    
     public GameplayLayout Layout { get; private set; }
     public event Action? NewCharacterRequested;
     public event Action? MainMenuRequested;
     public event Action? TurnRequested;
-
 
     private readonly Ui _ui;
     private readonly DeathDialog _deathDialog;
@@ -27,22 +26,23 @@ public class GameHud
     private readonly ContainerDialog _containerDialog;
     private readonly CommandBar _commandBar;
     private readonly GameContext _context;
-    
+
     public GameHud(GameContext context, WorldClock clock, int seed, Vector2i viewportTiles)
     {
         _context = context;
         _ui = new Ui { ViewportTiles = viewportTiles };
         _sidebar = new VStack { Anchor = Widget.UiAnchor.Absolute };
-        _sidebar.Add(new TimePanel(context.Clock));
-        _sidebar.Add(new StatusPanel(context.World, context.Player));
-        _sidebar.Add(new LifePanel(seed, context.World, context.Player));
+        _sidebar.Add(new BodyPanel(context.World, context.Player));
+        _sidebar.Add(new StatusPanel(context.World, context.Player, seed));
+        _sidebar.Add(new EnvironmentPanel(context));
+        _sidebar.Add(new CompassPanel(context));
         _ui.AddRoot(_sidebar);
-        
+
         _logPanel = new MessageLogPanel
         {
             Log = context.Log
         };
-        
+
         _commandBar = new CommandBar();
         _commandBar.AddText("arrows move");
         _commandBar.Hints.Add(('g', "et item"));
@@ -66,7 +66,7 @@ public class GameHud
         _inventoryDialog = new InventoryDialog(_ui, context);
         _helpDialog = new HelpDialog(_ui);
 
-        _containerDialog = new ContainerDialog(_ui);
+        _containerDialog = new ContainerDialog(_ui, context);
         _containerDialog.TurnRequested += OnTurnRequested;
 
         _worldMenu = new WorldMenu(_ui);

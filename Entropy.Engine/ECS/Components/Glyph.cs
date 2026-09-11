@@ -6,4 +6,5 @@ public struct Glyph
 {
     public char Character;
     public Color4 Foreground;
+    public bool RememberedInFog;
 }

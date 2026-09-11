@@ -14,7 +14,7 @@ public static class EntityRenderer
         VisibilityMap visibility,
         QuadBatcher glyphBatcher,
         QuadBatcher? spriteBatcher,
-        Func<ECS.Entity, string?>? spriteKeyOf,
+        Func<Entity, string?>? spriteKeyOf,
         IReadOnlyDictionary<string, Vector2i>? sprites,
         GlyphAtlas? spriteAtlas,
         int spriteCellSize,
@@ -32,8 +32,18 @@ public static class EntityRenderer
             }
 
             ref var position = ref world.Get<Position>(entity);
-            var visible = !options.CullByVisibility ||
-                visibility.IsVisible((int)position.Value.X, (int)position.Value.Y);
+            var px = (int)position.Value.X;
+            var py = (int)position.Value.Y;
+
+            if (!visibility.IsExplored(px, py))
+                continue;
+
+            ref var glyph = ref world.Get<Glyph>(entity);
+
+            var visible = !options.CullByVisibility || visibility.IsVisible(px, py);
+
+            if (!visible && !glyph.RememberedInFog)
+                continue;
 
             if (useSprites)
             {
@@ -65,7 +75,6 @@ public static class EntityRenderer
 
             if (!visible) continue;
 
-            ref var glyph = ref world.Get<Glyph>(entity);
             glyphBatcher.AddTexturedQuad(
                 (int)position.Value.X,
                 (int)position.Value.Y,

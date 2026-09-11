@@ -36,6 +36,7 @@ public abstract partial class DefListViewModel<T>(ContentWorkspace workspace) : 
     {
         var def = CreateNew();
         if (def is null) return;
+        AddToWorkspace(def);
         Defs.Add(def);
         Selected = def;
         UpdatePreview();
@@ -47,6 +48,7 @@ public abstract partial class DefListViewModel<T>(ContentWorkspace workspace) : 
         if (Selected is null) return;
         var copy = Clone(Selected);
         if (copy is null) return;
+        AddToWorkspace(copy);
         Defs.Add(copy);
         Selected = copy;
     }
@@ -56,10 +58,14 @@ public abstract partial class DefListViewModel<T>(ContentWorkspace workspace) : 
     {
         if (Selected is null) return;
         var index = Defs.IndexOf(Selected);
+        RemoveFromWorkspace(Selected);
         Defs.RemoveAt(index);
         Selected = Defs.Count > 0 ? Defs[Math.Min(index, Defs.Count - 1)] : null;
         UpdatePreview();
     }
+
+    protected abstract void AddToWorkspace(T def);
+    protected abstract void RemoveFromWorkspace(T def);
 
     protected abstract T? CreateNew();
 
@@ -88,6 +94,9 @@ public partial class ItemsViewModel(ContentWorkspace workspace) : DefListViewMod
     public override string TypeName => "Item";
 
     protected override string SpriteKeyOf(ItemDefinition def) => "item:" + def.Id;
+
+    protected override void AddToWorkspace(ItemDefinition def) => Workspace.Items.Add(def);
+    protected override void RemoveFromWorkspace(ItemDefinition def) => Workspace.Items.Remove(def);
 
     protected override ItemDefinition CreateNew() => new()
     {
@@ -127,6 +136,9 @@ public partial class CreaturesViewModel(ContentWorkspace workspace) : DefListVie
 
     protected override string? SpriteKeyOf(CreatureDefinition def) => "creature:" + def.Id;
 
+    protected override void AddToWorkspace(CreatureDefinition def) => Workspace.Creatures.Add(def);
+    protected override void RemoveFromWorkspace(CreatureDefinition def) => Workspace.Creatures.Remove(def);
+
     protected override CreatureDefinition CreateNew() => new()
     {
         Id = UniqueId(Defs.Select(d => d.Id), "new_creature"),
@@ -164,6 +176,9 @@ public partial class TerrainViewModel(ContentWorkspace workspace) : DefListViewM
 
     protected override string? SpriteKeyOf(TerrainDefinition def) => "terrain:" + def.Id;
 
+    protected override void AddToWorkspace(TerrainDefinition def) => Workspace.Terrains.Add(def);
+    protected override void RemoveFromWorkspace(TerrainDefinition def) => Workspace.Terrains.Remove(def);
+
     protected override TerrainDefinition CreateNew() => new()
     {
         Id = UniqueId(Defs.Select(d => d.Id), "new_terrain"),
@@ -198,6 +213,9 @@ public partial class TilesetsViewModel(ContentWorkspace workspace) : DefListView
     public override string TypeName => "Tileset";
 
     protected override string? SpriteKeyOf(TilesetDefinition def) => null; // preview not applicable
+
+    protected override void AddToWorkspace(TilesetDefinition def) => Workspace.Tilesets.Add(def);
+    protected override void RemoveFromWorkspace(TilesetDefinition def) => Workspace.Tilesets.Remove(def);
 
     protected override TilesetDefinition CreateNew() => new()
     {
@@ -241,6 +259,9 @@ public partial class BuildingsViewModel(ContentWorkspace workspace) : DefListVie
         "#.d,;:o*+~=xX-abcdefgijklmnopqrstuvwxyzABCDEFHIJKLMNOPQRSTUVWXYZ0123456789";
 
     protected override string? SpriteKeyOf(BuildingTemplate def) => null; // preview not applicable
+
+    protected override void AddToWorkspace(BuildingTemplate def) => Workspace.Buildings.Add(def);
+    protected override void RemoveFromWorkspace(BuildingTemplate def) => Workspace.Buildings.Remove(def);
 
     protected override BuildingTemplate CreateNew() => new()
     {
@@ -376,6 +397,9 @@ public partial class WorldObjectsViewModel(ContentWorkspace workspace) : DefList
     public override string TypeName => "World Object";
 
     protected override string? SpriteKeyOf(WorldObjectDefinition def) => "furniture:" + def.Id;
+
+    protected override void AddToWorkspace(WorldObjectDefinition def) => Workspace.WorldObjects.Add(def);
+    protected override void RemoveFromWorkspace(WorldObjectDefinition def) => Workspace.WorldObjects.Remove(def);
 
     protected override WorldObjectDefinition CreateNew() => new()
     {

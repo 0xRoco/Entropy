@@ -25,18 +25,22 @@ public class EntropyGame : IGameClient
     private Vector2i _clientSize;
 
     private MainMenuScreen _mainMenu = null!;
-    private GameMode _mode = GameMode.MainMenu;
-    
+    private GameMode _mode = GameMode.Loading;
+
     private Camera _camera = null!;
     private TileCamera _tileCamera = null!;
     private Shader _shader = null!;
     private QuadBatcher _batcher = null!;
-    private QuadBatcher _tileBatcher = null!;
+    private QuadBatcher _uiBatcher = null!;
+    private FontAtlas _fontAtlas = null!;
     private GlyphAtlas _atlas = null!;
     private TilesetDefinition _tileset = null!;
     private GlyphAtlas _terrainAtlas = null!;
     private string _contentRoot = null!;
     private QuadBatcher _terrainBatcher = null!;
+    private LoadingScreen _loadingScreen = null!;
+    private List<(string Name, Action Load)> _loadSteps = [];
+    private int _loadStep;
 
     private IGameInput _input = null!;
     private TileMap _map = null!;
@@ -77,38 +81,67 @@ public class EntropyGame : IGameClient
         _camera = new Camera { ViewportSize = clientSize };
         _tileCamera = new TileCamera { ViewportSize = clientSize };
         _atlas = new GlyphAtlas(Path.Combine(_contentRoot, "tilesets", "ascii.png"));
+        _fontAtlas = new FontAtlas(Path.Combine(_contentRoot, "Fonts", "Terminus.ttf"));
         _batcher = new QuadBatcher(_shader, _camera, _atlas);
-        _tileBatcher = new QuadBatcher(_shader, _tileCamera, _atlas);
+        _uiBatcher = new QuadBatcher(_shader, _tileCamera, _fontAtlas);
         _log = new MessageLog();
-        _drawContext = new DrawContext { Batcher = _tileBatcher, Atlas = _atlas };
+        _drawContext = new DrawContext { Batcher = _uiBatcher, Atlas = _fontAtlas };
         _clock = new WorldClock(2001, 3, 12, 7, 30);
 
         var jsonFolder = Path.Combine(_contentRoot, "Json");
         _definitions = new DefinitionRegistry();
-        _definitions.LoadItems(jsonFolder);
-        _definitions.LoadCreatures(jsonFolder);
-        _definitions.LoadTerrains(jsonFolder);
-        _definitions.LoadTilesets(jsonFolder);
-        _definitions.LoadBuildingTemplates(jsonFolder);
-        _definitions.LoadWorldObjects(jsonFolder);
 
+        _loadSteps =
+        [
+            ("Items", () => _definitions.LoadItems(jsonFolder)),
+            ("Creatures", () => _definitions.LoadCreatures(jsonFolder)),
+            ("Terrain", () => _definitions.LoadTerrains(jsonFolder)),
+            ("Tilesets", () => _definitions.LoadTilesets(jsonFolder)),
+            ("Building templates", () => _definitions.LoadBuildingTemplates(jsonFolder)),
+            ("World objects", () => _definitions.LoadWorldObjects(jsonFolder)),
+            ("Tileset atlas", FinishContentLoad)
+        ];
+
+        _loadingScreen = new LoadingScreen([.. _loadSteps.Select(step => step.Name)]);
+    }
+
+    private void ProcessLoadStep()
+    {
+        if (_loadStep >= _loadSteps.Count)
+            return;
+
+        var (name, load) = _loadSteps[_loadStep];
+        load();
+        _loadingScreen.Complete(name);
+        _loadStep++;
+    }
+
+    private void FinishContentLoad()
+    {
         _tileset = _definitions.Tileset("entropy_art");
 
         _terrainAtlas = _tileset.Mode == "art"
-            ? new GlyphAtlas(Path.Combine(gameRoot, _tileset.Atlas.Replace('/', Path.DirectorySeparatorChar)))
+            ? new GlyphAtlas(Path.Combine(
+                Path.GetDirectoryName(_contentRoot)!,
+                _tileset.Atlas.Replace('/', Path.DirectorySeparatorChar)))
             : _atlas;
 
         _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
-        
-        var block = CityBlockGenerator.Generate(_definitions);
 
-        _mainMenu = new MainMenuScreen(ToTileSize(clientSize));
+        _mainMenu = new MainMenuScreen(ToTileSize(_clientSize));
         _mainMenu.NewGameRequested += StartNewGame;
         _mainMenu.ExitRequested += () => ExitRequested = true;
+        _mode = GameMode.MainMenu;
     }
 
     public void Update(FrameEventArgs args)
-    { 
+    {
+        if (_mode == GameMode.Loading)
+        {
+            ProcessLoadStep();
+            return;
+        }
+
         if (_mode == GameMode.MainMenu)
         {
             var menuKey = _input.GetKeyPressed();
@@ -188,17 +221,36 @@ public class EntropyGame : IGameClient
 
     public void Render(FrameEventArgs args)
     {
+        if (_mode == GameMode.Loading)
+        {
+            GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
+
+            _loadingScreen.Draw(_drawContext, ToTileSize(_clientSize));
+            _uiBatcher.Flush();
+
+            return;
+        }
+
         if (_mode == GameMode.MainMenu)
         {
             GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
 
             _mainMenu.Draw(_drawContext);
-            _tileBatcher.Flush();
+            _uiBatcher.Flush();
 
             return;
         }
-        
+
         ApplyMapViewport();
+
+        // the map camera is player-centered, so world tiles extend past the
+        // map viewport — the scissor keeps them inside it (HUD draws after)
+        GL.Enable(EnableCap.ScissorTest);
+        GL.Scissor(
+            _hud.Layout.Map.X * (int)Camera.TilePixelSize,
+            _clientSize.Y - (_hud.Layout.Map.Y + _hud.Layout.Map.Height) * (int)Camera.TilePixelSize,
+            _hud.Layout.Map.Width * (int)Camera.TilePixelSize,
+            _hud.Layout.Map.Height * (int)Camera.TilePixelSize);
 
         TileRenderer.Draw(
             _context.Map,
@@ -222,20 +274,24 @@ public class EntropyGame : IGameClient
             _terrainAtlas,
             _tileset.CellSize);
 
+        GL.Disable(EnableCap.ScissorTest);
         GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
 
         _hud.Draw(_drawContext);
-        _tileBatcher.Flush();
+        _uiBatcher.Flush();
     }
 
     public void Resize(int width, int height)
     {
         _clientSize = new Vector2i(width, height);
-        _mainMenu.Resize(ToTileSize(_clientSize));
+
+        _camera.ViewportSize = _clientSize;
+        _tileCamera.ViewportSize = _clientSize;
+
+        _mainMenu?.Resize(ToTileSize(_clientSize));
 
         if (_mode != GameMode.Gameplay) return;
-        
-        _tileCamera.ViewportSize = _clientSize;
+
         _hud.Resize(ToTileSize(_clientSize));
         ConfigureMapCamera();
     }
@@ -493,7 +549,8 @@ public class EntropyGame : IGameClient
         _disposed = true;
         
         _batcher.Dispose();
-        _tileBatcher.Dispose();
+        _uiBatcher.Dispose();
+        _fontAtlas.Dispose();
         _terrainBatcher.Dispose();
         _shader.Dispose();
         _atlas.Dispose();

@@ -109,6 +109,26 @@
         </DockPanel>
 
         <DockPanel Grid.Column="2" Margin="8,0,0,0">
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12" DataContext="{Binding Selected}">
+                <TextBlock Text="Identity" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="28"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Id" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Id, UpdateSourceTrigger=PropertyChanged}" Margin="0,1"/>
+
+                    <TextBlock Grid.Row="1" Text="Name" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,1"/>
+                </Grid>
+            </StackPanel>
+
             <TextBlock DockPanel.Dock="Top" Text="Terrain (right-click grid to pick)"
                        FontWeight="SemiBold" Margin="0,0,0,4"/>
             <ListBox DockPanel.Dock="Top" x:Name="TerrainPalette" Height="180"

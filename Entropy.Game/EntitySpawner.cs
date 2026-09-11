@@ -60,7 +60,7 @@ public static class EntitySpawner
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Location { MapId = mapId })
-            .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
+            .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color, RememberedInFog = true })
             .With(world, new Item())
             .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id });
 
@@ -83,7 +83,7 @@ public static class EntitySpawner
         var e = world.Create()
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Location { MapId = mapId })
-            .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })
+            .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color, RememberedInFog = true })
             .With(world, new Named { Name = def.Name })
             .With(world, new WorldObjectIdentity { Name = def.Name, DefinitionId = def.Id })
             .With(world, new Solid { Blocks = !def.HasFlag("walkable") });

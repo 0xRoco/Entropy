@@ -15,51 +15,68 @@ public class GlyphAtlas : IDisposable
 
     public GlyphAtlas(string path, int cellRows = 16, int cellCols = 16)
     {
-        CellRows = cellRows;
-        CellCols = cellCols;
-        
         var image = ImageResult.FromStream(File.OpenRead(path), ColorComponents.RedGreenBlueAlpha);
 
-        Handle = GL.GenTexture();
-        GL.BindTexture(TextureTarget.Texture2D, Handle);
-        
+        CellRows = cellRows;
+        CellCols = cellCols;
+        Width = image.Width;
+        Height = image.Height;
+
+        Handle = Upload(image.Data, image.Width, image.Height);
+    }
+
+    protected GlyphAtlas(byte[] rgba, int width, int height, int cellRows, int cellCols)
+    {
+        CellRows = cellRows;
+        CellCols = cellCols;
+        Width = width;
+        Height = height;
+
+        Handle = Upload(rgba, width, height);
+    }
+
+    private static int Upload(byte[] data, int width, int height)
+    {
+        var handle = GL.GenTexture();
+        GL.BindTexture(TextureTarget.Texture2D, handle);
+
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-        
-        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba,
-            image.Width, image.Height, 0,
-            PixelFormat.Rgba, PixelType.UnsignedByte, image.Data);
 
-        Width = image.Width;
-        Height = image.Height;
+        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba,
+            width, height, 0,
+            PixelFormat.Rgba, PixelType.UnsignedByte, data);
+
+        return handle;
     }
 
     public (Vector2 tl, Vector2 tr, Vector2 br, Vector2 bl) GetUv(char c)
     {
-        var row = c / 16;
-        var col = c % 16;
+        var row = c / CellCols;
+        var col = c % CellCols;
 
-        var inset = 0.5f / (CellCols * 16f);
+        var uMin = col / (float)CellCols;
+        var uMax = (col + 1) / (float)CellCols;
 
-        var uMin = col / 16f;
-        var uMax = (col + 1) / 16f;
+        var vMin = row / (float)CellRows;
+        var vMax = (row + 1) / (float)CellRows;
 
-        var vMin = row / 16f;
-        var vMax = (row + 1) / 16f;
-        
-        uMin += inset;
-        uMax -= inset;
-        vMin += inset;
-        vMax -= inset;
+        var insetU = 0.5f / Width;
+        var insetV = 0.5f / Height;
 
-        var tl = new Vector2(uMin, vMin);
-        var tr = new Vector2(uMax, vMin);
-        var br = new Vector2(uMax, vMax);
-        var bl = new Vector2(uMin, vMax);
+        uMin += insetU;
+        uMax -= insetU;
+        vMin += insetV;
+        vMax -= insetV;
 
-        return (tl, tr, br, bl);
+        return (
+            new Vector2(uMin, vMin),
+            new Vector2(uMax, vMin),
+            new Vector2(uMax, vMax),
+            new Vector2(uMin, vMax)
+        );
     }
 
     public void Bind()

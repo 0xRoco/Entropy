@@ -6,9 +6,14 @@
     "symbol": "=",
     "color": "brown",
     "description": "A dented metal shelf stocked with odds and ends.",
-    "flags": ["container"],
+    "flags": [
+      "container"
+    ],
     "container_slots": 6,
-    "starter_items": ["crackers", "canned_beans"]
+    "starter_items": [
+      "crackers",
+      "canned_beans"
+    ]
   },
   {
     "type": "WORLD_OBJECT",
@@ -17,7 +22,9 @@
     "symbol": "$",
     "color": "gray",
     "description": "A dusty cash register. The drawer hangs open, empty.",
-    "flags": ["container"],
+    "flags": [
+      "container"
+    ],
     "container_slots": 4
   },
   {
@@ -27,7 +34,9 @@
     "symbol": "=",
     "color": "light_blue",
     "description": "A narrow bed with sheets that have seen better weeks.",
-    "flags": ["bed"]
+    "flags": [
+      "bed"
+    ]
   },
   {
     "type": "WORLD_OBJECT",
@@ -36,8 +45,13 @@
     "symbol": "F",
     "color": "white",
     "description": "A refrigerator humming on residual power. It smells like old leftovers.",
-    "flags": ["container"],
+    "flags": [
+      "container"
+    ],
     "container_slots": 6,
-    "starter_items": ["water_bottle", "canned_beans"]
+    "starter_items": [
+      "water_bottle",
+      "canned_beans"
+    ]
   }
 ]

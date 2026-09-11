@@ -2,7 +2,6 @@ using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
-using Entropy.Content;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using Entropy.Game.WorldGen;
@@ -53,7 +52,8 @@ public class WorldSetup
         {
             foreach (var (anchorName, tile) in building.Anchors)
             {
-                if (!defs.TryWorldObject(anchorName, out var objectDef))
+                if (!defs.TryWorldObject(anchorName, out var objectDef) &&
+                    !defs.TryWorldObject(anchorName.TrimEnd("0123456789".ToCharArray()), out objectDef))
                     continue;
 
                 var spawned = EntitySpawner.CreateWorldObject(

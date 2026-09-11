@@ -10,8 +10,13 @@ public class CommandBar : Widget
     {
         var x = X + offsetX;
         var y = Y + offsetY;
+        var maxX = x + Width;
         foreach (var (key, label) in Hints)
         {
+            var w = (key != '\0' ? 3 : 0) + label.Length + 2;
+            if (Width > 0 && x + w > maxX)
+                break;
+
             if (key != '\0')
             {
                 context.DrawText(x, y, $"[{key}]", UiTheme.Keybind);
@@ -20,7 +25,7 @@ public class CommandBar : Widget
             context.DrawText(x, y, label, UiTheme.TextDim);
             x += label.Length + 2;
         }
-        
+
         base.Draw(context, offsetX, offsetY);
     }
 

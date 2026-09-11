@@ -5,7 +5,7 @@ namespace Entropy.Content;
 public class TerrainDefinition
 {
     public string? Comment { get; set; }
-    public required string Id { get; init; }
+    public required string Id { get; set; }
     public required string Name { get; set; }
     public required char Symbol { get; set; }
     public required Color4 Color { get; set; }

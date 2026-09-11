@@ -13,7 +13,7 @@ public class ContainerDialog
 {
     public bool IsOpen => _ui.IsModal(_panel);
     public event Action? TurnRequested;
-    
+
     private readonly Ui _ui;
     private readonly Panel _panel;
     private readonly Label _title;
@@ -27,9 +27,11 @@ public class ContainerDialog
     private Entity _container;
     private bool _showingInventory;
 
-    public ContainerDialog(Ui ui)
+    public ContainerDialog(Ui ui, GameContext context)
     {
         _ui = ui;
+        _context = context;
+        _player = context.Player;
 
         _panel = new Panel { X = 1, Y = 1, Width = 32, Height = 15, Anchor = Widget.UiAnchor.Absolute, Closable = true };
         _title = new Label { X = 1, Y = 1, Width = 30, Color = UiTheme.Keybind };
@@ -176,12 +178,12 @@ public class ContainerDialog
 
         if (_showingInventory)
         {
-            _title.Text = $"Your pack — put into {containerName}";
+            _title.Text = $"Your pack - put into {containerName}";
             _hint.Text = "(tab) contents · (esc) close";
         }
         else
         {
-            _title.Text = $"{containerName} — contents";
+            _title.Text = $"{containerName} contents";
             _hint.Text = "(tab) your pack · (esc) close";
         }
 

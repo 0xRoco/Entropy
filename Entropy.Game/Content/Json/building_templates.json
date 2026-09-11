@@ -76,5 +76,32 @@
         3
       ]
     }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "small_shack",
+    "name": "Small Shack",
+    "grid": [
+      "#####",
+      "#...#",
+      "#...#",
+      "#...#",
+      "##d##"
+    ],
+    "legend": {
+      "#": "wall_brick",
+      ".": "floor_linoleum",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [
+        2,
+        4
+      ],
+      "shelf": [
+        2,
+        1
+      ]
+    }
   }
 ]

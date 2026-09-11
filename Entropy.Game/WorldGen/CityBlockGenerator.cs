@@ -34,6 +34,14 @@ public static class CityBlockGenerator
 
         AddBuilding(
             maps, buildings, defs, street,
+            instanceId: "store_shack",
+            templateId: "small_shack",
+            mapId: "store_shack_interior",
+            exteriorX: 10,
+            exteriorY: 0);
+
+        AddBuilding(
+            maps, buildings, defs, street,
             instanceId: "apartment_dana",
             templateId: "apartment_small",
             mapId: "apartment_dana_interior",
