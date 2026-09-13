@@ -25,7 +25,7 @@ namespace Entropy.Game;
 public class EntropyGame : IGameClient
 {
     public bool ExitRequested { get; private set; }
-    
+
     private const int ViewRadius = 6;
     private const int UiCellPixelWidth = 8;
     private const int UiCellPixelHeight = 16;
@@ -72,7 +72,7 @@ public class EntropyGame : IGameClient
 
     private bool _disposed;
 
-    
+
     public void Load(Vector2i clientSize, IGameInput input)
     {
         GL.Enable(EnableCap.Blend);
@@ -81,8 +81,8 @@ public class EntropyGame : IGameClient
         _input = input;
 
         _contentRoot = ContentPaths.TryFindContentRoot(AppContext.BaseDirectory)
-            ?? throw new InvalidOperationException(
-                "Could not locate the Content folder (no source tree and no deployed Content directory found).");
+                       ?? throw new InvalidOperationException(
+                           "Could not locate the Content folder (no source tree and no deployed Content directory found).");
         var gameRoot = Path.GetDirectoryName(_contentRoot)!;
 
         _shader = Shader.FromFiles(
@@ -180,7 +180,7 @@ public class EntropyGame : IGameClient
                 _characterCreation.HandleKey(characterKey.Value);
             return;
         }
-        
+
         if (_world.Has<Sleeping>(_player))
         {
             if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0)
@@ -246,25 +246,26 @@ public class EntropyGame : IGameClient
                 _pauseMenu.HandleKey(pauseKey.Value);
             return;
         }
+
         if (key == Keys.F6)
         {
             SaveCurrentGame();
             return;
         }
+
         if (key == Keys.Escape && !_hud.HasOpenModal)
         {
             _mode = GameMode.Paused;
             return;
         }
+
         if (key != null && _hud.HandleKey(key.Value)) return;
 
         if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
         Controls.GetMoveDirection(_input);
 
         var action = ProcessPlayerAction();
-        if (!action.Succeeded || !action.ConsumesTurn) return;
-
-        AdvanceTurn(action.TimeCostMinutes);
+        ProcessActionResult(action);
     }
 
     public void Render(FrameEventArgs args)
@@ -358,7 +359,7 @@ public class EntropyGame : IGameClient
         _hud.Resize(ToUiSize(_clientSize));
         ConfigureMapCamera();
     }
-    
+
     private void OpenCharacterCreation()
     {
         _mode = GameMode.CharacterCreation;
@@ -403,7 +404,7 @@ public class EntropyGame : IGameClient
         _hud = new GameHud(_context, _clock, _rng.Seed, ToUiSize(_clientSize));
         _hud.NewCharacterRequested += RestartGame;
         _hud.MainMenuRequested += ReturnToMainMenu;
-        _hud.TurnRequested += () => AdvanceTurn();
+        _hud.ActionCompleted += ProcessActionResult;
 
         ConfigureMapCamera();
         _camera.Position = _world.Get<Position>(_player).Value;
@@ -560,7 +561,7 @@ public class EntropyGame : IGameClient
             new(identity.Stats, StringComparer.OrdinalIgnoreCase),
             [.. identity.TraitIds],
             [.. identity.SkillIds]);
-    
+
     private void RestartGame()
     {
         _rng = new Rng(Random.Shared.Next(int.MinValue, int.MaxValue));
@@ -576,7 +577,7 @@ public class EntropyGame : IGameClient
     {
         _mode = GameMode.Gameplay;
     }
-    
+
     private void ConfigureMapCamera()
     {
         var rect = _hud.Layout.Map;
@@ -601,7 +602,15 @@ public class EntropyGame : IGameClient
             size.X,
             size.Y);
     }
-    
+
+    private void ProcessActionResult(ActionResult action)
+    {
+        if (!action.Succeeded || !action.ConsumesTurn)
+            return;
+
+        AdvanceTurn(action.TimeCostMinutes);
+    }
+
     private void AdvanceTurn(int timeCostMinutes = 1)
     {
         _context.Clock.Advance(timeCostMinutes);
@@ -622,7 +631,7 @@ public class EntropyGame : IGameClient
                 ViewRadius);
 
         var key = _input.GetKeyPressed();
-        
+
         return key switch
         {
             Keys.G => TryPickupAtPlayer() ? ActionResult.Turn : ActionResult.Failed,
@@ -665,9 +674,10 @@ public class EntropyGame : IGameClient
             if (ItemSystem.TryPickup(_world, _player, item))
                 _log.Add($"You pick up the {name}.");
         }
+
         return true;
     }
-    
+
     private void ReloadContent()
     {
         try
@@ -706,7 +716,7 @@ public class EntropyGame : IGameClient
 
             foreach (var map in _maps.Maps.Values)
                 RestampTerrainTiles(map);
-                
+
             var restamped = 0;
             foreach (var building in _buildings.Values)
             {
@@ -726,6 +736,7 @@ public class EntropyGame : IGameClient
                     var marker = template.Grid[y][x];
                     map.SetTile(x, y, _definitions.TileOf(template.Legend[marker]));
                 }
+
                 restamped++;
             }
 
@@ -767,12 +778,12 @@ public class EntropyGame : IGameClient
         new(
             pixels.X / 8,
             pixels.Y / 16);
-    
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        
+
         _batcher.Dispose();
         _uiBatcher.Dispose();
         _fontAtlas.Dispose();

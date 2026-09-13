@@ -36,8 +36,11 @@ public class RespondBehavior : IBehavior
             Destination: new Vector2i((int)targetPosition.X, (int)targetPosition.Y));
     }
 
-    public static void ExecuteArrest(World world, Entity officer, Entity target, GameContext context)
+    public static ActionResult ExecuteArrest(World world, Entity officer, Entity target, GameContext context)
     {
+        if (!world.IsAlive(officer) || !world.IsAlive(target) || !world.Has<Location>(target))
+            return ActionResult.Failed;
+
         var targetMapId = world.Get<Location>(target).MapId;
         var holding = ConsequenceSystem.FindHoldingTile(context.Maps[targetMapId]);
         world.Set(target, new Location { MapId = targetMapId });
@@ -50,5 +53,6 @@ public class RespondBehavior : IBehavior
         context.Log.Add("The officer grabs you. \"You're under arrest.\"", Color4.Red);
         context.Log.Add("You are held at the station. (Prison arrives later.)", Color4.LightGray);
         world.Destroy(officer);
+        return ActionResult.Turn;
     }
 }

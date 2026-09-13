@@ -14,7 +14,7 @@ namespace Entropy.Game.UI;
 public class InventoryDialog
 {
     public bool IsOpen => _ui.IsModal(_panel);
-    
+
     private readonly Ui _ui;
     private readonly GameContext _context;
     private readonly Entity _player;
@@ -27,6 +27,8 @@ public class InventoryDialog
     private List<ItemAction> _currentActions = [];
     private Entity _contextMenuItem;
     private bool IsContextMenuOpen => _contextMenu.IsOpen;
+    public event Action<ActionResult>? ActionCompleted;
+
     public InventoryDialog(Ui ui, GameContext context)
     {
         _ui = ui;
@@ -88,7 +90,6 @@ public class InventoryDialog
         if (key is not (Keys.I or Keys.Escape)) return _ui.HandleKey(key);
         Close();
         return true;
-
     }
 
     private void OpenContextMenuFor(int itemIndex)
@@ -116,7 +117,7 @@ public class InventoryDialog
 
     private void ExecuteAction(ItemAction action)
     {
-        action.Execute(_context, _player, _contextMenuItem);
+        ActionCompleted?.Invoke(action.Execute(_context, _player, _contextMenuItem));
         Refresh();
     }
 

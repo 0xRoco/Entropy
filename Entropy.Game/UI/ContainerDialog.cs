@@ -14,7 +14,7 @@ namespace Entropy.Game.UI;
 public class ContainerDialog
 {
     public bool IsOpen => _ui.IsModal(_panel);
-    public event Action? TurnRequested;
+    public event Action<ActionResult>? ActionCompleted;
 
     private readonly Ui _ui;
     private readonly Panel _panel;
@@ -35,7 +35,8 @@ public class ContainerDialog
         _context = context;
         _player = context.Player;
 
-        _panel = new Panel { X = 1, Y = 1, Width = 32, Height = 15, Anchor = Widget.UiAnchor.Absolute, Closable = true };
+        _panel = new Panel
+            { X = 1, Y = 1, Width = 32, Height = 15, Anchor = Widget.UiAnchor.Absolute, Closable = true };
         _title = new Label { X = 1, Y = 1, Width = 30, Color = UiTheme.Keybind };
         _hint = new Label { X = 1, Y = 2, Width = 30, Color = UiTheme.Text };
         _list = new ListView { X = 1, Y = 4, Width = 30, Height = 10 };
@@ -138,8 +139,9 @@ public class ContainerDialog
         if (ItemSystem.Transfer(_context.World, item, _player))
         {
             _context.Log.Add($"You take the {name}.");
-            TurnRequested?.Invoke();
+            ActionCompleted?.Invoke(ActionResult.Turn);
         }
+
         Refresh();
     }
 
@@ -151,8 +153,9 @@ public class ContainerDialog
         if (ItemSystem.Transfer(_context.World, item, _container))
         {
             _context.Log.Add($"You put the {name} away.");
-            TurnRequested?.Invoke();
+            ActionCompleted?.Invoke(ActionResult.Turn);
         }
+
         Refresh();
     }
 

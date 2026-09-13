@@ -16,7 +16,7 @@ public static class AiUtil
         Math.Abs((int)a.X - (int)b.X) + Math.Abs((int)a.Y - (int)b.Y);
 
     public static bool IsAdjacent(Vector2 a, Vector2 b) => Manhattan(a, b) == 1;
-    
+
     /// <summary>
     /// Any other Actor on the same map occupying the tile (creatures block
     /// creatures). Map is derived from the mover's own Location.
@@ -32,6 +32,7 @@ public static class AiUtil
             var p = world.Get<Position>(e).Value;
             if ((int)p.X == tile.X && (int)p.Y == tile.Y) return true;
         }
+
         return false;
     }
 
@@ -56,9 +57,9 @@ public static class AiUtil
     /// <summary>
     /// Random adjacent walkable free tile, or stay put
     /// </summary>
-    public static void Wander(World world, Entity self, TileMap map, Rng rng, float chance)
+    public static bool Wander(World world, Entity self, TileMap map, Rng rng, float chance)
     {
-        if (!rng.Chance(chance)) return;
+        if (!rng.Chance(chance)) return false;
 
         ref var pos = ref world.Get<Position>(self);
         var start = ToTile(pos.Value);
@@ -81,15 +82,17 @@ public static class AiUtil
             if (!map[tile.X, tile.Y].Walkable) continue;
             if (IsOccupied(world, self, tile)) continue;
             pos.Value = new Vector2(tile.X, tile.Y);
-            return;
+            return true;
         }
+
+        return false;
     }
-    
+
     /// <summary>Random adjacent step, but never beyond radius from the anchor.</summary>
-    public static void WanderNear(World world, Entity self, TileMap map, Rng rng,
+    public static bool WanderNear(World world, Entity self, TileMap map, Rng rng,
         Vector2i anchor, int radius, float chance)
     {
-        if (!rng.Chance(chance)) return;
+        if (!rng.Chance(chance)) return false;
 
         ref var pos = ref world.Get<Position>(self);
         var start = ToTile(pos.Value);
@@ -113,10 +116,12 @@ public static class AiUtil
             if (!map[tile.X, tile.Y].Walkable) continue;
             if (IsOccupied(world, self, tile)) continue;
             pos.Value = new Vector2(tile.X, tile.Y);
-            return;
+            return true;
         }
+
+        return false;
     }
-    
+
     /// <summary>
     /// Moves an NPC toward an anchor, crossing map transitions when necessary.
     /// The player transition remains in TurnProcessor because it also changes
@@ -160,5 +165,4 @@ public static class AiUtil
         world.Get<Position>(entity).Value =
             new Vector2(transition.ToTile.X, transition.ToTile.Y);
     }
-
 }

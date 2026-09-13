@@ -132,7 +132,7 @@ public class TurnProcessor
 
         Fov.Compute(new Vector2i(tx, ty), viewRadius, context.Map, visibility);
         Spend(player, context.Map[tx, ty].MoveCost);
-            return ActionResult.Turn;
+        return ActionResult.Turn;
     }
 
     public void RunAITurns(Entity player, GameContext ctx)
@@ -172,7 +172,7 @@ public class TurnProcessor
                 {
                     var behaviorId = ctx.World.Get<Behavior>(actor).BehaviorId;
                     var intent = BehaviorCatalog.Get(behaviorId).Decide(ctx.World, actor, ctx);
-                    ExecuteAiIntent(actor, intent, ctx);
+                    _ = ExecuteAiIntent(actor, intent, ctx);
                 }
 
                 if (!ctx.World.IsAlive(player)) return;
@@ -190,33 +190,37 @@ public class TurnProcessor
     private static int SpeedOf(GameContext ctx, Entity entity) =>
         ctx.World.Has<Speed>(entity) ? ctx.World.Get<Speed>(entity).Value : DefaultSpeed;
 
-    private static void ExecuteAiIntent(Entity actor, AiIntent intent, GameContext context)
+    private static ActionResult ExecuteAiIntent(Entity actor, AiIntent intent, GameContext context)
     {
         var world = context.World;
         switch (intent.Type)
         {
             case AiIntentType.Attack when intent.Target is { } target && world.IsAlive(target):
-                InteractionSystem.Attack(context, actor, target);
-                break;
+                return InteractionSystem.Attack(context, actor, target);
             case AiIntentType.StepToward when intent.Destination is { } destination:
-                AiUtil.StepToward(world, actor, context.Map, destination);
-                break;
+                return AiUtil.StepToward(world, actor, context.Map, destination)
+                    ? ActionResult.Turn
+                    : ActionResult.Failed;
             case AiIntentType.Wander:
-                AiUtil.Wander(world, actor, context.Map, context.Rng, intent.Chance);
-                break;
+                return AiUtil.Wander(world, actor, context.Map, context.Rng, intent.Chance)
+                    ? ActionResult.Turn
+                    : ActionResult.Failed;
             case AiIntentType.WanderNear when intent.Anchor is { } anchor:
-                AiUtil.WanderNear(world, actor, context.Map, context.Rng, anchor, intent.Radius, intent.Chance);
-                break;
+                return AiUtil.WanderNear(world, actor, context.Map, context.Rng, anchor, intent.Radius, intent.Chance)
+                    ? ActionResult.Turn
+                    : ActionResult.Failed;
             case AiIntentType.TravelToward when intent.MapId != null && intent.Destination is { } destination:
-                AiUtil.TravelToward(world, actor, context, intent.MapId, destination);
-                break;
+                return AiUtil.TravelToward(world, actor, context, intent.MapId, destination)
+                    ? ActionResult.Turn
+                    : ActionResult.Failed;
             case AiIntentType.Arrest when intent.Target is { } target && world.IsAlive(target):
-                RespondBehavior.ExecuteArrest(world, actor, target, context);
-                break;
+                return RespondBehavior.ExecuteArrest(world, actor, target, context);
             case AiIntentType.Despawn:
                 context.Log.Add("The officer shrugs and leaves.", Color4.LightGray);
                 world.Destroy(actor);
-                break;
+                return ActionResult.Turn;
+            default:
+                return ActionResult.Failed;
         }
     }
 }

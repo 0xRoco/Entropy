@@ -11,8 +11,8 @@ public class WorldMenu
 {
     public bool IsOpen => _menu.IsOpen;
     public event Action<GameContext, Entity>? ContainerRequested;
-    public event Action? TurnRequested;
-    
+    public event Action<ActionResult>? ActionCompleted;
+
     private readonly ContextMenu _menu;
     private List<WorldVerb> _verbs = [];
     private GameContext? _context;
@@ -52,9 +52,6 @@ public class WorldMenu
     private void Execute(WorldVerb verb)
     {
         var context = _context ?? throw new InvalidOperationException("World menu opened without a context.");
-        verb.Execute(context, _player);
-
-        if (verb.SpendsTurn)
-            TurnRequested?.Invoke();
+        ActionCompleted?.Invoke(verb.Execute(context, _player));
     }
 }

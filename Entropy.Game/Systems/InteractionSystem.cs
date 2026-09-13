@@ -12,7 +12,7 @@ using OpenTK.Mathematics;
 
 namespace Entropy.Game.Systems;
 
-public record WorldVerb(string Label, bool SpendsTurn, Action<GameContext, Entity> Execute);
+public record WorldVerb(string Label, Func<GameContext, Entity, ActionResult> Execute);
 
 public static class InteractionSystem
 {
@@ -31,18 +31,22 @@ public static class InteractionSystem
             {
                 if (HasItemWithFlag(context, player, "key_pharmacy"))
                 {
-                    verbs.Add(new WorldVerb("Unlock the door with the pharmacy key", true,
+                    verbs.Add(new WorldVerb("Unlock the door with the pharmacy key",
                         (ctx, p) => UnlockDoor(ctx, p, transition.ToMap)));
                 }
 
                 if (HasItemWithFlag(context, player, "tool_smash"))
                 {
-                    verbs.Add(new WorldVerb("Smash through the locked door", true,
+                    verbs.Add(new WorldVerb("Smash through the locked door",
                         (ctx, p) => ForceDoor(ctx, p, transition.ToMap, tile)));
                 }
 
-                verbs.Add(new WorldVerb("Examine the locked door", false,
-                    (ctx, _) => ctx.Log.Add("The door is locked. There may be another way in.", Color4.Yellow)));
+                verbs.Add(new WorldVerb("Examine the locked door",
+                    (ctx, _) =>
+                    {
+                        ctx.Log.Add("The door is locked. There may be another way in.", Color4.Yellow);
+                        return ActionResult.Free;
+                    }));
             }
         }
 
@@ -58,25 +62,37 @@ public static class InteractionSystem
                 var target = entity;
                 if (!world.Has<Searched>(entity))
                 {
-                    verbs.Add(new WorldVerb($"Search the {identity.Name}", true,
+                    verbs.Add(new WorldVerb($"Search the {identity.Name}",
                         (ctx, _) => SearchContainer(ctx, target)));
                 }
                 else
                 {
-                    verbs.Add(new WorldVerb($"Open the {identity.Name}", true,
-                        (ctx, _) => openContainer.Invoke(ctx, target)));
+                    verbs.Add(new WorldVerb($"Open the {identity.Name}",
+                        (ctx, _) =>
+                        {
+                            openContainer.Invoke(ctx, target);
+                            return ActionResult.Turn;
+                        }));
                 }
             }
 
             if (adjacent && def.HasFlag("bed"))
             {
                 var bed = entity;
-                verbs.Add(new WorldVerb($"Sleep on the {identity.Name}", true,
-                    (ctx, p) => SleepSystem.FallAsleep(ctx, p, bed)));
+                verbs.Add(new WorldVerb($"Sleep on the {identity.Name}",
+                    (ctx, p) =>
+                    {
+                        SleepSystem.FallAsleep(ctx, p, bed);
+                        return ActionResult.Turn;
+                    }));
             }
 
-            verbs.Add(new WorldVerb($"Examine the {identity.Name}", false,
-                (ctx, _) => ExamineWorldObject(ctx, entity)));
+            verbs.Add(new WorldVerb($"Examine the {identity.Name}",
+                (ctx, _) =>
+                {
+                    ExamineWorldObject(ctx, entity);
+                    return ActionResult.Free;
+                }));
         }
 
         foreach (var entity in world.Query<Position, Actor>())
@@ -90,23 +106,35 @@ public static class InteractionSystem
             var target = entity;
 
             if (IsAdjacent(world.Get<Position>(player).Value, tile))
-                verbs.Add(new WorldVerb($"Attack {name}", true,
+                verbs.Add(new WorldVerb($"Attack {name}",
                     (ctx, _) => Attack(ctx, player, target)));
 
-            verbs.Add(new WorldVerb($"Talk to {name}", false,
-                (ctx, _) => ctx.Log.Add($"{name} ignores you.", Color4.LightGray)));
-            verbs.Add(new WorldVerb($"Examine {name}", false,
-                (ctx, _) => ExamineNpc(ctx, target)));
+            verbs.Add(new WorldVerb($"Talk to {name}",
+                (ctx, _) =>
+                {
+                    ctx.Log.Add($"{name} ignores you.", Color4.LightGray);
+                    return ActionResult.Free;
+                }));
+            verbs.Add(new WorldVerb($"Examine {name}",
+                (ctx, _) =>
+                {
+                    ExamineNpc(ctx, target);
+                    return ActionResult.Free;
+                }));
         }
 
         foreach (var item in ItemSystem.ItemsAt(world, mapId, tile))
         {
             var name = world.Get<ItemIdentity>(item).Name;
             if (IsOnOrAdjacent(world.Get<Position>(player).Value, tile))
-                verbs.Add(new WorldVerb($"Pick up the {name}", true,
+                verbs.Add(new WorldVerb($"Pick up the {name}",
                     (ctx, p) => PickUp(ctx, p, item)));
-            verbs.Add(new WorldVerb($"Examine the {name}", false,
-                (ctx, _) => ExamineItem(ctx, item)));
+            verbs.Add(new WorldVerb($"Examine the {name}",
+                (ctx, _) =>
+                {
+                    ExamineItem(ctx, item);
+                    return ActionResult.Free;
+                }));
         }
 
         if (verbs.Count == 0)
@@ -171,9 +199,12 @@ public static class InteractionSystem
         context.Log.Add($"{terrain.Name}: {terrain.Description}", Color4.LightGray);
     }
 
-    public static void Attack(GameContext context, Entity attacker, Entity target)
+    public static ActionResult Attack(GameContext context, Entity attacker, Entity target)
     {
         var world = context.World;
+        if (!world.IsAlive(target) || !world.Has<Health>(target))
+            return ActionResult.Failed;
+
         ref var hp = ref world.Get<Health>(target);
         var isPlayer = attacker.Equals(context.Player);
 
@@ -183,6 +214,7 @@ public static class InteractionSystem
         {
             damage += Math.Max(0, (strength - 8) / 4);
         }
+
         if (isPlayer && world.Has<Equipped>(attacker))
         {
             var equipped = world.Get<Equipped>(attacker).Item;
@@ -217,23 +249,31 @@ public static class InteractionSystem
         {
             if (isPlayer && !world.Has<Hostile>(target))
                 world.Set(target, new Hostile());
-            return;
+            return ActionResult.Turn;
         }
 
         context.Log.Add($"{name} has been killed!", Color4.Yellow);
         world.Destroy(target);
         context.Turns.RemoveActor(target);
+        return ActionResult.Turn;
     }
 
-    private static void PickUp(GameContext context, Entity player, Entity item)
+    private static ActionResult PickUp(GameContext context, Entity player, Entity item)
     {
+        if (!context.World.IsAlive(item)) return ActionResult.Failed;
         var name = context.World.Get<ItemIdentity>(item).Name;
         if (ItemSystem.TryPickup(context.World, player, item))
+        {
             context.Log.Add($"You pick up the {name}.");
+            return ActionResult.Turn;
+        }
+
+        return ActionResult.Failed;
     }
 
-    private static void SearchContainer(GameContext context, Entity container)
+    private static ActionResult SearchContainer(GameContext context, Entity container)
     {
+        if (!context.World.IsAlive(container)) return ActionResult.Failed;
         context.World.Set(container, new Searched());
         var identity = context.World.Get<WorldObjectIdentity>(container);
         var count = context.World.Has<Container>(container)
@@ -244,19 +284,22 @@ public static class InteractionSystem
                 ? $"You search the {identity.Name}. You find something inside."
                 : $"You search the {identity.Name}. It is empty.",
             count > 0 ? Color4.Cyan : Color4.LightGray);
+        return ActionResult.Turn;
     }
 
-    private static void UnlockDoor(GameContext context, Entity player, string mapId)
+    private static ActionResult UnlockDoor(GameContext context, Entity player, string mapId)
     {
         context.LockedMaps.Remove(mapId);
         context.Log.Add("You unlock the pharmacy door quietly.", Color4.Cyan);
+        return ActionResult.Turn;
     }
 
-    private static void ForceDoor(GameContext context, Entity player, string mapId, Vector2i tile)
+    private static ActionResult ForceDoor(GameContext context, Entity player, string mapId, Vector2i tile)
     {
         context.LockedMaps.Remove(mapId);
         context.Log.Add("You smash the lock. The noise carries down the street.", Color4.OrangeRed);
         NoiseSystem.Emit(context, tile, 12, "Something is breaking into the pharmacy");
+        return ActionResult.Turn;
     }
 
     private static bool HasItemWithFlag(GameContext context, Entity player, string flag)
@@ -302,8 +345,12 @@ public static class InteractionSystem
     private static WorldVerb ExamineTerrainVerb(GameContext context, Vector2i tile)
     {
         var terrain = TerrainAt(context, tile);
-        return new WorldVerb($"Examine the {terrain.Name}", false,
-            (ctx, _) => ctx.Log.Add($"{terrain.Name}: {terrain.Description}", Color4.LightGray));
+        return new WorldVerb($"Examine the {terrain.Name}",
+            (ctx, _) =>
+            {
+                ctx.Log.Add($"{terrain.Name}: {terrain.Description}", Color4.LightGray);
+                return ActionResult.Free;
+            });
     }
 
     private static TerrainDefinition TerrainAt(GameContext context, Vector2i tile) =>

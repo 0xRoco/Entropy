@@ -4,6 +4,7 @@ using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
 using Entropy.Game.Components;
 using Entropy.Game.Components.Vitals;
+using Entropy.Game.Systems;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -14,7 +15,7 @@ public class GameHud
     public GameplayLayout Layout { get; private set; }
     public event Action? NewCharacterRequested;
     public event Action? MainMenuRequested;
-    public event Action? TurnRequested;
+    public event Action<ActionResult>? ActionCompleted;
 
     private readonly Ui _ui;
     private readonly DeathDialog _deathDialog;
@@ -57,23 +58,24 @@ public class GameHud
         {
             DrawBackground = true
         };
-        
+
 
         _commandPanel.Add(_commandBar);
 
         _ui.AddRoot(_commandPanel);
         _ui.AddRoot(_logPanel);
         ApplyBounds(_sidebar, Layout.Sidebar);
-        
+
         _inventoryDialog = new InventoryDialog(_ui, context);
+        _inventoryDialog.ActionCompleted += OnActionCompleted;
         _helpDialog = new HelpDialog(_ui);
 
         _containerDialog = new ContainerDialog(_ui, context);
-        _containerDialog.TurnRequested += OnTurnRequested;
+        _containerDialog.ActionCompleted += OnActionCompleted;
 
         _worldMenu = new WorldMenu(_ui);
         _worldMenu.ContainerRequested += (ctx, container) => _containerDialog.Open(ctx, ctx.Player, container);
-        _worldMenu.TurnRequested += OnTurnRequested;
+        _worldMenu.ActionCompleted += OnActionCompleted;
 
         _deathDialog = new DeathDialog(_ui, context.World, context.Player, clock, () => seed);
         _deathDialog.NewCharacterRequested += OnNewCharacterRequested;
@@ -121,7 +123,7 @@ public class GameHud
         _worldMenu.Open(_context, _context.Player, tile, Layout.Map);
     }
 
-    private void OnTurnRequested() => TurnRequested?.Invoke();
+    private void OnActionCompleted(ActionResult result) => ActionCompleted?.Invoke(result);
 
     public void Draw(DrawContext drawContext)
     {
@@ -133,7 +135,7 @@ public class GameHud
         {
             _deathDialog.Open();
         }
-        
+
         _ui.Draw(drawContext);
     }
 
@@ -162,7 +164,7 @@ public class GameHud
         widget.Width = bounds.Width;
         widget.Height = bounds.Height;
     }
-    
+
     private void OnNewCharacterRequested() => NewCharacterRequested?.Invoke();
     private void OnMainMenuRequested() => MainMenuRequested?.Invoke();
 }
