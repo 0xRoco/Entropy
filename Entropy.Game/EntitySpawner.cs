@@ -51,7 +51,8 @@ public static class EntitySpawner
             .With(world, new Perception { SightRadius = def.SightRadius, SmellRadius = def.SmellRadius })
             .With(world, Awareness.Create())
             .With(world, WitnessMemory.Create())
-            .With(world, new Behavior { Impl = new RespondBehavior(target) });
+            .With(world, new AIState { Mode = AIMode.Hunt, Target = target })
+            .With(world, new Behavior { Id = "respond" });
         return e;
     }
 
@@ -116,7 +117,7 @@ public static class EntitySpawner
             .With(world, Awareness.Create())
             .With(world, WitnessMemory.Create())
             .With(world, new AIState { Mode = AIMode.Idle })
-            .With(world, new Behavior { Impl = BehaviorCatalog.Get(def.Behavior) });
+            .With(world, new Behavior { Id = def.Behavior });
 
         if (def.Hostile)
             e.With(world, new Hostile());

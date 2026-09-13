@@ -9,12 +9,12 @@ namespace Entropy.Game.Behaviors;
 
 public class RespondBehavior : IBehavior
 {
-    private readonly Entity _target;
-
-    public RespondBehavior(Entity target) => _target = target;
-
     public void Act(World world, Entity self, GameContext context)
     {
+        if (!world.Has<AIState>(self)) return;
+        var target = world.Get<AIState>(self).Target;
+        if (target is not { } _target) return;
+
         if (!world.IsAlive(_target) || !world.Has<Wanted>(_target))
         {
             context.Log.Add("The officer shrugs and leaves.", Color4.LightGray);

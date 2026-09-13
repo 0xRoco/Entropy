@@ -3,6 +3,7 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
+using Entropy.Game.Behaviors;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game.Systems;
@@ -84,9 +85,6 @@ public class TurnProcessor
             return true;
         }
 
-        pos.Value = target;
-        context.World.Set(player, new Facing { Direction = new Vector2i(move.X, move.Y) });
-
         var transition = context.Maps.TransitionAt(playerMapId, new Vector2i(tx, ty));
 
         if (transition != null)
@@ -96,6 +94,9 @@ public class TurnProcessor
                 context.Log.Add("The door is locked.", Color4.Yellow);
                 return false;
             }
+
+            pos.Value = target;
+            context.World.Set(player, new Facing { Direction = new Vector2i(move.X, move.Y) });
 
             pos.Value = new Vector2(transition.ToTile.X, transition.ToTile.Y);
 
@@ -120,6 +121,9 @@ public class TurnProcessor
 
             return true;
         }
+
+        pos.Value = target;
+        context.World.Set(player, new Facing { Direction = new Vector2i(move.X, move.Y) });
 
         Fov.Compute(new Vector2i(tx, ty), viewRadius, context.Map, visibility);
         Spend(player, context.Map[tx, ty].MoveCost);
@@ -160,7 +164,10 @@ public class TurnProcessor
 
                 _energy[actor] -= ActionCost;
                 if (ctx.World.Has<Behavior>(actor))
-                    ctx.World.Get<Behavior>(actor).Impl.Act(ctx.World, actor, ctx);
+                {
+                    var behaviorId = ctx.World.Get<Behavior>(actor).Id;
+                    BehaviorCatalog.Get(behaviorId).Act(ctx.World, actor, ctx);
+                }
 
                 if (!ctx.World.IsAlive(player)) return;
                 acted = true;

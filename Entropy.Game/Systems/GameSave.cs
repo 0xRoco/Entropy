@@ -60,7 +60,8 @@ public static class GameSave
 
         try
         {
-            return JsonSerializer.Deserialize<GameSaveData>(File.ReadAllText(Path));
+            var data = JsonSerializer.Deserialize<GameSaveData>(File.ReadAllText(Path));
+            return data is { Version: CurrentVersion } ? data : null;
         }
         catch (JsonException)
         {

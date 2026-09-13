@@ -29,20 +29,36 @@ public class World
     
     public void Set<T>(Entity entity, T component)
     {
+        EnsureAlive(entity);
         GetStorage<T>()[entity.Id] = component;
     }
     
     public ref T Get<T>(Entity entity)
     {
+        EnsureAlive(entity);
         ref var value = ref CollectionsMarshal.GetValueRefOrNullRef(GetStorage<T>(), entity.Id);
         if (Unsafe.IsNullRef(ref value))
             throw new InvalidOperationException($"Entity {entity.Id} does not have component of type {typeof(T)}");
         return ref value;
     }
     
-    public bool Has<T>(Entity entity) => GetStorage<T>().ContainsKey(entity.Id);
-    
-    public void Remove<T>(Entity entity) => GetStorage<T>().Remove(entity.Id);
+    public bool Has<T>(Entity entity)
+    {
+        EnsureAlive(entity);
+        return GetStorage<T>().ContainsKey(entity.Id);
+    }
+
+    public void Remove<T>(Entity entity)
+    {
+        EnsureAlive(entity);
+        GetStorage<T>().Remove(entity.Id);
+    }
+
+    private void EnsureAlive(Entity entity)
+    {
+        if (!IsAlive(entity))
+            throw new InvalidOperationException($"Entity {entity.Id} is not alive.");
+    }
     
     public IEnumerable<Entity> Query<T1>()
     {
