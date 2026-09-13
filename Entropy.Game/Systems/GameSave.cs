@@ -51,7 +51,9 @@ public static class GameSave
     {
         var directory = System.IO.Path.GetDirectoryName(Path)!;
         Directory.CreateDirectory(directory);
-        File.WriteAllText(Path, JsonSerializer.Serialize(data, Options));
+        var temporaryPath = Path + ".tmp";
+        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(data, Options));
+        File.Move(temporaryPath, Path, overwrite: true);
     }
 
     public static GameSaveData? Read()

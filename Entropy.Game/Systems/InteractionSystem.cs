@@ -166,20 +166,21 @@ public static class InteractionSystem
         context.Log.Add($"{terrain.Name}: {terrain.Description}", Color4.LightGray);
     }
 
-    public static void Attack(GameContext context, Entity player, Entity target)
+    public static void Attack(GameContext context, Entity attacker, Entity target)
     {
         var world = context.World;
         ref var hp = ref world.Get<Health>(target);
+        var isPlayer = attacker.Equals(context.Player);
 
         var damage = 1;
-        if (world.Has<CharacterIdentity>(player) &&
-            world.Get<CharacterIdentity>(player).Stats.TryGetValue("strength", out var strength))
+        if (isPlayer && world.Has<CharacterIdentity>(attacker) &&
+            world.Get<CharacterIdentity>(attacker).Stats.TryGetValue("strength", out var strength))
         {
             damage += Math.Max(0, (strength - 8) / 4);
         }
-        if (world.Has<Equipped>(player))
+        if (isPlayer && world.Has<Equipped>(attacker))
         {
-            var equipped = world.Get<Equipped>(player).Item;
+            var equipped = world.Get<Equipped>(attacker).Item;
             if (world.IsAlive(equipped) && world.Has<Damage>(equipped))
                 damage = world.Get<Damage>(equipped).Amount;
         }
@@ -192,22 +193,24 @@ public static class InteractionSystem
         hp.Current -= damage;
         var killed = hp.Current <= 0;
 
-        context.Log.Add($"You hit {name} for {damage} damage.");
+        context.Log.Add(isPlayer
+            ? $"You hit {name} for {damage} damage."
+            : $"The {world.Get<CreatureIdentity>(attacker).DefinitionId} hits {name} for {damage} damage.");
 
-        if (!world.Has<Hostile>(target))
+        if (isPlayer && !world.Has<Hostile>(target))
         {
             ConsequenceSystem.Report(
                 context,
                 killed ? "murder" : "assault",
                 $"You {(!killed ? "attacked" : "killed")} {name}",
                 new Vector2i((int)location.X, (int)location.Y),
-                player,
+                attacker,
                 target);
         }
 
         if (!killed)
         {
-            if (!world.Has<Hostile>(target))
+            if (isPlayer && !world.Has<Hostile>(target))
                 world.Set(target, new Hostile());
             return;
         }

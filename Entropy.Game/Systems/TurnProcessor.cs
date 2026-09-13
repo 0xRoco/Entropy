@@ -29,7 +29,7 @@ public class TurnProcessor
         _energy.Remove(entity);
     }
 
-    public bool ProcessPlayerTurn(
+    public ActionResult ProcessPlayerTurn(
         Entity player,
         Vector2i move,
         GameContext context,
@@ -42,10 +42,10 @@ public class TurnProcessor
         var ty = (int)target.Y;
 
         if (tx < 0 || tx >= context.Map.Width || ty < 0 || ty >= context.Map.Height)
-            return false;
+            return ActionResult.Failed;
 
         if (!context.Map[tx, ty].Walkable)
-            return false;
+            return ActionResult.Failed;
 
         var playerMapId = context.World.Get<Location>(player).MapId;
         var playerNameOf = (Entity entity) => context.World.Has<Named>(entity)
@@ -64,12 +64,12 @@ public class TurnProcessor
             {
                 InteractionSystem.Attack(context, player, entity);
                 Spend(player);
-                return true;
+                return ActionResult.Turn;
             }
 
             context.Log.Add($"The {playerNameOf(entity)} blocks your way", Color4.LightGray);
             Spend(player);
-            return true;
+            return ActionResult.Turn;
         }
 
         foreach (var entity in context.World.Query<Position, Solid>())
@@ -82,7 +82,7 @@ public class TurnProcessor
 
             context.Log.Add($"The {playerNameOf(entity)} blocks your way", Color4.LightGray);
             Spend(player);
-            return true;
+            return ActionResult.Turn;
         }
 
         var transition = context.Maps.TransitionAt(playerMapId, new Vector2i(tx, ty));
@@ -92,7 +92,7 @@ public class TurnProcessor
             if (context.LockedMaps.Contains(transition.ToMap))
             {
                 context.Log.Add("The door is locked.", Color4.Yellow);
-                return false;
+                return ActionResult.Failed;
             }
 
             pos.Value = target;
@@ -119,7 +119,7 @@ public class TurnProcessor
                 player,
                 context.Map[transition.ToTile.X, transition.ToTile.Y].MoveCost);
 
-            return true;
+            return ActionResult.Turn;
         }
 
         pos.Value = target;
@@ -127,7 +127,7 @@ public class TurnProcessor
 
         Fov.Compute(new Vector2i(tx, ty), viewRadius, context.Map, visibility);
         Spend(player, context.Map[tx, ty].MoveCost);
-        return true;
+            return ActionResult.Turn;
     }
 
     public void RunAITurns(Entity player, GameContext ctx)
@@ -166,7 +166,8 @@ public class TurnProcessor
                 if (ctx.World.Has<Behavior>(actor))
                 {
                     var behaviorId = ctx.World.Get<Behavior>(actor).Id;
-                    BehaviorCatalog.Get(behaviorId).Act(ctx.World, actor, ctx);
+                    var intent = BehaviorCatalog.Get(behaviorId).Decide(ctx.World, actor, ctx);
+                    ExecuteAiIntent(actor, intent, ctx);
                 }
 
                 if (!ctx.World.IsAlive(player)) return;
@@ -183,4 +184,34 @@ public class TurnProcessor
 
     private static int SpeedOf(GameContext ctx, Entity entity) =>
         ctx.World.Has<Speed>(entity) ? ctx.World.Get<Speed>(entity).Value : DefaultSpeed;
+
+    private static void ExecuteAiIntent(Entity actor, AiIntent intent, GameContext context)
+    {
+        var world = context.World;
+        switch (intent.Type)
+        {
+            case AiIntentType.Attack when intent.Target is { } target && world.IsAlive(target):
+                InteractionSystem.Attack(context, actor, target);
+                break;
+            case AiIntentType.StepToward when intent.Destination is { } destination:
+                AiUtil.StepToward(world, actor, context.Map, destination);
+                break;
+            case AiIntentType.Wander:
+                AiUtil.Wander(world, actor, context.Map, context.Rng, intent.Chance);
+                break;
+            case AiIntentType.WanderNear when intent.Anchor is { } anchor:
+                AiUtil.WanderNear(world, actor, context.Map, context.Rng, anchor, intent.Radius, intent.Chance);
+                break;
+            case AiIntentType.TravelToward when intent.MapId != null && intent.Destination is { } destination:
+                AiUtil.TravelToward(world, actor, context, intent.MapId, destination);
+                break;
+            case AiIntentType.Arrest when intent.Target is { } target && world.IsAlive(target):
+                RespondBehavior.ExecuteArrest(world, actor, target, context);
+                break;
+            case AiIntentType.Despawn:
+                context.Log.Add("The officer shrugs and leaves.", Color4.LightGray);
+                world.Destroy(actor);
+                break;
+        }
+    }
 }

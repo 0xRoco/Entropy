@@ -42,12 +42,19 @@ public static class ItemSystem
     public static bool Transfer(World world, Entity item, Entity destination)
     {
         if (!world.IsAlive(item) || !world.IsAlive(destination)) return false;
+        if (item.Equals(destination) || WouldCreateCycle(world, item, destination)) return false;
+
+        if (world.Has<InContainer>(item) &&
+            world.Get<InContainer>(item).Parent.Equals(destination))
+            return true;
 
         if (!world.Has<Container>(destination))
             world.Set(destination, Container.Create());
 
         ref var destinationContainer = ref world.Get<Container>(destination);
-        if (destinationContainer.Items.Count >= destinationContainer.Slots) return false;
+        var alreadyContained = destinationContainer.Items.Contains(item);
+        if (!alreadyContained && destinationContainer.Items.Count >= destinationContainer.Slots)
+            return false;
 
         RemoveFromContainer(world, item);
         world.Set(item, new InContainer { Parent = destination });
@@ -58,6 +65,7 @@ public static class ItemSystem
 
     public static void Drop(World world, string mapId, Entity item, int x, int y)
     {
+        if (!world.IsAlive(item)) return;
         RemoveFromContainer(world, item);
         world.Set(item, new Position { Value = new Vector2(x, y) });
         world.Set(item, new Location { MapId = mapId });
@@ -108,5 +116,19 @@ public static class ItemSystem
         }
         
         container.Items.Add(item);
+    }
+
+    private static bool WouldCreateCycle(World world, Entity item, Entity destination)
+    {
+        var current = destination;
+        var visited = new HashSet<Entity>();
+        while (world.IsAlive(current) && world.Has<InContainer>(current))
+        {
+            if (!visited.Add(current)) return true;
+            current = world.Get<InContainer>(current).Parent;
+            if (current.Equals(item)) return true;
+        }
+
+        return false;
     }
 }

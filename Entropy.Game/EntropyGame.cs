@@ -256,9 +256,10 @@ public class EntropyGame : IGameClient
         if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
         Controls.GetMoveDirection(_input);
 
-        if (!ProcessPlayerAction()) return;
+        var action = ProcessPlayerAction();
+        if (!action.Succeeded || !action.ConsumesTurn) return;
 
-        AdvanceTurn();
+        AdvanceTurn(action.TimeCostMinutes);
     }
 
     public void Render(FrameEventArgs args)
@@ -397,7 +398,7 @@ public class EntropyGame : IGameClient
         _hud = new GameHud(_context, _clock, _rng.Seed, ToUiSize(_clientSize));
         _hud.NewCharacterRequested += RestartGame;
         _hud.MainMenuRequested += ReturnToMainMenu;
-        _hud.TurnRequested += AdvanceTurn;
+        _hud.TurnRequested += () => AdvanceTurn();
 
         ConfigureMapCamera();
         _camera.Position = _world.Get<Position>(_player).Value;
@@ -596,15 +597,15 @@ public class EntropyGame : IGameClient
             size.Y);
     }
     
-    private void AdvanceTurn()
+    private void AdvanceTurn(int timeCostMinutes = 1)
     {
-        _context.Clock.Advance(1);
+        _context.Clock.Advance(timeCostMinutes);
         NeedsSystem.Update(_context);
         _turnProcessor.RunAITurns(_player, _context);
         _camera.Position = _world.Get<Position>(_player).Value;
     }
 
-    private bool ProcessPlayerAction()
+    private ActionResult ProcessPlayerAction()
     {
         var move = Controls.GetMoveDirection(_input);
         if (move != null)
@@ -619,10 +620,10 @@ public class EntropyGame : IGameClient
         
         return key switch
         {
-            Keys.G => TryPickupAtPlayer(),
-            Keys.E => OpenInteractMenu(),
-            Keys.Period => true,
-            _ => false
+            Keys.G => TryPickupAtPlayer() ? ActionResult.Turn : ActionResult.Failed,
+            Keys.E => OpenInteractMenu() ? ActionResult.Turn : ActionResult.Failed,
+            Keys.Period => ActionResult.Turn,
+            _ => ActionResult.Failed
         };
     }
 

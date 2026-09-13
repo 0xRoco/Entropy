@@ -5,8 +5,6 @@ namespace Entropy.Game.Behaviors;
 
 public class WanderBehavior : IBehavior
 {
-    public void Act(World world, Entity self, GameContext context)
-    {
-        AiUtil.Wander(world, self, context.Map, context.Rng, 0.3f);
-    }
+    public AiIntent Decide(World world, Entity self, GameContext context) =>
+        new(AiIntentType.Wander, Chance: 0.3f);
 }

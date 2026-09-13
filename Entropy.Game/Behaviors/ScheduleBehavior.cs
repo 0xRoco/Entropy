@@ -10,10 +10,10 @@ public class ScheduleBehavior : IBehavior
 {
     private const int WanderRadius = 6;
 
-    public void Act(World world, Entity self, GameContext context)
+    public AiIntent Decide(World world, Entity self, GameContext context)
     {
         if (!world.Has<Schedule>(self) || !world.Has<Home>(self))
-            return;
+            return new AiIntent(AiIntentType.None);
 
         var minuteOfDay = context.Clock.MinuteOfDay;
         var activity = world.Get<Schedule>(self)
@@ -25,24 +25,18 @@ public class ScheduleBehavior : IBehavior
         {
             case ScheduleActivity.Sleep:
             case ScheduleActivity.Home:
-                GoTo(world, self, context, home.MapId, home.Tile);
-                break;
+                return new AiIntent(AiIntentType.TravelToward, MapId: home.MapId, Destination: home.Tile);
 
             case ScheduleActivity.Work:
                 if (world.Has<Workplace>(self))
                 {
                     var work = world.Get<Workplace>(self);
-                    GoTo(world, self, context, work.MapId, work.Tile);
+                    return new AiIntent(AiIntentType.TravelToward, MapId: work.MapId, Destination: work.Tile);
                 }
-                else
-                {
-                    WanderAtHome(world, self, context, home);
-                }
-                break;
+                return new AiIntent(AiIntentType.WanderNear, Anchor: home.Tile, Radius: WanderRadius, Chance: 0.3f);
 
             default:
-                WanderAtHome(world, self, context, home);
-                break;
+                return new AiIntent(AiIntentType.WanderNear, Anchor: home.Tile, Radius: WanderRadius, Chance: 0.3f);
         }
     }
 

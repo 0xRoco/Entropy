@@ -9,13 +9,12 @@ namespace Entropy.Game.Behaviors;
 
 public class ZombieBehavior : IBehavior
 {
-    private const int ZombieDamage = 1;
     private const int GiveUpAfterTurns = 5;
     private const float WanderChance = 0.3f;
     
-    public void Act(World world, Entity self, GameContext context)
+    public AiIntent Decide(World world, Entity self, GameContext context)
     {
-        if (!world.IsAlive(self)) return;
+        if (!world.IsAlive(self)) return new AiIntent(AiIntentType.None);
 
         ref var position = ref world.Get<Position>(self).Value;
         ref var awareness = ref world.Get<Awareness>(self);
@@ -26,8 +25,7 @@ public class ZombieBehavior : IBehavior
 
         if (world.IsAlive(player) && AiUtil.IsAdjacent(position, world.Get<Position>(player).Value))
         {
-            AttackPlayer(world, context, player);
-            return;
+            return new AiIntent(AiIntentType.Attack, Target: player);
         }
 
         if (awareness.Detected.ContainsKey(player))
@@ -51,11 +49,11 @@ public class ZombieBehavior : IBehavior
                 if (awareness.Detected.ContainsKey(player))
                 {
                     var live = AiUtil.ToTile(world.Get<Position>(player).Value);
-                    AiUtil.StepToward(world, self, context.Map, live);
+                    return new AiIntent(AiIntentType.StepToward, Destination: live);
                 }
                 else if (awareness.LastKnownPositions.TryGetValue(player, out var remembered))
                 {
-                    AiUtil.StepToward(world, self, context.Map, remembered);
+                    return new AiIntent(AiIntentType.StepToward, Destination: remembered);
                 }
                 else
                 {
@@ -69,11 +67,11 @@ public class ZombieBehavior : IBehavior
                     var here = AiUtil.ToTile(position);
                     if (here.Equals(lastKnown))
                     {
-                        AiUtil.Wander(world, self, context.Map, context.Rng, 0.5f);
+                    return new AiIntent(AiIntentType.Wander, Chance: 0.5f);
                     }
                     else
                     {
-                        AiUtil.StepToward(world, self, context.Map, lastKnown);
+                    return new AiIntent(AiIntentType.StepToward, Destination: lastKnown);
                     }
                 }
                 else
@@ -84,24 +82,10 @@ public class ZombieBehavior : IBehavior
 
             case AIMode.Idle:
             default:
-                AiUtil.Wander(world, self, context.Map, context.Rng, WanderChance);
-                break;
-        }
-    }
-
-    private void AttackPlayer(World world, GameContext context, Entity player)
-    {
-        ref var hp = ref world.Get<Health>(player);
-        hp.Current -= ZombieDamage;
-
-        if (hp.Current <= 0)
-        {
-            context.Log.Add("You have been killed by a zombie!", Color4.Red);
-            return;
+                return new AiIntent(AiIntentType.Wander, Chance: WanderChance);
         }
 
-        context.Log.Add($"The zombie hits you for {ZombieDamage}!", Color4.OrangeRed);
-        context.Log.Add($"You feel that wicked pain in your chest as the zombie's claws tear through your flesh... HP {hp.Current}/{hp.Max}", Color4.OrangeRed);
+        return new AiIntent(AiIntentType.None);
     }
 
 }
