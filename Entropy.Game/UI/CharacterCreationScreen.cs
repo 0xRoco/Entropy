@@ -75,24 +75,27 @@ public sealed class CharacterCreationScreen
 
     public void Draw(DrawContext context)
     {
-        context.DrawRect(0, 0, _viewport.X, _viewport.Y, Color4.Black);
-
-        context.DrawText(2, 1, "ENTROPY CHARACTER CREATION", UiTheme.Valid);
-        context.DrawText(2, 3, $"Name: {_build.Name}    Trait points: {_points}/10", UiTheme.TextBright);
-        context.DrawText(2, 5, "[LEFT/RIGHT] tab  [UP/DOWN] select  [ENTER] choose  [R] randomize  [ESC] cancel", UiTheme.TextDim);
+        context.DrawRect(0, 0, _viewport.X, _viewport.Y, UiTheme.PanelBackground);
+        context.DrawText(2, 1, "ENTROPY // CHARACTER CREATION", UiTheme.Info);
+        context.DrawText(2, 2, $"Name: {_build.Name}", UiTheme.TextBright);
+        context.DrawText(Math.Max(30, _viewport.X - 24), 2, $"Traits: {_points,2}/10", UiTheme.Keybind);
 
         var x = 2;
         for (var i = 0; i < Tabs.Length; i++)
         {
-            var color = i == _tab ? UiTheme.TextBright : UiTheme.TextDim;
-            context.DrawText(x, 7, i == _tab ? $">{Tabs[i]}<" : Tabs[i], color);
-            x += Tabs[i].Length + 4;
+            var label = i == _tab ? $"[{Tabs[i]}]" : $" {Tabs[i]} ";
+            context.DrawText(x, 4, label, i == _tab ? UiTheme.TextBright : UiTheme.TextDim);
+            x += label.Length + 2;
         }
+        TerminalChrome.Divider(context, 1, 5, Math.Max(1, _viewport.X - 2));
 
         if (_tab == Tabs.Length - 1)
-            DrawSummary(context);
+            DrawSummary(context, new UiRect(2, 7, Math.Max(1, _viewport.X - 4), Math.Max(1, _viewport.Y - 11)));
         else
-            DrawOptions(context);
+            DrawOptions(context, new UiRect(2, 7, Math.Max(1, _viewport.X - 4), Math.Max(1, _viewport.Y - 11)));
+
+        TerminalChrome.Footer(context, 1, Math.Max(6, _viewport.Y - 3), Math.Max(1, _viewport.X - 2),
+            ('<', "prev tab"), ('>', "next tab"), ('j', "select"), ('e', "choose"), ('r', "randomize"), ('?', "help"));
     }
 
     public void Resize(Vector2i viewportTiles)
@@ -191,11 +194,11 @@ public sealed class CharacterCreationScreen
         _ => 0
     };
 
-    private void DrawOptions(DrawContext context)
+    private void DrawOptions(DrawContext context, UiRect area)
     {
         if (_tab == 4)
         {
-            DrawStats(context);
+            DrawStats(context, area);
             return;
         }
 
@@ -208,39 +211,63 @@ public sealed class CharacterCreationScreen
             5 => _catalog.Traits.Cast<CharacterOption>().ToList(),
             _ => _catalog.Skills.Cast<CharacterOption>().ToList()
         };
-        var start = Math.Max(0, _selection[_tab] - 12);
-        var end = Math.Min(options.Count, start + 18);
+        var listWidth = Math.Min(36, Math.Max(24, area.Width / 3));
+        var detailX = area.X + listWidth + 2;
+        var detailWidth = Math.Max(1, area.Width - listWidth - 2);
+        TerminalChrome.Window(context, new UiRect(area.X, area.Y, listWidth, area.Height), Tabs[_tab]);
+        TerminalChrome.Window(context, new UiRect(detailX, area.Y, detailWidth, area.Height), "Selection");
 
+        var visibleRows = Math.Max(1, Math.Min(18, area.Height - 4));
+        var start = Math.Max(0, Math.Min(_selection[_tab] - visibleRows / 2, options.Count - visibleRows));
+        var end = Math.Min(options.Count, start + visibleRows);
+
+        context.PushClip(new UiRect(area.X + 1, area.Y + 1, listWidth - 2, area.Height - 2));
         for (var i = start; i < end; i++)
         {
             var option = options[i];
             var selected = i == _selection[_tab];
             var chosen = IsChosen(i);
-            var marker = selected ? ">" : chosen ? "+" : " ";
-            var suffix = _tab == 5 ? $" [{_catalog.Traits[i].Cost:+#;-#;0}]" : "";
-            context.DrawText(3, 9 + i - start, $"{marker} {option.Name}{suffix}", selected ? UiTheme.TextBright : chosen ? UiTheme.Valid : UiTheme.Text);
+            var marker = chosen ? "+" : " ";
+            var suffix = _tab == 5 ? $" {_catalog.Traits[i].Cost:+#;-#;0}" : "";
+            var text = $"{marker} {option.Name}{suffix}";
+            TerminalChrome.SelectionRow(context, area.X + 1, area.Y + 2 + i - start, listWidth - 2, text,
+                selected, chosen ? UiTheme.Valid : UiTheme.Text);
         }
+        context.PopClip();
 
         var selectedOption = options[_selection[_tab]];
-        context.DrawText(42, 10, selectedOption.Name, UiTheme.Info);
-        DrawWrapped(context, selectedOption.Description, 42, 12, 36);
+        context.PushClip(new UiRect(detailX + 1, area.Y + 1, detailWidth - 2, area.Height - 2));
+        context.DrawText(detailX + 2, area.Y + 2, selectedOption.Name, UiTheme.Info);
+        DrawWrapped(context, selectedOption.Description, detailX + 2, area.Y + 4, Math.Max(1, detailWidth - 4));
+        if (_tab == 5)
+            context.DrawText(detailX + 2, area.Bottom - 2, IsChosen(_selection[_tab]) ? "ENTER removes trait" : "ENTER adds trait", UiTheme.Keybind);
+        else if (_tab == 6)
+            context.DrawText(detailX + 2, area.Bottom - 2, $"Selected skills: {_build.SkillIds.Count}/5", UiTheme.Keybind);
+        context.PopClip();
     }
 
-    private void DrawSummary(DrawContext context)
+    private void DrawSummary(DrawContext context, UiRect area)
     {
         var scenario = _catalog.Scenarios.Single(option => option.Id == _build.ScenarioId);
         var profession = _catalog.Professions.Single(option => option.Id == _build.ProfessionId);
         var background = _catalog.Backgrounds.Single(option => option.Id == _build.BackgroundId);
 
-        context.DrawText(3, 10, "CHARACTER SUMMARY", UiTheme.Info);
-        context.DrawText(3, 12, $"Name: {_build.Name}", UiTheme.TextBright);
-        context.DrawText(3, 13, $"Scenario: {scenario.Name}", UiTheme.Text);
-        context.DrawText(3, 14, $"Profession: {profession.Name}", UiTheme.Text);
-        context.DrawText(3, 15, $"Background: {background.Name}", UiTheme.Text);
-        context.DrawText(3, 17, $"Stats: {string.Join(", ", _build.Stats.Select(pair => $"{pair.Key} {pair.Value}"))}", UiTheme.Text);
-        context.DrawText(3, 18, $"Traits: {(_build.TraitIds.Count == 0 ? "None" : string.Join(", ", _build.TraitIds))}", UiTheme.Text);
-        context.DrawText(3, 19, $"Skills: {(_build.SkillIds.Count == 0 ? "None" : string.Join(", ", _build.SkillIds))}", UiTheme.Text);
-        context.DrawText(3, 21, "Press ENTER to begin with this character.", UiTheme.Valid);
+        var leftWidth = Math.Max(25, area.Width / 2);
+        TerminalChrome.Window(context, new UiRect(area.X, area.Y, leftWidth, area.Height), "Character");
+        TerminalChrome.Window(context, new UiRect(area.X + leftWidth + 2, area.Y, area.Width - leftWidth - 2, area.Height), "Loadout");
+        context.DrawText(area.X + 2, area.Y + 2, $"Name:       {_build.Name}", UiTheme.TextBright);
+        context.DrawText(area.X + 2, area.Y + 3, $"Scenario:   {scenario.Name}", UiTheme.Text);
+        context.DrawText(area.X + 2, area.Y + 4, $"Profession: {profession.Name}", UiTheme.Text);
+        context.DrawText(area.X + 2, area.Y + 5, $"Background: {background.Name}", UiTheme.Text);
+        context.DrawText(area.X + 2, area.Y + 7, "ATTRIBUTES", UiTheme.Heading);
+        var row = area.Y + 8;
+        foreach (var pair in _build.Stats)
+            context.DrawText(area.X + 2, row++, $"{pair.Key,-14} {pair.Value,2}", UiTheme.Text);
+        context.DrawText(area.X + leftWidth + 4, area.Y + 2, "TRAITS", UiTheme.Heading);
+        DrawWrapped(context, _build.TraitIds.Count == 0 ? "None" : string.Join(", ", _build.TraitIds), area.X + leftWidth + 4, area.Y + 3, area.Width - leftWidth - 6);
+        context.DrawText(area.X + leftWidth + 4, area.Y + 7, "SKILLS", UiTheme.Heading);
+        DrawWrapped(context, _build.SkillIds.Count == 0 ? "None" : string.Join(", ", _build.SkillIds), area.X + leftWidth + 4, area.Y + 8, area.Width - leftWidth - 6);
+        context.DrawText(area.X + 2, area.Bottom - 3, "ENTER begins the run", UiTheme.Valid);
     }
 
     private bool IsChosen(int index) => _tab switch
@@ -267,17 +294,24 @@ public sealed class CharacterCreationScreen
         _statPoints++;
     }
 
-    private void DrawStats(DrawContext context)
+    private void DrawStats(DrawContext context, UiRect area)
     {
-        context.DrawText(42, 10, $"STAT POINTS REMAINING: {_statPoints}", UiTheme.Info);
+        var panelWidth = Math.Min(44, area.Width);
+        TerminalChrome.Window(context, new UiRect(area.X, area.Y, panelWidth, area.Height), "Attributes");
+        context.DrawText(area.X + 2, area.Y + 2, $"POINTS REMAINING: {_statPoints}", UiTheme.Keybind);
         for (var i = 0; i < StatNames.Length; i++)
         {
             var key = StatNames[i].ToLowerInvariant();
             var selected = i == _selection[4];
-            context.DrawText(3, 9 + i, $"{(selected ? ">" : " ")} {StatNames[i],-14} {_build.Stats[key]}", selected ? UiTheme.TextBright : UiTheme.Text);
+            TerminalChrome.SelectionRow(context, area.X + 1, area.Y + 4 + i, panelWidth - 2,
+                $"{StatNames[i],-14} {_build.Stats[key],2}", selected);
         }
-        context.DrawText(42, 12, "ENTER raises the selected stat.", UiTheme.TextDim);
-        context.DrawText(42, 13, "DELETE lowers it back toward 8.", UiTheme.TextDim);
+        if (area.Width > panelWidth + 4)
+        {
+            context.DrawText(area.X + panelWidth + 3, area.Y + 2, "HOW ATTRIBUTES WORK", UiTheme.Heading);
+            DrawWrapped(context, "Attributes shape what you can carry, notice, endure, and survive. Build a person, not a perfect character.", area.X + panelWidth + 3, area.Y + 4, area.Width - panelWidth - 5);
+        }
+        context.DrawText(area.X + 2, area.Bottom - 2, "ENTER +1    DELETE -1", UiTheme.TextDim);
     }
 
     private sealed class NamedOption : CharacterOption

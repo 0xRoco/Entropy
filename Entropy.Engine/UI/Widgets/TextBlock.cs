@@ -40,7 +40,6 @@ public class TextBlock : Widget
 
             foreach (var word in words)
             {
-                // Long unbroken text still needs to fit.
                 if (word.Length > width)
                 {
                     if (line.Length > 0)

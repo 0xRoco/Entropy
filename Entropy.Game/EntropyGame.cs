@@ -22,6 +22,8 @@ public class EntropyGame : IGameClient
     public bool ExitRequested { get; private set; }
     
     private const int ViewRadius = 6;
+    private const int UiCellPixelWidth = 8;
+    private const int UiCellPixelHeight = 16;
     private Vector2i _clientSize;
 
     private MainMenuScreen _mainMenu = null!;
@@ -82,9 +84,9 @@ public class EntropyGame : IGameClient
             Path.Combine(_contentRoot, "Shaders", "quad.vert"),
             Path.Combine(_contentRoot, "Shaders", "textured.frag"));
         _camera = new Camera { ViewportSize = clientSize };
-        _tileCamera = new TileCamera { ViewportSize = clientSize };
+        _tileCamera = new TileCamera { ViewportSize = clientSize, CellPixelWidth = 8f, CellPixelHeight = 16f };
         _atlas = new GlyphAtlas(Path.Combine(_contentRoot, "tilesets", "ascii.png"));
-        _fontAtlas = new FontAtlas(Path.Combine(_contentRoot, "Fonts", "Terminus.ttf"));
+        _fontAtlas = new FontAtlas(Path.Combine(_contentRoot, "Fonts", "IBM_VGA_8x16.ttf"));
         _batcher = new QuadBatcher(_shader, _camera, _atlas);
         _uiBatcher = new QuadBatcher(_shader, _tileCamera, _fontAtlas);
         _log = new MessageLog();
@@ -131,16 +133,16 @@ public class EntropyGame : IGameClient
 
         _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
 
-        _mainMenu = new MainMenuScreen(ToTileSize(_clientSize));
+        _mainMenu = new MainMenuScreen(ToUiSize(_clientSize));
         _characterCatalog = CharacterCatalog.Load(Path.Combine(_contentRoot, "Characters", "character_options.json"));
-        _characterCreation = new CharacterCreationScreen(_characterCatalog, ToTileSize(_clientSize));
+        _characterCreation = new CharacterCreationScreen(_characterCatalog, ToUiSize(_clientSize));
         _characterCreation.Confirmed += StartNewGame;
         _characterCreation.Cancelled += ReturnToMainMenu;
 
         _mainMenu.CharacterCreationRequested += OpenCharacterCreation;
         _mainMenu.LoadGameRequested += LoadGame;
         _mainMenu.ExitRequested += () => ExitRequested = true;
-        _pauseMenu = new PauseMenu(ToTileSize(_clientSize));
+        _pauseMenu = new PauseMenu(ToUiSize(_clientSize));
         _pauseMenu.ResumeRequested += ResumeGame;
         _pauseMenu.SaveRequested += SaveCurrentGame;
         _pauseMenu.MainMenuRequested += ReturnToMainMenu;
@@ -265,7 +267,7 @@ public class EntropyGame : IGameClient
         {
             GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
 
-            _loadingScreen.Draw(_drawContext, ToTileSize(_clientSize));
+            _loadingScreen.Draw(_drawContext, ToUiSize(_clientSize));
             _uiBatcher.Flush();
 
             return;
@@ -300,10 +302,10 @@ public class EntropyGame : IGameClient
         ApplyMapViewport();
         GL.Enable(EnableCap.ScissorTest);
         GL.Scissor(
-            _hud.Layout.Map.X * (int)Camera.TilePixelSize,
-            _clientSize.Y - (_hud.Layout.Map.Y + _hud.Layout.Map.Height) * (int)Camera.TilePixelSize,
-            _hud.Layout.Map.Width * (int)Camera.TilePixelSize,
-            _hud.Layout.Map.Height * (int)Camera.TilePixelSize);
+            _hud.Layout.Map.X * UiCellPixelWidth,
+            _clientSize.Y - (_hud.Layout.Map.Y + _hud.Layout.Map.Height) * UiCellPixelHeight,
+            _hud.Layout.Map.Width * UiCellPixelWidth,
+            _hud.Layout.Map.Height * UiCellPixelHeight);
 
         TileRenderer.Draw(
             _context.Map,
@@ -341,13 +343,13 @@ public class EntropyGame : IGameClient
         _camera.ViewportSize = _clientSize;
         _tileCamera.ViewportSize = _clientSize;
 
-        _mainMenu?.Resize(ToTileSize(_clientSize));
-        _characterCreation?.Resize(ToTileSize(_clientSize));
-        _pauseMenu?.Resize(ToTileSize(_clientSize));
+        _mainMenu?.Resize(ToUiSize(_clientSize));
+        _characterCreation?.Resize(ToUiSize(_clientSize));
+        _pauseMenu?.Resize(ToUiSize(_clientSize));
 
         if (_mode != GameMode.Gameplay) return;
 
-        _hud.Resize(ToTileSize(_clientSize));
+        _hud.Resize(ToUiSize(_clientSize));
         ConfigureMapCamera();
     }
     
@@ -392,7 +394,7 @@ public class EntropyGame : IGameClient
             }
         };
 
-        _hud = new GameHud(_context, _clock, _rng.Seed, ToTileSize(_clientSize));
+        _hud = new GameHud(_context, _clock, _rng.Seed, ToUiSize(_clientSize));
         _hud.NewCharacterRequested += RestartGame;
         _hud.MainMenuRequested += ReturnToMainMenu;
         _hud.TurnRequested += AdvanceTurn;
@@ -572,15 +574,14 @@ public class EntropyGame : IGameClient
     private void ConfigureMapCamera()
     {
         var rect = _hud.Layout.Map;
-        var pixelsPerTile = (int)Camera.TilePixelSize;
 
         _camera.ViewportOrigin = new Vector2i(
-            rect.X * pixelsPerTile,
-            rect.Y * pixelsPerTile);
+            rect.X * UiCellPixelWidth,
+            rect.Y * UiCellPixelHeight);
 
         _camera.ViewportSize = new Vector2i(
-            rect.Width * pixelsPerTile,
-            rect.Height * pixelsPerTile);
+            rect.Width * UiCellPixelWidth,
+            rect.Height * UiCellPixelHeight);
     }
 
     private void ApplyMapViewport()
@@ -756,10 +757,10 @@ public class EntropyGame : IGameClient
         return null;
     }
 
-    private static Vector2i ToTileSize(Vector2i pixels) =>
+    private static Vector2i ToUiSize(Vector2i pixels) =>
         new(
-            pixels.X / (int)Camera.TilePixelSize,
-            pixels.Y / (int)Camera.TilePixelSize);
+            pixels.X / 8,
+            pixels.Y / 16);
     
     public void Dispose()
     {

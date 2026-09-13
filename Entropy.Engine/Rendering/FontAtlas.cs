@@ -5,17 +5,18 @@ namespace Entropy.Engine.Rendering;
 public class FontAtlas(string ttfPath)
     : GlyphAtlas(BuildPixels(ttfPath, out var width, out var height), width, height, 16, 16)
 {
-    private const int Cell = 16;
+    private const int CellWidth = 8;
+    private const int CellHeight = 16;
     private const int SuperSample = 2;
     private const float InkFraction = 0.95f;
-    private const float WidthFactor = 2f;
+    private const float WidthFactor = 1f;
 
     private static byte[] BuildPixels(string ttfPath, out int width, out int height)
     {
         const int cellsX = 16;
         const int cellsY = 16;
-        width = cellsX * Cell;
-        height = cellsY * Cell;
+        width = cellsX * CellWidth;
+        height = cellsY * CellHeight;
         var pixels = new byte[width * height * 4];
 
         var fontData = File.ReadAllBytes(ttfPath);
@@ -32,7 +33,7 @@ public class FontAtlas(string ttfPath)
                 &lineGap);
 
 
-            var scale = Cell * InkFraction * SuperSample / (ascent - descent);
+            var scale = CellHeight * InkFraction * SuperSample / (ascent - descent);
 
             var scaleX = scale * WidthFactor;
             var scaleY = scale;
@@ -41,8 +42,8 @@ public class FontAtlas(string ttfPath)
 
             for (var codepoint = 0; codepoint < cellsX * cellsY; codepoint++)
             {
-                var cellX = (codepoint % cellsX) * Cell;
-                var cellY = (codepoint / cellsX) * Cell;
+                var cellX = (codepoint % cellsX) * CellWidth;
+                var cellY = (codepoint / cellsX) * CellHeight;
 
                 if (TryDrawBlock(
                         codepoint,
@@ -51,7 +52,8 @@ public class FontAtlas(string ttfPath)
                         height,
                         cellX,
                         cellY,
-                        Cell))
+                        CellWidth,
+                        CellHeight))
                 {
                     continue;
                 }
@@ -137,8 +139,8 @@ public class FontAtlas(string ttfPath)
                     var px = cellX + glyphX;
                     var py = cellY + glyphY;
 
-                    if (px < cellX || px >= cellX + Cell ||
-                        py < cellY || py >= cellY + Cell)
+                    if (px < cellX || px >= cellX + CellWidth ||
+                        py < cellY || py >= cellY + CellHeight)
                         continue;
 
                     var index = (py * width + px) * 4;
@@ -157,33 +159,33 @@ public class FontAtlas(string ttfPath)
 
     private static bool TryDrawBlock(
         int codepoint, byte[] pixels, int width, int height,
-        int cellX, int cellY, int cell)
+        int cellX, int cellY, int cellWidth, int cellHeight)
     {
         switch (codepoint)
         {
             case 219: // full block
-                Fill(pixels, width, height, cellX, cellY, cell, cell);
+                Fill(pixels, width, height, cellX, cellY, cellWidth, cellHeight);
                 return true;
             case 220: // lower half
-                Fill(pixels, width, height, cellX, cellY + cell / 2, cell, cell - cell / 2);
+                Fill(pixels, width, height, cellX, cellY + cellHeight / 2, cellWidth, cellHeight - cellHeight / 2);
                 return true;
             case 223: // upper half
-                Fill(pixels, width, height, cellX, cellY, cell, cell / 2);
+                Fill(pixels, width, height, cellX, cellY, cellWidth, cellHeight / 2);
                 return true;
             case 254: // filled square
-                Fill(pixels, width, height, cellX + 1, cellY + 1, cell - 2, cell - 2);
+                Fill(pixels, width, height, cellX + 1, cellY + 1, cellWidth - 2, cellHeight - 2);
                 return true;
             case 250: // middle dot
-                Fill(pixels, width, height, cellX + cell / 2, cellY + cell / 2, 1, 1);
+                Fill(pixels, width, height, cellX + cellWidth / 2, cellY + cellHeight / 2, 1, 1);
                 return true;
             case 176: // light shade
-                Shade(pixels, width, height, cellX, cellY, cell, (x, y) => x % 2 == 0 && y % 2 == 0);
+                Shade(pixels, width, height, cellX, cellY, cellWidth, cellHeight, (x, y) => x % 2 == 0 && y % 2 == 0);
                 return true;
             case 177: // medium shade
-                Shade(pixels, width, height, cellX, cellY, cell, (x, y) => (x + y) % 2 == 0);
+                Shade(pixels, width, height, cellX, cellY, cellWidth, cellHeight, (x, y) => (x + y) % 2 == 0);
                 return true;
             case 178: // dark shade
-                Shade(pixels, width, height, cellX, cellY, cell, (x, y) => (x + y) % 2 != 0);
+                Shade(pixels, width, height, cellX, cellY, cellWidth, cellHeight, (x, y) => (x + y) % 2 != 0);
                 return true;
             default:
                 return false;
@@ -212,10 +214,10 @@ public class FontAtlas(string ttfPath)
 
     private static void Shade(
         byte[] pixels, int width, int height,
-        int px, int py, int cell, Func<int, int, bool> on)
+        int px, int py, int cellWidth, int cellHeight, Func<int, int, bool> on)
     {
-        for (var y = 0; y < cell; y++)
-        for (var x = 0; x < cell; x++)
+        for (var y = 0; y < cellHeight; y++)
+        for (var x = 0; x < cellWidth; x++)
         {
             if (!on(x, y))
                 continue;

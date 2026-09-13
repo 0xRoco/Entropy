@@ -25,7 +25,7 @@ public class StatusPanel : Panel
         Height = 15;
 
         const int innerX = 1;
-        Add(new Label { X = innerX, Y = 1, Width = 22, Text = "BODY", Color = UiTheme.Keybind });
+        Add(new Label { X = innerX, Y = 1, Width = 22, Text = "STATUS", Color = UiTheme.Keybind });
         _healthBar = new BarWidget { X = innerX, Y = 3, Width = 22, Label = "HP" };
         Add(_healthBar);
 
