@@ -2,6 +2,7 @@ using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
+using Entropy.Game.Components.AI;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using Entropy.Game.WorldGen;

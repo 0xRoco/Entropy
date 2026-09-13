@@ -1,6 +1,10 @@
 using System.Text.Json;
 using Entropy.Engine.ECS;
 using Entropy.Game.Components;
+using Entropy.Game.Components.Identity;
+using Entropy.Game.Components.Inventory;
+using Entropy.Game.Components.Spatial;
+using Entropy.Game.Components.Vitals;
 
 namespace Entropy.Game.Systems;
 

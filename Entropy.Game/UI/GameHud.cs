@@ -3,6 +3,7 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
 using Entropy.Game.Components;
+using Entropy.Game.Components.Vitals;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 

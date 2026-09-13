@@ -1,5 +1,6 @@
 using Entropy.Engine.UI;
 using Entropy.Game.Components;
+using Entropy.Game.Components.Vitals;
 
 namespace Entropy.Game.Systems;
 

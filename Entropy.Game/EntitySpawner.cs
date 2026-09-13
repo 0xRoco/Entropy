@@ -4,6 +4,14 @@ using Entropy.Game.Behaviors;
 using Entropy.Game.Components;
 using Entropy.Game.Systems;
 using Entropy.Content;
+using Entropy.Game.Components.AI;
+using Entropy.Game.Components.Identity;
+using Entropy.Game.Components.Inventory;
+using Entropy.Game.Components.ItemEffects;
+using Entropy.Game.Components.Simulation;
+using Entropy.Game.Components.Spatial;
+using Entropy.Game.Components.Tags;
+using Entropy.Game.Components.Vitals;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game;
@@ -52,7 +60,7 @@ public static class EntitySpawner
             .With(world, Awareness.Create())
             .With(world, WitnessMemory.Create())
             .With(world, new AIState { Mode = AIMode.Hunt, Target = target })
-            .With(world, new Behavior { Id = "respond" });
+            .With(world, new Behavior { BehaviorId = "respond" });
         return e;
     }
 
@@ -117,7 +125,7 @@ public static class EntitySpawner
             .With(world, Awareness.Create())
             .With(world, WitnessMemory.Create())
             .With(world, new AIState { Mode = AIMode.Idle })
-            .With(world, new Behavior { Id = def.Behavior });
+            .With(world, new Behavior { BehaviorId = def.Behavior });
 
         if (def.Hostile)
             e.With(world, new Hostile());

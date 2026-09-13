@@ -4,6 +4,11 @@ using Entropy.Engine.ECS.Components;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
 using Entropy.Game.Behaviors;
+using Entropy.Game.Components.AI;
+using Entropy.Game.Components.Identity;
+using Entropy.Game.Components.Simulation;
+using Entropy.Game.Components.Spatial;
+using Entropy.Game.Components.Tags;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game.Systems;
@@ -165,7 +170,7 @@ public class TurnProcessor
                 _energy[actor] -= ActionCost;
                 if (ctx.World.Has<Behavior>(actor))
                 {
-                    var behaviorId = ctx.World.Get<Behavior>(actor).Id;
+                    var behaviorId = ctx.World.Get<Behavior>(actor).BehaviorId;
                     var intent = BehaviorCatalog.Get(behaviorId).Decide(ctx.World, actor, ctx);
                     ExecuteAiIntent(actor, intent, ctx);
                 }

@@ -1,6 +1,10 @@
 using Entropy.Engine.ECS;
 using Entropy.Engine.UI;
 using Entropy.Game.Components;
+using Entropy.Game.Components.Identity;
+using Entropy.Game.Components.Inventory;
+using Entropy.Game.Components.ItemEffects;
+using Entropy.Game.Components.Vitals;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game.Systems;

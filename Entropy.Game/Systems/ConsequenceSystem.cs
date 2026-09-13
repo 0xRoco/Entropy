@@ -3,6 +3,9 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
+using Entropy.Game.Components.AI;
+using Entropy.Game.Components.Identity;
+using Entropy.Game.Components.Tags;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game.Systems;
