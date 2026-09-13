@@ -91,6 +91,12 @@ public class TurnProcessor
 
         if (transition != null)
         {
+            if (context.LockedMaps.Contains(transition.ToMap))
+            {
+                context.Log.Add("The door is locked.", Color4.Yellow);
+                return false;
+            }
+
             pos.Value = new Vector2(transition.ToTile.X, transition.ToTile.Y);
 
             context.World.Set(player, new Location

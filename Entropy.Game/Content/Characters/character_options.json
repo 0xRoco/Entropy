@@ -1,0 +1,161 @@
+{
+  "Scenarios": [
+    {
+      "Id": "apartment_morning",
+      "Name": "Apartment Morning",
+      "Description": "Begin at home with time to prepare before the neighborhood changes.",
+      "StartMapId": "apartment_dana_interior",
+      "StartX": 5,
+      "StartY": 4
+    },
+    {
+      "Id": "street_commute",
+      "Name": "Street Commute",
+      "Description": "Begin outside with the city already moving around you.",
+      "StartMapId": "block_street",
+      "StartX": 30,
+      "StartY": 20
+    },
+    {
+      "Id": "late_shift",
+      "Name": "Late Shift",
+      "Description": "Begin near the shops after working through the night.",
+      "StartMapId": "store_interior",
+      "StartX": 6,
+      "StartY": 8
+    }
+  ],
+  "Professions": [
+    {
+      "Id": "mechanic",
+      "Name": "Mechanic",
+      "Description": "You know machines, tools, and how to make broken things work.",
+      "StartingItems": ["baseball_bat", "scrap_metal"],
+      "Skills": ["mechanics", "smash"]
+    },
+    {
+      "Id": "nurse",
+      "Name": "Nurse",
+      "Description": "You can treat injuries and keep calm when other people cannot.",
+      "StartingItems": ["first_aid_kit", "bandage"],
+      "Skills": ["health_care", "first_aid"]
+    },
+    {
+      "Id": "shop_worker",
+      "Name": "Shop Worker",
+      "Description": "You know stores, stockrooms, customers, and the local routine.",
+      "StartingItems": ["water_bottle", "crackers"],
+      "Skills": ["social", "survival"]
+    },
+    {
+      "Id": "police_officer",
+      "Name": "Police Officer",
+      "Description": "You have training, authority, and obligations to the people nearby.",
+      "StartingItems": ["baseball_bat", "bandage"],
+      "Skills": ["melee", "social"]
+    },
+    {
+      "Id": "journalist",
+      "Name": "Journalist",
+      "Description": "You notice details, ask difficult questions, and know how to find people.",
+      "StartingItems": ["water_bottle", "candle"],
+      "Skills": ["social", "observation"]
+    },
+    {
+      "Id": "drifter",
+      "Name": "Drifter",
+      "Description": "You have few obligations and know how to live with very little.",
+      "StartingItems": ["kitchen_knife", "water_bottle"],
+      "Skills": ["survival", "melee"]
+    }
+  ],
+  "Backgrounds": [
+    {
+      "Id": "local_resident",
+      "Name": "Local Resident",
+      "Description": "You know the streets and have a place nearby that feels like home.",
+      "StartingItems": ["key_pharmacy"],
+      "Skills": ["survival"]
+    },
+    {
+      "Id": "night_worker",
+      "Name": "Night Worker",
+      "Description": "You are used to empty streets, odd hours, and seeing trouble first.",
+      "StartingItems": ["candle"],
+      "Skills": ["observation"]
+    },
+    {
+      "Id": "medical_family",
+      "Name": "Medical Family",
+      "Description": "Care work was part of your life long before the emergency began.",
+      "StartingItems": ["bandage"],
+      "Skills": ["first_aid"]
+    },
+    {
+      "Id": "unpaid_debts",
+      "Name": "Unpaid Debts",
+      "Description": "You know who is looking for you, and what you owe them.",
+      "StartingItems": ["kitchen_knife"],
+      "Skills": ["social"]
+    },
+    {
+      "Id": "technical_school",
+      "Name": "Technical School",
+      "Description": "You learned enough practical work to be useful in a crisis.",
+      "StartingItems": ["scrap_metal"],
+      "Skills": ["mechanics"]
+    },
+    {
+      "Id": "sheltered_upbringing",
+      "Name": "Sheltered Upbringing",
+      "Description": "The city is more unfamiliar to you than you expected.",
+      "StartingItems": ["water_bottle"],
+      "Skills": ["social"]
+    },
+    {
+      "Id": "streetwise",
+      "Name": "Streetwise",
+      "Description": "You learned to read a room before anyone had to explain it.",
+      "StartingItems": ["crackers"],
+      "Skills": ["observation", "survival"]
+    },
+    {
+      "Id": "quiet_life",
+      "Name": "Quiet Life",
+      "Description": "You had a normal life and a normal plan until this morning.",
+      "StartingItems": ["candle"],
+      "Skills": ["first_aid"]
+    }
+  ],
+  "Traits": [
+    { "Id": "insomniac", "Name": "Insomniac", "Description": "Sleep restores less fatigue.", "Cost": -2 },
+    { "Id": "light_sleeper", "Name": "Light Sleeper", "Description": "You wake more easily when danger approaches.", "Cost": 1 },
+    { "Id": "strong_back", "Name": "Strong Back", "Description": "You can carry more before becoming encumbered.", "Cost": 2 },
+    { "Id": "frail", "Name": "Frail", "Description": "You have less maximum health.", "Cost": -2 },
+    { "Id": "tech_savvy", "Name": "Tech Savvy", "Description": "You understand unfamiliar devices quickly.", "Cost": 2 },
+    { "Id": "pacifist", "Name": "Pacifist", "Description": "Violence is difficult for you to choose.", "Cost": -1 },
+    { "Id": "empathetic", "Name": "Empathetic", "Description": "Other people's fear affects you more strongly.", "Cost": 1 },
+    { "Id": "night_owl", "Name": "Night Owl", "Description": "You function better during the night.", "Cost": 1 },
+    { "Id": "hoarder", "Name": "Hoarder", "Description": "Discarding useful things is difficult.", "Cost": -1 },
+    { "Id": "quick", "Name": "Quick", "Description": "You recover from actions slightly faster.", "Cost": 2 },
+    { "Id": "clumsy", "Name": "Clumsy", "Description": "Difficult physical actions are less reliable.", "Cost": -1 },
+    { "Id": "observant", "Name": "Observant", "Description": "You notice details others overlook.", "Cost": 2 }
+  ],
+  "Skills": [
+    { "Id": "first_aid", "Name": "First Aid", "Description": "Treat injuries and stabilize bleeding.", "Attribute": "intelligence" },
+    { "Id": "health_care", "Name": "Health Care", "Description": "Recognize illness and medical supplies.", "Attribute": "intelligence" },
+    { "Id": "mechanics", "Name": "Mechanics", "Description": "Repair, maintain, and understand machines.", "Attribute": "intelligence" },
+    { "Id": "smash", "Name": "Smash", "Description": "Force doors and break objects effectively.", "Attribute": "strength" },
+    { "Id": "melee", "Name": "Melee", "Description": "Fight with improvised and conventional weapons.", "Attribute": "strength" },
+    { "Id": "social", "Name": "Social", "Description": "Persuade, calm, threaten, and negotiate.", "Attribute": "perception" },
+    { "Id": "survival", "Name": "Survival", "Description": "Find resources and manage scarce supplies.", "Attribute": "perception" },
+    { "Id": "observation", "Name": "Observation", "Description": "Notice movement, danger, and useful details.", "Attribute": "perception" },
+    { "Id": "cooking", "Name": "Cooking", "Description": "Prepare food safely and stretch ingredients.", "Attribute": "intelligence" },
+    { "Id": "lockpicking", "Name": "Lockpicking", "Description": "Open simple locks without making much noise.", "Attribute": "dexterity" },
+    { "Id": "running", "Name": "Running", "Description": "Move quickly and manage fatigue while doing so.", "Attribute": "constitution" },
+    { "Id": "computers", "Name": "Computers", "Description": "Use and repair common early-2000s computer systems.", "Attribute": "intelligence" },
+    { "Id": "driving", "Name": "Driving", "Description": "Operate and maintain ordinary vehicles.", "Attribute": "dexterity" },
+    { "Id": "trading", "Name": "Trading", "Description": "Recognize value and negotiate exchanges.", "Attribute": "social" },
+    { "Id": "stealth", "Name": "Stealth", "Description": "Move and act without drawing attention.", "Attribute": "dexterity" }
+  ]
+}

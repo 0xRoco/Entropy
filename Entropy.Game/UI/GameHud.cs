@@ -34,7 +34,6 @@ public class GameHud
         _sidebar = new VStack { Anchor = Widget.UiAnchor.Absolute };
         _sidebar.Add(new BodyPanel(context.World, context.Player));
         _sidebar.Add(new StatusPanel(context.World, context.Player, seed));
-        _sidebar.Add(new ObjectivePanel(context));
         _sidebar.Add(new EnvironmentPanel(context));
         _sidebar.Add(new CompassPanel(context));
         _ui.AddRoot(_sidebar);

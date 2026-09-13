@@ -357,5 +357,22 @@
       "soft"
     ],
     "weight": 30
+  },
+  {
+    "//": "key to the neighborhood pharmacy",
+    "type": "ITEM",
+    "id": "key_pharmacy",
+    "name": "Pharmacy Key",
+    "symbol": "k",
+    "color": "yellow",
+    "description": "A small brass key marked with a faded pharmacy logo.",
+    "category": "tools",
+    "material": [
+      "Steel"
+    ],
+    "flags": [
+      "key_pharmacy"
+    ],
+    "weight": 20
   }
 ]

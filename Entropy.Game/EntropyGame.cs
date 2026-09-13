@@ -25,6 +25,7 @@ public class EntropyGame : IGameClient
     private Vector2i _clientSize;
 
     private MainMenuScreen _mainMenu = null!;
+    private CharacterCreationScreen _characterCreation = null!;
     private PauseMenu _pauseMenu = null!;
     private GameMode _mode = GameMode.Loading;
 
@@ -49,6 +50,7 @@ public class EntropyGame : IGameClient
     private MapGraph _maps = null!;
     private IReadOnlyDictionary<string, BuildingInstance> _buildings = null!;
     private DefinitionRegistry _definitions = null!;
+    private CharacterCatalog _characterCatalog = null!;
     private Entity _player;
     private VisibilityMap _visibility = null!;
     private Dictionary<string, VisibilityMap> _visibilities = null!;
@@ -130,7 +132,12 @@ public class EntropyGame : IGameClient
         _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
 
         _mainMenu = new MainMenuScreen(ToTileSize(_clientSize));
-        _mainMenu.NewGameRequested += StartNewGame;
+        _characterCatalog = CharacterCatalog.Load(Path.Combine(_contentRoot, "Characters", "character_options.json"));
+        _characterCreation = new CharacterCreationScreen(_characterCatalog, ToTileSize(_clientSize));
+        _characterCreation.Confirmed += StartNewGame;
+        _characterCreation.Cancelled += ReturnToMainMenu;
+
+        _mainMenu.CharacterCreationRequested += OpenCharacterCreation;
         _mainMenu.LoadGameRequested += LoadGame;
         _mainMenu.ExitRequested += () => ExitRequested = true;
         _pauseMenu = new PauseMenu(ToTileSize(_clientSize));
@@ -156,6 +163,14 @@ public class EntropyGame : IGameClient
             if (menuKey != null)
                 _mainMenu.HandleKey(menuKey.Value);
 
+            return;
+        }
+
+        if (_mode == GameMode.CharacterCreation)
+        {
+            var characterKey = _input.GetKeyPressed();
+            if (characterKey != null)
+                _characterCreation.HandleKey(characterKey.Value);
             return;
         }
         
@@ -266,6 +281,14 @@ public class EntropyGame : IGameClient
             return;
         }
 
+        if (_mode == GameMode.CharacterCreation)
+        {
+            GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
+            _characterCreation.Draw(_drawContext);
+            _uiBatcher.Flush();
+            return;
+        }
+
         if (_mode == GameMode.Paused)
         {
             GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
@@ -319,6 +342,7 @@ public class EntropyGame : IGameClient
         _tileCamera.ViewportSize = _clientSize;
 
         _mainMenu?.Resize(ToTileSize(_clientSize));
+        _characterCreation?.Resize(ToTileSize(_clientSize));
         _pauseMenu?.Resize(ToTileSize(_clientSize));
 
         if (_mode != GameMode.Gameplay) return;
@@ -327,7 +351,12 @@ public class EntropyGame : IGameClient
         ConfigureMapCamera();
     }
     
-    private void StartNewGame()
+    private void OpenCharacterCreation()
+    {
+        _mode = GameMode.CharacterCreation;
+    }
+
+    private void StartNewGame(CharacterBuild? character = null)
     {
         _clock = new WorldClock(2001, 3, 12, 7, 30);
         _log = new MessageLog();
@@ -342,8 +371,6 @@ public class EntropyGame : IGameClient
         _visibilities = result.Visibilities;
         _visibility = _visibilities[result.MapId];
         _turnProcessor = result.Turns;
-        var objective = new DemoObjective();
-
         _context = new GameContext
         {
             Map = result.Map,
@@ -359,7 +386,6 @@ public class EntropyGame : IGameClient
             Visibilities = result.Visibilities,
             Visibility = _visibility,
             ViewRadius = ViewRadius,
-            Objective = objective,
             LockedMaps = new(StringComparer.OrdinalIgnoreCase)
             {
                 "neighborhood_pharmacy_interior"
@@ -375,7 +401,51 @@ public class EntropyGame : IGameClient
         _camera.Position = _world.Get<Position>(_player).Value;
 
         _mode = GameMode.Gameplay;
-        objective.Update(_context);
+
+        ApplyCharacter(_context, character);
+    }
+
+    private void ApplyCharacter(GameContext context, CharacterBuild? character)
+    {
+        if (character is null)
+            return;
+
+        var scenario = _characterCatalog.Scenarios.Single(option => option.Id == character.ScenarioId);
+        if (_maps.Maps.ContainsKey(scenario.StartMapId))
+        {
+            context.MapId = scenario.StartMapId;
+            context.Map = _maps[scenario.StartMapId];
+            context.Visibility = _visibilities[scenario.StartMapId];
+            _world.Set(_player, new Location { MapId = scenario.StartMapId });
+            _world.Get<Position>(_player).Value = new Vector2(scenario.StartX, scenario.StartY);
+            Fov.Compute(new Vector2i(scenario.StartX, scenario.StartY), ViewRadius, context.Map, context.Visibility);
+        }
+
+        var profession = _characterCatalog.Professions.Single(option => option.Id == character.ProfessionId);
+        var background = _characterCatalog.Backgrounds.Single(option => option.Id == character.BackgroundId);
+        _world.Set(_player, new CharacterIdentity
+        {
+            Name = character.Name,
+            ProfessionId = profession.Id,
+            BackgroundId = background.Id,
+            Stats = new(character.Stats, StringComparer.OrdinalIgnoreCase),
+            TraitIds = [.. character.TraitIds],
+            SkillIds = [.. profession.Skills.Concat(background.Skills).Concat(character.SkillIds).Distinct()]
+        });
+        _world.Set(_player, new Named { Name = character.Name });
+        foreach (var itemId in profession.StartingItems.Concat(background.StartingItems))
+        {
+            var item = EntitySpawner.CreateItem(
+                _world,
+                context.MapId,
+                _definitions.Item(itemId),
+                (int)_world.Get<Position>(_player).Value.X,
+                (int)_world.Get<Position>(_player).Value.Y);
+            ItemSystem.Transfer(_world, item, _player);
+        }
+
+        context.Log.Add($"You are {character.Name}, a {profession.Name} from {background.Name}.", Color4.Cyan);
+        _camera.Position = _world.Get<Position>(_player).Value;
     }
 
     private void LoadGame()
@@ -415,6 +485,19 @@ public class EntropyGame : IGameClient
             Parched = save.Thirst.Parched
         });
         _world.Set(_player, new Fatigue { Current = save.Fatigue.Current, Max = save.Fatigue.Max });
+        if (save.Character is { } character)
+        {
+            _world.Set(_player, new CharacterIdentity
+            {
+                Name = character.Name,
+                ProfessionId = character.ProfessionId,
+                BackgroundId = character.BackgroundId,
+                Stats = new(character.Stats, StringComparer.OrdinalIgnoreCase),
+                TraitIds = [.. character.TraitIds],
+                SkillIds = [.. character.SkillIds]
+            });
+            _world.Set(_player, new Named { Name = character.Name });
+        }
 
         foreach (var item in save.Inventory)
         {
@@ -434,7 +517,6 @@ public class EntropyGame : IGameClient
         _context.MapId = save.MapId;
         _context.Map = _maps[save.MapId];
         _context.Visibility = _visibilities[save.MapId];
-        _context.Objective.Restore(save.StoreVisited, save.SafeRoomReached);
         Fov.Compute(
             new Vector2i(save.PlayerX, save.PlayerY),
             ViewRadius,
@@ -455,10 +537,21 @@ public class EntropyGame : IGameClient
             _rng.Seed,
             _clock.TotalMinutes,
             _context.MapId,
-            _context.Objective);
+            _world.Has<CharacterIdentity>(_player)
+                ? ToCharacterData(_world.Get<CharacterIdentity>(_player))
+                : null);
         GameSave.Write(save);
         _log.Add("Game saved.", Color4.LightGray);
     }
+
+    private static CharacterData ToCharacterData(CharacterIdentity identity) =>
+        new(
+            identity.Name,
+            identity.ProfessionId,
+            identity.BackgroundId,
+            new(identity.Stats, StringComparer.OrdinalIgnoreCase),
+            [.. identity.TraitIds],
+            [.. identity.SkillIds]);
     
     private void RestartGame()
     {
@@ -508,7 +601,6 @@ public class EntropyGame : IGameClient
         NeedsSystem.Update(_context);
         _turnProcessor.RunAITurns(_player, _context);
         _camera.Position = _world.Get<Position>(_player).Value;
-        _context.Objective.Update(_context);
     }
 
     private bool ProcessPlayerAction()

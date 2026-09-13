@@ -17,16 +17,22 @@ public sealed record GameSaveData(
     HungerData Hunger,
     ThirstData Thirst,
     FatigueData Fatigue,
-    bool StoreVisited,
-    bool SafeRoomReached,
     IReadOnlyList<InventoryItemData> Inventory,
-    string? EquippedItemId);
+    string? EquippedItemId,
+    CharacterData? Character);
 
 public sealed record HealthData(int Current, int Max);
 public sealed record HungerData(int Current, int Max, bool Starving);
 public sealed record ThirstData(int Current, int Max, bool Parched);
 public sealed record FatigueData(int Current, int Max);
 public sealed record InventoryItemData(string DefinitionId, int Count);
+public sealed record CharacterData(
+    string Name,
+    string ProfessionId,
+    string BackgroundId,
+    Dictionary<string, int> Stats,
+    IReadOnlyList<string> TraitIds,
+    IReadOnlyList<string> SkillIds);
 
 public static class GameSave
 {
@@ -68,7 +74,7 @@ public static class GameSave
         int seed,
         int elapsedMinutes,
         string mapId,
-        DemoObjective objective)
+        CharacterData? character = null)
     {
         var position = world.Get<Entropy.Engine.ECS.Components.Position>(player).Value;
         var facing = world.Has<Facing>(player)
@@ -107,9 +113,8 @@ public static class GameSave
             new HungerData(hunger.Current, hunger.Max, hunger.Starving),
             new ThirstData(thirst.Current, thirst.Max, thirst.Parched),
             new FatigueData(fatigue.Current, fatigue.Max),
-            objective.StoreVisited,
-            objective.SafeRoomReached,
             inventory,
-            equippedItemId);
+            equippedItemId,
+            character);
     }
 }

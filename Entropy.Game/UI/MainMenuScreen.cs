@@ -8,7 +8,7 @@ namespace Entropy.Game.UI;
 
 public class MainMenuScreen
 {
-    public event Action? NewGameRequested;
+    public event Action? CharacterCreationRequested;
     public event Action? LoadGameRequested;
     public event Action? ExitRequested;
 
@@ -78,8 +78,8 @@ public class MainMenuScreen
         [
             new MenuEntry(
                 "New Game",
-                "Start a new run. The descent begins within days.",
-                () => NewGameRequested?.Invoke()),
+                "Create a character and enter the neighborhood.",
+                () => CharacterCreationRequested?.Invoke()),
 
             new MenuEntry(
                 "Load Game",
@@ -141,7 +141,7 @@ public class MainMenuScreen
         switch (key)
         {
             case Keys.N:
-                NewGameRequested?.Invoke();
+                CharacterCreationRequested?.Invoke();
                 return true;
             case Keys.L when GameSave.Exists:
                 LoadGameRequested?.Invoke();

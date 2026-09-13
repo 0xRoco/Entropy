@@ -1,6 +1,7 @@
 using Entropy.Content;
 using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
+using Entropy.Engine.UI;
 using Entropy.Game.Components;
 using OpenTK.Mathematics;
 
@@ -17,6 +18,28 @@ public static class InteractionSystem
         var verbs = new List<WorldVerb>();
         var world = context.World;
         var mapId = world.Get<Location>(player).MapId;
+        var transition = context.Maps.TransitionAt(mapId, tile);
+
+        if (transition is not null && IsAdjacent(world.Get<Position>(player).Value, tile))
+        {
+            if (context.LockedMaps.Contains(transition.ToMap))
+            {
+                if (HasItemWithFlag(context, player, "key_pharmacy"))
+                {
+                    verbs.Add(new WorldVerb("Unlock the door with the pharmacy key", true,
+                        (ctx, p) => UnlockDoor(ctx, p, transition.ToMap)));
+                }
+
+                if (HasItemWithFlag(context, player, "tool_smash"))
+                {
+                    verbs.Add(new WorldVerb("Smash through the locked door", true,
+                        (ctx, p) => ForceDoor(ctx, p, transition.ToMap, tile)));
+                }
+
+                verbs.Add(new WorldVerb("Examine the locked door", false,
+                    (ctx, _) => ctx.Log.Add("The door is locked. There may be another way in.", Color4.Yellow)));
+            }
+        }
 
         foreach (var entity in world.Query<Position, WorldObjectIdentity>())
         {
@@ -28,8 +51,16 @@ public static class InteractionSystem
             if (world.Has<Container>(entity) && adjacent)
             {
                 var target = entity;
-                verbs.Add(new WorldVerb($"Open the {identity.Name}", true,
-                    (ctx, _) => openContainer.Invoke(ctx, target)));
+                if (!world.Has<Searched>(entity))
+                {
+                    verbs.Add(new WorldVerb($"Search the {identity.Name}", true,
+                        (ctx, _) => SearchContainer(ctx, target)));
+                }
+                else
+                {
+                    verbs.Add(new WorldVerb($"Open the {identity.Name}", true,
+                        (ctx, _) => openContainer.Invoke(ctx, target)));
+                }
             }
 
             if (adjacent && def.HasFlag("bed"))
@@ -141,6 +172,11 @@ public static class InteractionSystem
         ref var hp = ref world.Get<Health>(target);
 
         var damage = 1;
+        if (world.Has<CharacterIdentity>(player) &&
+            world.Get<CharacterIdentity>(player).Stats.TryGetValue("strength", out var strength))
+        {
+            damage += Math.Max(0, (strength - 8) / 4);
+        }
         if (world.Has<Equipped>(player))
         {
             var equipped = world.Get<Equipped>(player).Item;
@@ -186,6 +222,45 @@ public static class InteractionSystem
         var name = context.World.Get<ItemIdentity>(item).Name;
         if (ItemSystem.TryPickup(context.World, player, item))
             context.Log.Add($"You pick up the {name}.");
+    }
+
+    private static void SearchContainer(GameContext context, Entity container)
+    {
+        context.World.Set(container, new Searched());
+        var identity = context.World.Get<WorldObjectIdentity>(container);
+        var count = context.World.Has<Container>(container)
+            ? context.World.Get<Container>(container).Items.Count
+            : 0;
+        context.Log.Add(
+            count > 0
+                ? $"You search the {identity.Name}. You find something inside."
+                : $"You search the {identity.Name}. It is empty.",
+            count > 0 ? Color4.Cyan : Color4.LightGray);
+    }
+
+    private static void UnlockDoor(GameContext context, Entity player, string mapId)
+    {
+        context.LockedMaps.Remove(mapId);
+        context.Log.Add("You unlock the pharmacy door quietly.", Color4.Cyan);
+    }
+
+    private static void ForceDoor(GameContext context, Entity player, string mapId, Vector2i tile)
+    {
+        context.LockedMaps.Remove(mapId);
+        context.Log.Add("You smash the lock. The noise carries down the street.", Color4.OrangeRed);
+        NoiseSystem.Emit(context, tile, 12, "Something is breaking into the pharmacy");
+    }
+
+    private static bool HasItemWithFlag(GameContext context, Entity player, string flag)
+    {
+        var world = context.World;
+        if (!world.Has<Container>(player)) return false;
+
+        return world.Get<Container>(player).Items
+            .Where(world.IsAlive)
+            .Where(item => world.Has<ItemIdentity>(item))
+            .Select(item => context.Definitions.Item(world.Get<ItemIdentity>(item).DefinitionId))
+            .Any(item => item.Flags.Contains(flag));
     }
 
     private static void ExamineWorldObject(GameContext context, Entity entity)
