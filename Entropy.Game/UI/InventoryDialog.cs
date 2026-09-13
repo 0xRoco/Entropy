@@ -31,17 +31,28 @@ public class InventoryDialog
         _context = context;
         _player = context.Player;
 
-        _panel = new Panel { X = 1, Y = 1, Width = 30, Height = 12, Anchor = Widget.UiAnchor.Absolute, Closable = true };
+        _panel = new Panel { Anchor = Widget.UiAnchor.Absolute, Closable = true };
 
-        _panel.Add(new Label { X = 1, Y = 1, Width = 28, Text = "Inventory", Color = UiTheme.Keybind });
+        _panel.Add(new Label { X = 1, Y = 1, Text = "INVENTORY", Color = UiTheme.Heading });
 
-        _list = new ListView { X = 1, Y = 3, Width = 28, Height = 8, ItemColor = RowColor };
+        _list = new ListView { X = 1, Y = 3, ItemColor = RowColor };
 
         _panel.Add(_list);
         _list.OnActivate += OpenContextMenuFor;
         _panel.CloseRequested += Close;
 
         _contextMenu = new ContextMenu(ui);
+    }
+
+    public void Resize(Vector2i viewportTiles)
+    {
+        _panel.Width = Math.Clamp(viewportTiles.X - 12, 40, 96);
+        _panel.Height = Math.Clamp(viewportTiles.Y - 8, 16, 32);
+        _panel.X = Math.Max(1, (viewportTiles.X - _panel.Width) / 2);
+        _panel.Y = Math.Max(1, (viewportTiles.Y - _panel.Height) / 2);
+        _list.Width = _panel.Width - 2;
+        _list.Height = _panel.Height - 5;
+        _panel.Children[0].Width = _panel.Width - 2;
     }
 
     public void Open()
@@ -95,7 +106,10 @@ public class InventoryDialog
             .ToList();
 
         var title = _context.World.Get<ItemIdentity>(_contextMenuItem).Name;
-        _contextMenu.Show(_panel.X + _panel.Width + 1, _panel.Y + 3 + row.Value, title, actions);
+        var menuX = _panel.X + _panel.Width + 1;
+        if (menuX + title.Length + actions.Count + 8 > _ui.ViewportTiles.X)
+            menuX = Math.Max(1, _panel.X - title.Length - 14);
+        _contextMenu.Show(menuX, _panel.Y + 3 + row.Value, title, actions);
     }
 
     private void ExecuteAction(ItemAction action)

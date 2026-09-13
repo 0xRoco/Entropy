@@ -150,6 +150,7 @@ public class GameHud
         _commandBar.X = 1;
         _commandBar.Y = 1;
         _commandBar.Width = Math.Max(0, Layout.Commands.Width - 2);
+        _inventoryDialog.Resize(viewportTiles);
     }
 
     private static void ApplyBounds(Widget widget, UiRect bounds)

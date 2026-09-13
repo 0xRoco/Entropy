@@ -43,10 +43,10 @@ public class ContextMenu : Panel
         _title.Width = width - 2;
         _list.Width = width - 2;
         _list.Height = Math.Max(1, items.Count);
-        X = x;
-        Y = y;
         Width = width;
         Height = items.Count + 3;
+        X = Math.Clamp(x, 0, Math.Max(0, _ui.ViewportTiles.X - Width));
+        Y = Math.Clamp(y, 0, Math.Max(0, _ui.ViewportTiles.Y - Height));
         _list.SelectedIndex = 0;
         Visible = true;
         _ui.PushModal(this, _list);
