@@ -1,5 +1,6 @@
 using Entropy.Engine.UI;
 using Entropy.Engine.UI.Widgets;
+using Entropy.Game.Systems;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -8,6 +9,7 @@ namespace Entropy.Game.UI;
 public class MainMenuScreen
 {
     public event Action? NewGameRequested;
+    public event Action? LoadGameRequested;
     public event Action? ExitRequested;
 
     private static readonly string[] Logo =
@@ -81,8 +83,8 @@ public class MainMenuScreen
 
             new MenuEntry(
                 "Load Game",
-                "Loading saved games is not implemented yet.",
-                null),
+                "Continue the last run.",
+                () => LoadGameRequested?.Invoke()),
 
             new MenuEntry(
                 "Settings",
@@ -140,6 +142,9 @@ public class MainMenuScreen
         {
             case Keys.N:
                 NewGameRequested?.Invoke();
+                return true;
+            case Keys.L when GameSave.Exists:
+                LoadGameRequested?.Invoke();
                 return true;
             case Keys.Q or Keys.Escape:
                 ExitRequested?.Invoke();

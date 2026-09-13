@@ -22,4 +22,6 @@ public sealed class GameContext
     public required Dictionary<string, VisibilityMap> Visibilities { get; init; }
     public required VisibilityMap Visibility { get; set; }
     public required int ViewRadius { get; init; }
+    public required DemoObjective Objective { get; init; }
+    public required HashSet<string> LockedMaps { get; init; }
 }

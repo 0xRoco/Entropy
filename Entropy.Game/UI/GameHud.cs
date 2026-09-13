@@ -34,6 +34,7 @@ public class GameHud
         _sidebar = new VStack { Anchor = Widget.UiAnchor.Absolute };
         _sidebar.Add(new BodyPanel(context.World, context.Player));
         _sidebar.Add(new StatusPanel(context.World, context.Player, seed));
+        _sidebar.Add(new ObjectivePanel(context));
         _sidebar.Add(new EnvironmentPanel(context));
         _sidebar.Add(new CompassPanel(context));
         _ui.AddRoot(_sidebar);
@@ -49,6 +50,7 @@ public class GameHud
         _commandBar.Hints.Add(('e', "xamine facing"));
         _commandBar.Hints.Add(('i', "nventory"));
         _commandBar.Hints.Add(('.', "wait"));
+        _commandBar.AddText("F6 save");
         _commandBar.Hints.Add(('?', "Help"));
 
         _commandPanel = new Panel

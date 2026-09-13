@@ -51,7 +51,7 @@ private readonly Ui _ui;
             General
 
             Press ? to open this help screen. Press Escape to close menus
-            or return to the previous dialog.
+            or return to the previous dialog. F6 saves the current game.
             """);
 
         var inventory = CreatePage(

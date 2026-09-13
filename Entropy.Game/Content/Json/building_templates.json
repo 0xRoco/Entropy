@@ -103,5 +103,217 @@
         1
       ]
     }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "detached_house",
+    "name": "Detached House",
+    "grid": [
+      "##########",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "####d#####"
+    ],
+    "legend": {
+      "#": "wall_brick",
+      ".": "floor_wood",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [4, 7],
+      "home": [5, 3],
+      "bed1": [3, 3],
+      "fridge": [7, 2]
+    }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "pharmacy",
+    "name": "Pharmacy",
+    "grid": [
+      "##########",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "####d#####"
+    ],
+    "legend": {
+      "#": "wall_concrete",
+      ".": "floor_linoleum",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [4, 8],
+      "shelf1": [2, 2],
+      "shelf2": [2, 5],
+      "register": [7, 2],
+      "fridge": [7, 5]
+    }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "diner",
+    "name": "Diner",
+    "grid": [
+      "############",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#####d######"
+    ],
+    "legend": {
+      "#": "wall_concrete",
+      ".": "floor_linoleum",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [5, 7],
+      "register": [9, 2],
+      "fridge": [9, 5],
+      "shelf1": [2, 2]
+    }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "hardware_store",
+    "name": "Hardware Store",
+    "grid": [
+      "############",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#####d######"
+    ],
+    "legend": {
+      "#": "wall_brick",
+      ".": "floor_linoleum",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [5, 7],
+      "shelf1": [2, 2],
+      "shelf2": [2, 5],
+      "register": [9, 2]
+    }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "clinic",
+    "name": "Clinic",
+    "grid": [
+      "##########",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "####d#####"
+    ],
+    "legend": {
+      "#": "wall_concrete",
+      ".": "floor_linoleum",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [4, 8],
+      "bed1": [2, 2],
+      "bed2": [2, 5],
+      "fridge": [7, 2]
+    }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "warehouse",
+    "name": "Warehouse",
+    "grid": [
+      "##############",
+      "#............#",
+      "#............#",
+      "#............#",
+      "#............#",
+      "#............#",
+      "#............#",
+      "#............#",
+      "######d#######"
+    ],
+    "legend": {
+      "#": "wall_concrete",
+      ".": "floor_linoleum",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [6, 8],
+      "shelf1": [3, 2],
+      "shelf2": [3, 5],
+      "shelf3": [10, 2]
+    }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "office",
+    "name": "Office",
+    "grid": [
+      "##########",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "#........#",
+      "####d#####"
+    ],
+    "legend": {
+      "#": "wall_concrete",
+      ".": "floor_wood",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [4, 7],
+      "bed1": [2, 2],
+      "shelf1": [7, 2],
+      "register": [7, 5]
+    }
+  },
+  {
+    "type": "BUILDING_TEMPLATE",
+    "id": "service_station",
+    "name": "Service Station",
+    "grid": [
+      "############",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#..........#",
+      "#####d######"
+    ],
+    "legend": {
+      "#": "wall_concrete",
+      ".": "floor_linoleum",
+      "d": "door"
+    },
+    "anchors": {
+      "entry": [5, 7],
+      "register": [9, 2],
+      "shelf1": [2, 2],
+      "fridge": [9, 5]
+    }
   }
 ]

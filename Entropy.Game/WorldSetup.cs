@@ -38,7 +38,7 @@ public class WorldSetup
             pair => pair.Key,
             pair => new VisibilityMap(pair.Value.Width, pair.Value.Height));
 
-        var playerStart = new Vector2i(30, 17);
+        var playerStart = new Vector2i(30, 20);
         var player = EntitySpawner.CreatePlayer(
             world,
             block.StreetMapId,
@@ -179,6 +179,42 @@ public class WorldSetup
             store.Anchors["shelf"].X,
             store.Anchors["shelf"].Y,
             count: 3);
+
+        var house = block.Buildings["neighborhood_house"];
+        var keyTile = house.Anchors["home"];
+        EntitySpawner.CreateItem(
+            world,
+            house.MapId,
+            defs.Item("key_pharmacy"),
+            keyTile.X,
+            keyTile.Y);
+
+        var pharmacy = block.Buildings["neighborhood_pharmacy"];
+        var pharmacyShelf = pharmacy.Anchors["shelf1"];
+        EntitySpawner.CreateItem(
+            world,
+            pharmacy.MapId,
+            defs.Item("first_aid_kit"),
+            pharmacyShelf.X,
+            pharmacyShelf.Y);
+
+        var hardware = block.Buildings["neighborhood_hardware"];
+        var hardwareShelf = hardware.Anchors["shelf1"];
+        EntitySpawner.CreateItem(
+            world,
+            hardware.MapId,
+            defs.Item("baseball_bat"),
+            hardwareShelf.X,
+            hardwareShelf.Y);
+
+        var zombie = EntitySpawner.CreateHuman(
+            world,
+            block.StreetMapId,
+            defs.Creature("zombie"),
+            108,
+            20,
+            "Zombie");
+        turns.AddActor(zombie);
 
         Fov.Compute(
             playerStart,

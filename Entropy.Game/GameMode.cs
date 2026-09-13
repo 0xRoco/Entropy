@@ -4,5 +4,6 @@ public enum GameMode
 {
     Loading,
     MainMenu,
+    Paused,
     Gameplay
 }

@@ -25,6 +25,7 @@ public class EntropyGame : IGameClient
     private Vector2i _clientSize;
 
     private MainMenuScreen _mainMenu = null!;
+    private PauseMenu _pauseMenu = null!;
     private GameMode _mode = GameMode.Loading;
 
     private Camera _camera = null!;
@@ -130,7 +131,13 @@ public class EntropyGame : IGameClient
 
         _mainMenu = new MainMenuScreen(ToTileSize(_clientSize));
         _mainMenu.NewGameRequested += StartNewGame;
+        _mainMenu.LoadGameRequested += LoadGame;
         _mainMenu.ExitRequested += () => ExitRequested = true;
+        _pauseMenu = new PauseMenu(ToTileSize(_clientSize));
+        _pauseMenu.ResumeRequested += ResumeGame;
+        _pauseMenu.SaveRequested += SaveCurrentGame;
+        _pauseMenu.MainMenuRequested += ReturnToMainMenu;
+        _pauseMenu.QuitRequested += () => ExitRequested = true;
         _mode = GameMode.MainMenu;
     }
 
@@ -209,6 +216,24 @@ public class EntropyGame : IGameClient
             ReloadContent();
             return;
         }
+
+        if (_mode == GameMode.Paused)
+        {
+            var pauseKey = _input.GetKeyPressed();
+            if (pauseKey != null)
+                _pauseMenu.HandleKey(pauseKey.Value);
+            return;
+        }
+        if (key == Keys.F6)
+        {
+            SaveCurrentGame();
+            return;
+        }
+        if (key == Keys.Escape && !_hud.HasOpenModal)
+        {
+            _mode = GameMode.Paused;
+            return;
+        }
         if (key != null && _hud.HandleKey(key.Value)) return;
 
         if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
@@ -241,10 +266,15 @@ public class EntropyGame : IGameClient
             return;
         }
 
-        ApplyMapViewport();
+        if (_mode == GameMode.Paused)
+        {
+            GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
+            _pauseMenu.Draw(_drawContext);
+            _uiBatcher.Flush();
+            return;
+        }
 
-        // the map camera is player-centered, so world tiles extend past the
-        // map viewport — the scissor keeps them inside it (HUD draws after)
+        ApplyMapViewport();
         GL.Enable(EnableCap.ScissorTest);
         GL.Scissor(
             _hud.Layout.Map.X * (int)Camera.TilePixelSize,
@@ -289,6 +319,7 @@ public class EntropyGame : IGameClient
         _tileCamera.ViewportSize = _clientSize;
 
         _mainMenu?.Resize(ToTileSize(_clientSize));
+        _pauseMenu?.Resize(ToTileSize(_clientSize));
 
         if (_mode != GameMode.Gameplay) return;
 
@@ -311,6 +342,7 @@ public class EntropyGame : IGameClient
         _visibilities = result.Visibilities;
         _visibility = _visibilities[result.MapId];
         _turnProcessor = result.Turns;
+        var objective = new DemoObjective();
 
         _context = new GameContext
         {
@@ -326,7 +358,12 @@ public class EntropyGame : IGameClient
             Turns = _turnProcessor,
             Visibilities = result.Visibilities,
             Visibility = _visibility,
-            ViewRadius = ViewRadius
+            ViewRadius = ViewRadius,
+            Objective = objective,
+            LockedMaps = new(StringComparer.OrdinalIgnoreCase)
+            {
+                "neighborhood_pharmacy_interior"
+            }
         };
 
         _hud = new GameHud(_context, _clock, _rng.Seed, ToTileSize(_clientSize));
@@ -338,6 +375,89 @@ public class EntropyGame : IGameClient
         _camera.Position = _world.Get<Position>(_player).Value;
 
         _mode = GameMode.Gameplay;
+        objective.Update(_context);
+    }
+
+    private void LoadGame()
+    {
+        var save = GameSave.Read();
+        if (save is null)
+        {
+            return;
+        }
+
+        _rng = new Rng(save.Seed);
+        StartNewGame();
+
+        if (!_maps.Maps.ContainsKey(save.MapId))
+        {
+            _log.Add($"Save refers to unknown map '{save.MapId}'. Starting at the street.", Color4.Yellow);
+            return;
+        }
+
+        _clock.Advance(save.ElapsedMinutes);
+
+        ref var position = ref _world.Get<Position>(_player);
+        position.Value = new Vector2(save.PlayerX, save.PlayerY);
+        _world.Set(_player, new Location { MapId = save.MapId });
+        _world.Set(_player, new Facing { Direction = new Vector2i(save.FacingX, save.FacingY) });
+        _world.Set(_player, new Health { Current = save.Health.Current, Max = save.Health.Max });
+        _world.Set(_player, new Hunger
+        {
+            Current = save.Hunger.Current,
+            Max = save.Hunger.Max,
+            Starving = save.Hunger.Starving
+        });
+        _world.Set(_player, new Thirst
+        {
+            Current = save.Thirst.Current,
+            Max = save.Thirst.Max,
+            Parched = save.Thirst.Parched
+        });
+        _world.Set(_player, new Fatigue { Current = save.Fatigue.Current, Max = save.Fatigue.Max });
+
+        foreach (var item in save.Inventory)
+        {
+            var entity = EntitySpawner.CreateItem(
+                _world,
+                save.MapId,
+                _definitions.Item(item.DefinitionId),
+                save.PlayerX,
+                save.PlayerY,
+                item.Count);
+            ItemSystem.Transfer(_world, entity, _player);
+
+            if (save.EquippedItemId == item.DefinitionId && _world.Has<Damage>(entity))
+                _world.Set(_player, new Equipped { Item = entity });
+        }
+
+        _context.MapId = save.MapId;
+        _context.Map = _maps[save.MapId];
+        _context.Visibility = _visibilities[save.MapId];
+        _context.Objective.Restore(save.StoreVisited, save.SafeRoomReached);
+        Fov.Compute(
+            new Vector2i(save.PlayerX, save.PlayerY),
+            ViewRadius,
+            _context.Map,
+            _context.Visibility);
+        _camera.Position = position.Value;
+        _log.Add("Game loaded.", Color4.LightGray);
+    }
+
+    private void SaveCurrentGame()
+    {
+        if (_mode != GameMode.Gameplay || !_world.IsAlive(_player))
+            return;
+
+        var save = GameSave.Capture(
+            _world,
+            _player,
+            _rng.Seed,
+            _clock.TotalMinutes,
+            _context.MapId,
+            _context.Objective);
+        GameSave.Write(save);
+        _log.Add("Game saved.", Color4.LightGray);
     }
     
     private void RestartGame()
@@ -349,6 +469,11 @@ public class EntropyGame : IGameClient
     private void ReturnToMainMenu()
     {
         _mode = GameMode.MainMenu;
+    }
+
+    private void ResumeGame()
+    {
+        _mode = GameMode.Gameplay;
     }
     
     private void ConfigureMapCamera()
@@ -383,6 +508,7 @@ public class EntropyGame : IGameClient
         NeedsSystem.Update(_context);
         _turnProcessor.RunAITurns(_player, _context);
         _camera.Position = _world.Get<Position>(_player).Value;
+        _context.Objective.Update(_context);
     }
 
     private bool ProcessPlayerAction()
