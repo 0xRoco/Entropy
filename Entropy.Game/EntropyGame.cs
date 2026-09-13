@@ -605,10 +605,7 @@ public class EntropyGame : IGameClient
 
     private void ProcessActionResult(ActionResult action)
     {
-        if (!action.Succeeded || !action.ConsumesTurn)
-            return;
-
-        AdvanceTurn(action.TimeCostMinutes);
+        ActionScheduler.Process(action, AdvanceTurn);
     }
 
     private void AdvanceTurn(int timeCostMinutes = 1)
