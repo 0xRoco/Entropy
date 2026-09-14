@@ -1,7 +1,6 @@
 using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.World;
-using Entropy.Game.Components;
 using Entropy.Game.Components.AI;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
@@ -66,6 +65,9 @@ public class WorldSetup
 
                 foreach (var itemId in objectDef.StarterItems)
                     EntitySpawner.SpawnIntoContainer(world, spawned, defs.Item(itemId));
+
+                if (objectDef.LootTableId is { Length: > 0 } lootTableId)
+                    LootSystem.Generate(world, defs, rng, spawned, defs.LootTable(lootTableId));
             }
         }
 
@@ -157,29 +159,6 @@ public class WorldSetup
             sleepEnd: 7 * 60));
 
         turns.AddActor(priya);
-
-        EntitySpawner.CreateItem(
-            world,
-            block.StreetMapId,
-            defs.Item("iron_sword"),
-            28,
-            17);
-
-        EntitySpawner.CreateItem(
-            world,
-            danaApartment.MapId,
-            defs.Item("bandage"),
-            danaBed.X + 1,
-            danaBed.Y,
-            count: 2);
-
-        EntitySpawner.CreateItem(
-            world,
-            store.MapId,
-            defs.Item("crackers"),
-            store.Anchors["shelf"].X,
-            store.Anchors["shelf"].Y,
-            count: 3);
 
         var house = block.Buildings["neighborhood_house"];
         var keyTile = house.Anchors["home"];

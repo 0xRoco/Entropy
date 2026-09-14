@@ -5,6 +5,7 @@ using Entropy.Engine.Rendering;
 using Entropy.Engine.UI;
 using Entropy.Engine.World;
 using Entropy.Game.Components;
+using Entropy.Game.Components.Simulation;
 using Entropy.Content;
 using Entropy.Content.Validation;
 using Entropy.Game.Components.Identity;
@@ -109,6 +110,7 @@ public class EntropyGame : IGameClient
             ("Tilesets", () => _definitions.LoadTilesets(jsonFolder)),
             ("Building templates", () => _definitions.LoadBuildingTemplates(jsonFolder)),
             ("World objects", () => _definitions.LoadWorldObjects(jsonFolder)),
+            ("Loot tables", () => _definitions.LoadLootTables(jsonFolder)),
             ("Tileset atlas", FinishContentLoad)
         ];
 
@@ -181,22 +183,18 @@ public class EntropyGame : IGameClient
             return;
         }
 
-        if (_world.Has<Sleeping>(_player))
+        if (ActivitySystem.IsActive(_world, _player))
         {
             if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0)
             {
-                _world.Remove<Sleeping>(_player);
+                ActivitySystem.Cancel(_context, _player, "Your activity is interrupted.");
                 return;
             }
 
             AdvanceTurn();
-            SleepSystem.Recover(_context, _player);
-
-            var reason = SleepSystem.WakeReason(_context, _player);
-            if (reason is not null)
-                SleepSystem.Wake(_context, _player, reason);
-            else if (_input.GetKeyPressed() != null)
-                SleepSystem.Wake(_context, _player, "You wake up.");
+            var tick = ActivitySystem.Advance(_context, _player);
+            if (tick.State == ActivityState.InProgress && _input.GetKeyPressed() != null)
+                ActivitySystem.Interrupt(_context, _player, "You wake up.");
 
             return;
         }
@@ -380,6 +378,9 @@ public class EntropyGame : IGameClient
         _visibilities = result.Visibilities;
         _visibility = _visibilities[result.MapId];
         _turnProcessor = result.Turns;
+        var pharmacyTransition = result.Maps.Transitions.Single(transition =>
+            transition.ToMap.Equals("neighborhood_pharmacy_interior", StringComparison.OrdinalIgnoreCase));
+        var pharmacyDoor = DoorSystem.KeyFor(pharmacyTransition);
         _context = new GameContext
         {
             Map = result.Map,
@@ -395,9 +396,13 @@ public class EntropyGame : IGameClient
             Visibilities = result.Visibilities,
             Visibility = _visibility,
             ViewRadius = ViewRadius,
-            LockedMaps = new(StringComparer.OrdinalIgnoreCase)
+            DoorDefinitions = new()
             {
-                "neighborhood_pharmacy_interior"
+                [pharmacyDoor] = new DoorDefinition("pharmacy_door", "key_pharmacy", "tool_smash", Trespass: false)
+            },
+            DoorStates = new()
+            {
+                [pharmacyDoor] = new DoorState { Locked = true }
             }
         };
 
@@ -494,6 +499,7 @@ public class EntropyGame : IGameClient
             Parched = save.Thirst.Parched
         });
         _world.Set(_player, new Fatigue { Current = save.Fatigue.Current, Max = save.Fatigue.Max });
+        _world.Set(_player, new Wallet { CashCents = save.CashCents });
         if (save.Character is { } character)
         {
             _world.Set(_player, new CharacterIdentity
@@ -520,7 +526,7 @@ public class EntropyGame : IGameClient
             ItemSystem.Transfer(_world, entity, _player);
 
             if (save.EquippedItemId == item.DefinitionId && _world.Has<Damage>(entity))
-                _world.Set(_player, new Equipped { Item = entity });
+                _world.Set(_player, new Equipped { Item = StableEntityReference.From(_world, entity) });
         }
 
         _context.MapId = save.MapId;
@@ -610,9 +616,7 @@ public class EntropyGame : IGameClient
 
     private void AdvanceTurn(int timeCostMinutes = 1)
     {
-        _context.Clock.Advance(timeCostMinutes);
-        NeedsSystem.Update(_context);
-        _turnProcessor.RunAITurns(_player, _context);
+        SimulationTime.Advance(_context, timeCostMinutes);
         _camera.Position = _world.Get<Position>(_player).Value;
     }
 
@@ -687,10 +691,11 @@ public class EntropyGame : IGameClient
             fresh.LoadTilesets(jsonFolder);
             fresh.LoadBuildingTemplates(jsonFolder);
             fresh.LoadWorldObjects(jsonFolder);
+            fresh.LoadLootTables(jsonFolder);
 
             var errors = DefinitionValidator.Validate(
                 fresh.Items, fresh.Creatures, fresh.Terrains,
-                fresh.Tilesets, fresh.BuildingTemplates, fresh.WorldObjects);
+                fresh.Tilesets, fresh.BuildingTemplates, fresh.WorldObjects, fresh.LootTables);
             if (errors.Count > 0)
             {
                 _log.Add($"Content reload blocked, {errors.Count} validation error(s):", Color4.Red);

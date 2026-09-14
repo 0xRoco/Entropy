@@ -47,7 +47,7 @@ public static class ItemSystem
         if (item.Equals(destination) || WouldCreateCycle(world, item, destination)) return false;
 
         if (world.Has<InContainer>(item) &&
-            world.Get<InContainer>(item).Parent.Equals(destination))
+            world.Get<InContainer>(item).Parent.Resolve(world).Equals(destination))
             return true;
 
         if (!world.Has<Container>(destination))
@@ -59,7 +59,7 @@ public static class ItemSystem
             return false;
 
         RemoveFromContainer(world, item);
-        world.Set(item, new InContainer { Parent = destination });
+        world.Set(item, new InContainer { Parent = StableEntityReference.From(world, destination) });
         world.Remove<Position>(item);
         AddToContainer(world, destination, item);
         return true;
@@ -83,7 +83,7 @@ public static class ItemSystem
     public static void RemoveFromContainer(World world, Entity item)
     {
         if (!world.Has<InContainer>(item)) return;
-        var parent = world.Get<InContainer>(item).Parent;
+        var parent = world.Get<InContainer>(item).Parent.Resolve(world);
         if (world.IsAlive(parent) && world.Has<Container>(parent))
             world.Get<Container>(parent).Items.Remove(item);
         world.Remove<InContainer>(item);
@@ -127,7 +127,7 @@ public static class ItemSystem
         while (world.IsAlive(current) && world.Has<InContainer>(current))
         {
             if (!visited.Add(current)) return true;
-            current = world.Get<InContainer>(current).Parent;
+            current = world.Get<InContainer>(current).Parent.Resolve(world);
             if (current.Equals(item)) return true;
         }
 

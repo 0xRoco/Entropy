@@ -35,6 +35,11 @@ public static class DefinitionLoader
         return LoadType(rootDirectory, "WORLD_OBJECT", ParseWorldObject);
     }
 
+    public static List<LootTableDefinition> LoadLootTables(string rootDirectory)
+    {
+        return LoadType(rootDirectory, "LOOT_TABLE", ParseLootTable);
+    }
+
     private static List<T> LoadType<T>(string rootDirectory, string typeName,
         Func<JsonElement, string, T> parse)
     {
@@ -73,6 +78,7 @@ public static class DefinitionLoader
             Materials = ParseMaterials(element, id, file),
             Flags = ParseFlags(element),
             Weight = GetIntOr(element, "weight", 0),
+            PriceCents = GetIntOr(element, "price_cents", 0),
             Stackable = GetBoolOr(element, "stackable", false),
             MaxStack = GetIntOr(element, "max_stack", 10),
             Effects = ParseEffects(element, id, file)
@@ -293,8 +299,37 @@ public static class DefinitionLoader
             Description = GetStringOr(element, "description", string.Empty),
             Flags = ParseFlags(element),
             ContainerSlots = GetIntOr(element, "container_slots", 0),
-            StarterItems = ParseStringList(element, "starter_items")
+            StarterItems = ParseStringList(element, "starter_items"),
+            LootTableId = GetStringOr(element, "loot_table", null),
+            Locked = GetBoolOr(element, "locked", false),
+            RequiredKeyFlag = GetStringOr(element, "required_key_flag", string.Empty),
+            RequiredToolFlag = GetStringOr(element, "required_tool_flag", string.Empty)
         };
+    }
+
+    private static LootTableDefinition ParseLootTable(JsonElement element, string file)
+    {
+        var table = new LootTableDefinition
+        {
+            Id = GetString(element, "id", file),
+            Rolls = GetIntOr(element, "rolls", 1)
+        };
+
+        if (element.TryGetProperty("entries", out var entries) && entries.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var entry in entries.EnumerateArray())
+            {
+                table.Entries.Add(new LootEntry
+                {
+                    ItemId = GetString(entry, "item", file),
+                    Weight = GetIntOr(entry, "weight", 1),
+                    MinQuantity = GetIntOr(entry, "min", 1),
+                    MaxQuantity = GetIntOr(entry, "max", 1)
+                });
+            }
+        }
+
+        return table;
     }
 
     private static List<string> ParseStringList(JsonElement e, string name)

@@ -107,6 +107,7 @@ public partial class ItemsViewModel(ContentWorkspace workspace) : DefListViewMod
         Description = "",
         Category = "",
         Weight = 0,
+        PriceCents = 0,
         Stackable = true,
         MaxStack = 10
     };
@@ -123,6 +124,7 @@ public partial class ItemsViewModel(ContentWorkspace workspace) : DefListViewMod
         Materials = new List<Material>(source.Materials),
         Flags = new HashSet<string>(source.Flags, StringComparer.OrdinalIgnoreCase),
         Weight = source.Weight,
+        PriceCents = source.PriceCents,
         Stackable = source.Stackable,
         MaxStack = source.MaxStack,
         Effects = source.Effects.Select(e => e).ToList()

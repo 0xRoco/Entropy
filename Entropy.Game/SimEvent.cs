@@ -7,4 +7,6 @@ public record SimEvent(
     string Description,
     string MapId,
     Vector2i Location,
-    int Minute);
+    int Minute,
+    long? ActorStableId = null,
+    long? TargetStableId = null);

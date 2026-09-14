@@ -48,7 +48,7 @@ public static class ItemActions
             return ActionResult.Failed;
         }
 
-        world.Set(player, new Equipped { Item = item });
+        world.Set(player, new Equipped { Item = StableEntityReference.From(world, item) });
         log.Add($"You wield the {world.Get<ItemIdentity>(item).Name}.", Color4.Cyan);
         return ActionResult.Free;
     }
@@ -60,7 +60,8 @@ public static class ItemActions
         var mapId = context.World.Get<Location>(player).MapId;
         var name = context.World.Get<ItemIdentity>(item).Name;
 
-        if (context.World.Has<Equipped>(player) && context.World.Get<Equipped>(player).Item.Equals(item))
+        if (context.World.Has<Equipped>(player) &&
+            context.World.Get<Equipped>(player).Item.Resolve(context.World).Equals(item))
             context.World.Remove<Equipped>(player);
 
         ItemSystem.Drop(context.World, mapId, item, (int)pos.X, (int)pos.Y);

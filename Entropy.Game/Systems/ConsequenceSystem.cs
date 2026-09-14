@@ -21,7 +21,10 @@ public static class ConsequenceSystem
             description,
             ctx.MapId,
             location,
-            ctx.Clock.MinuteOfDay);
+            ctx.Clock.MinuteOfDay,
+            ctx.World.IsAlive(attacker) ? ctx.World.StableId(attacker) : null,
+            ctx.World.IsAlive(victim) ? ctx.World.StableId(victim) : null);
+        ctx.Events.Publish(simEvent);
         var witnesses = FindWitnesses(ctx, location, attacker);
         if (witnesses.Count == 0) return; // unseen crime
 

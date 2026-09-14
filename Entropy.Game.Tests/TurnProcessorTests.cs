@@ -74,7 +74,8 @@ public class TurnProcessorTests
             Visibilities = new Dictionary<string, VisibilityMap> { ["test"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,
-            LockedMaps = new HashSet<string>()
+            DoorDefinitions = new(),
+            DoorStates = new()
         };
 
         return new Fixture(map, world, player, visibility, turns, context);

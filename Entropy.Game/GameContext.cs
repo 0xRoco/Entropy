@@ -2,6 +2,7 @@ using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.World;
 using Entropy.Content;
+using Entropy.Game.Components.Spatial;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 
@@ -22,5 +23,7 @@ public sealed class GameContext
     public required Dictionary<string, VisibilityMap> Visibilities { get; init; }
     public required VisibilityMap Visibility { get; set; }
     public required int ViewRadius { get; init; }
-    public required HashSet<string> LockedMaps { get; init; }
+    public required Dictionary<DoorKey, DoorDefinition> DoorDefinitions { get; init; }
+    public required Dictionary<DoorKey, DoorState> DoorStates { get; init; }
+    public SimulationEventBus Events { get; init; } = new();
 }

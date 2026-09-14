@@ -13,6 +13,10 @@ public class WorldObjectDefinition
     public HashSet<string> Flags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public int ContainerSlots { get; set; }
     public List<string> StarterItems { get; set; } = [];
+    public string? LootTableId { get; set; }
+    public bool Locked { get; set; }
+    public string RequiredKeyFlag { get; set; } = string.Empty;
+    public string RequiredToolFlag { get; set; } = string.Empty;
 
     public bool HasFlag(string flag) => Flags.Contains(flag);
     public bool IsContainer => ContainerSlots > 0;

@@ -4,5 +4,5 @@ namespace Entropy.Game.Components.Inventory;
 
 public struct Equipped
 {
-    public Entity Item;
+    public StableEntityReference Item;
 }

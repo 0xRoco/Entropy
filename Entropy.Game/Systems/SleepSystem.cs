@@ -1,6 +1,7 @@
 using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Game.Components;
+using Entropy.Game.Components.Simulation;
 using Entropy.Game.Components.Tags;
 using Entropy.Game.Components.Vitals;
 using OpenTK.Mathematics;
@@ -11,16 +12,25 @@ public static class SleepSystem
 {
     public const int RecoveryPerTurn = 3;
 
-    public static void FallAsleep(GameContext context, Entity player, Entity bed)
+    public static ActionResult FallAsleep(GameContext context, Entity player, Entity bed)
     {
-        context.World.Set(player, new Sleeping { Bed = bed });
+        if (!context.World.IsAlive(bed) || ActivitySystem.IsActive(context.World, player))
+            return ActionResult.Failed;
+
+        ActivitySystem.Start(context, player, new Activity
+        {
+            Kind = ActivityKind.Sleep,
+            RemainingMinutes = 480,
+            TotalMinutes = 480,
+            Target = StableEntityReference.From(context.World, bed)
+        });
         context.Log.Add("You lie down and fall asleep.");
+        return ActionResult.Turn;
     }
 
     public static void Wake(GameContext context, Entity player, string reason)
     {
-        context.World.Remove<Sleeping>(player);
-        context.Log.Add(reason, Color4.LightGray);
+        ActivitySystem.Interrupt(context, player, reason);
     }
 
     public static void Recover(GameContext context, Entity player)

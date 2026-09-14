@@ -8,7 +8,8 @@ public static class DefinitionValidator
         IReadOnlyCollection<TerrainDefinition> terrains,
         IReadOnlyCollection<TilesetDefinition> tilesets,
         IReadOnlyCollection<BuildingTemplate> buildings,
-        IReadOnlyCollection<WorldObjectDefinition> worldObjects)
+        IReadOnlyCollection<WorldObjectDefinition> worldObjects,
+        IReadOnlyCollection<LootTableDefinition>? lootTables = null)
     {
         var errors = new List<string>();
 
@@ -18,7 +19,10 @@ public static class DefinitionValidator
         errors.AddRange(ValidateTilesets(tilesets,
             ItemIds(items), CreatureIds(creatures), TerrainIds(terrains), WorldObjectIds(worldObjects)));
         errors.AddRange(ValidateBuildingTemplates(buildings, TerrainIds(terrains)));
-        errors.AddRange(ValidateWorldObjects(worldObjects, ItemIds(items)));
+        var lootTableIds = lootTables?.Select(table => table.Id).ToList();
+        errors.AddRange(ValidateWorldObjects(worldObjects, ItemIds(items), lootTableIds));
+        if (lootTables is not null)
+            errors.AddRange(ValidateLootTables(lootTables, ItemIds(items)));
 
         return errors;
     }
@@ -40,6 +44,9 @@ public static class DefinitionValidator
 
             if (ColorNames.NameOf(def.Color) is null)
                 errors.Add($"Item '{def.Id}' has a color with no palette name.");
+
+            if (def.PriceCents < 0)
+                errors.Add($"Item '{def.Id}' has a negative price.");
 
             foreach (var material in def.Materials)
             {
@@ -263,7 +270,8 @@ public static class DefinitionValidator
 
     public static List<string> ValidateWorldObjects(
         IEnumerable<WorldObjectDefinition> worldObjects,
-        IReadOnlyCollection<string>? itemIds = null)
+        IReadOnlyCollection<string>? itemIds = null,
+        IReadOnlyCollection<string>? lootTableIds = null)
     {
         var errors = new List<string>();
         var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -284,10 +292,51 @@ public static class DefinitionValidator
             if (def.ContainerSlots < 0)
                 errors.Add($"World object '{def.Id}' has negative container_slots.");
 
+            if (def.Locked && string.IsNullOrWhiteSpace(def.RequiredKeyFlag) &&
+                string.IsNullOrWhiteSpace(def.RequiredToolFlag))
+                errors.Add($"Locked world object '{def.Id}' has no key or tool requirement.");
+
             foreach (var itemId in def.StarterItems)
             {
                 if (itemIds?.Contains(itemId, StringComparer.OrdinalIgnoreCase) == false)
                     errors.Add($"World object '{def.Id}' starts with unknown item id '{itemId}'.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(def.LootTableId) &&
+                lootTableIds?.Contains(def.LootTableId, StringComparer.OrdinalIgnoreCase) == false)
+                errors.Add($"World object '{def.Id}' references unknown loot table '{def.LootTableId}'.");
+        }
+
+        return errors;
+    }
+
+    public static List<string> ValidateLootTables(
+        IEnumerable<LootTableDefinition> lootTables,
+        IReadOnlyCollection<string>? itemIds = null)
+    {
+        var errors = new List<string>();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var table in lootTables)
+        {
+            if (string.IsNullOrWhiteSpace(table.Id))
+                errors.Add("Loot table with empty id.");
+            else if (!seenIds.Add(table.Id))
+                errors.Add($"Duplicate loot table id '{table.Id}'.");
+
+            if (table.Rolls < 0)
+                errors.Add($"Loot table '{table.Id}' has negative rolls.");
+            if (table.Entries.Count == 0)
+                errors.Add($"Loot table '{table.Id}' has no entries.");
+
+            foreach (var entry in table.Entries)
+            {
+                if (itemIds?.Contains(entry.ItemId, StringComparer.OrdinalIgnoreCase) == false)
+                    errors.Add($"Loot table '{table.Id}' references unknown item '{entry.ItemId}'.");
+                if (entry.Weight <= 0)
+                    errors.Add($"Loot table '{table.Id}' item '{entry.ItemId}' has non-positive weight.");
+                if (entry.MinQuantity <= 0 || entry.MaxQuantity < entry.MinQuantity)
+                    errors.Add($"Loot table '{table.Id}' item '{entry.ItemId}' has invalid quantity range.");
             }
         }
 

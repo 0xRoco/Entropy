@@ -124,7 +124,15 @@ public class ContainerDialog
         }
         else
         {
-            actions.Add(("Take", () => Take(item, name)));
+            if (PurchaseSystem.IsShopStock(_context, _container))
+            {
+                actions.Add(("Buy", () => Buy(item, name)));
+                actions.Add(("Steal", () => Steal(item, name)));
+            }
+            else
+            {
+                actions.Add(("Take", () => Take(item, name)));
+            }
             actions.Add(("Examine", () => Examine(item)));
         }
 
@@ -155,6 +163,28 @@ public class ContainerDialog
             _context.Log.Add($"You put the {name} away.");
             ActionCompleted?.Invoke(ActionResult.Turn);
         }
+
+        Refresh();
+    }
+
+    private void Buy(Entity item, string name)
+    {
+        if (_context is null)
+            return;
+
+        if (PurchaseSystem.TryPurchase(_context, _player, item, _container))
+            ActionCompleted?.Invoke(ActionResult.Turn);
+
+        Refresh();
+    }
+
+    private void Steal(Entity item, string name)
+    {
+        if (_context is null)
+            return;
+
+        if (PurchaseSystem.TrySteal(_context, _player, item, _container))
+            ActionCompleted?.Invoke(ActionResult.Turn);
 
         Refresh();
     }
@@ -207,6 +237,13 @@ public class ContainerDialog
 
             if (_context.World.Has<Stackable>(item))
                 text += $" x{_context.World.Get<Stackable>(item).Count}";
+
+            if (!_showingInventory && PurchaseSystem.IsShopStock(_context, _container))
+            {
+                var definitionId = _context.World.Get<ItemIdentity>(item).DefinitionId;
+                var price = _context.Definitions.Item(definitionId).PriceCents;
+                text += price > 0 ? $" ${price / 100}.{price % 100:00}" : " (not for sale)";
+            }
 
             _list.Items.Add($"[{glyph.Character}] {text}");
             _rows.Add(item);

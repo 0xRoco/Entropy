@@ -2,9 +2,11 @@ using Entropy.Content;
 using Entropy.Engine.ECS;
 using Entropy.Engine.ECS.Components;
 using Entropy.Engine.UI;
+using Entropy.Engine.World;
 using Entropy.Game.Components;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Inventory;
+using Entropy.Game.Components.Spatial;
 using Entropy.Game.Components.ItemEffects;
 using Entropy.Game.Components.Tags;
 using Entropy.Game.Components.Vitals;
@@ -25,29 +27,24 @@ public static class InteractionSystem
         var mapId = world.Get<Location>(player).MapId;
         var transition = context.Maps.TransitionAt(mapId, tile);
 
-        if (transition is not null && IsAdjacent(world.Get<Position>(player).Value, tile))
+        if (transition is not null && IsAdjacent(world.Get<Position>(player).Value, tile) &&
+            DoorSystem.TryGet(context, transition, out var door, out var doorState) &&
+            doorState.Locked && !doorState.Broken)
         {
-            if (context.LockedMaps.Contains(transition.ToMap))
+            if (!string.IsNullOrWhiteSpace(door.RequiredKeyFlag) && DoorSystem.HasItemWithFlag(context, player, door.RequiredKeyFlag))
             {
-                if (HasItemWithFlag(context, player, "key_pharmacy"))
-                {
-                    verbs.Add(new WorldVerb("Unlock the door with the pharmacy key",
-                        (ctx, p) => UnlockDoor(ctx, p, transition.ToMap)));
-                }
-
-                if (HasItemWithFlag(context, player, "tool_smash"))
-                {
-                    verbs.Add(new WorldVerb("Smash through the locked door",
-                        (ctx, p) => ForceDoor(ctx, p, transition.ToMap, tile)));
-                }
-
-                verbs.Add(new WorldVerb("Examine the locked door",
-                    (ctx, _) =>
-                    {
-                        ctx.Log.Add("The door is locked. There may be another way in.", Color4.Yellow);
-                        return ActionResult.Free;
-                    }));
+                verbs.Add(new WorldVerb("Unlock the door",
+                    (ctx, p) => DoorSystem.Unlock(ctx, p, transition)));
             }
+
+            AddDoorForceVerbs(context, verbs, player, transition, tile);
+
+            verbs.Add(new WorldVerb("Examine the locked door",
+                (ctx, _) =>
+                {
+                    ctx.Log.Add("The door is locked. There may be another way in.", Color4.Yellow);
+                    return ActionResult.Free;
+                }));
         }
 
         foreach (var entity in world.Query<Position, WorldObjectIdentity>())
@@ -60,10 +57,25 @@ public static class InteractionSystem
             if (world.Has<Container>(entity) && adjacent)
             {
                 var target = entity;
-                if (!world.Has<Searched>(entity))
+                if (DoorSystem.TryGetLock(context, entity, out var lockState) &&
+                    lockState.Locked && !lockState.Broken)
+                {
+                    if (DoorSystem.HasItemWithFlag(context, player, lockState.RequiredKeyFlag))
+                        verbs.Add(new WorldVerb($"Unlock the {identity.Name}",
+                            (ctx, p) => DoorSystem.UnlockContainer(ctx, p, target)));
+
+                    AddContainerForceVerbs(context, verbs, player, target, tile);
+                    verbs.Add(new WorldVerb($"Examine the locked {identity.Name}",
+                        (ctx, _) =>
+                        {
+                            ctx.Log.Add("It is locked. There may be another way in.", Color4.Yellow);
+                            return ActionResult.Free;
+                        }));
+                }
+                else if (!world.Has<Searched>(entity))
                 {
                     verbs.Add(new WorldVerb($"Search the {identity.Name}",
-                        (ctx, _) => SearchContainer(ctx, target)));
+                        (ctx, p) => SearchSystem.Start(ctx, p, target)));
                 }
                 else
                 {
@@ -80,11 +92,7 @@ public static class InteractionSystem
             {
                 var bed = entity;
                 verbs.Add(new WorldVerb($"Sleep on the {identity.Name}",
-                    (ctx, p) =>
-                    {
-                        SleepSystem.FallAsleep(ctx, p, bed);
-                        return ActionResult.Turn;
-                    }));
+                    (ctx, p) => SleepSystem.FallAsleep(ctx, p, bed)));
             }
 
             verbs.Add(new WorldVerb($"Examine the {identity.Name}",
@@ -141,6 +149,34 @@ public static class InteractionSystem
             verbs.Add(ExamineTerrainVerb(context, tile));
 
         return verbs;
+    }
+
+    private static void AddContainerForceVerbs(GameContext context, List<WorldVerb> verbs,
+        Entity player, Entity container, Vector2i source)
+    {
+        if (DoorSystem.HasItemWithFlag(context, player, "tool_smash"))
+            verbs.Add(new WorldVerb("Bash it open",
+                (ctx, p) => DoorSystem.ForceContainerEntry(ctx, p, container, source, "tool_smash", "bash", 12)));
+        if (DoorSystem.HasItemWithFlag(context, player, "tool_crowbar"))
+            verbs.Add(new WorldVerb("Pry it open",
+                (ctx, p) => DoorSystem.ForceContainerEntry(ctx, p, container, source, "tool_crowbar", "pry", 8)));
+        if (DoorSystem.HasItemWithFlag(context, player, "tool_lockpick"))
+            verbs.Add(new WorldVerb("Pick the lock",
+                (ctx, p) => DoorSystem.ForceContainerEntry(ctx, p, container, source, "tool_lockpick", "pick", 1)));
+    }
+
+    private static void AddDoorForceVerbs(GameContext context, List<WorldVerb> verbs,
+        Entity player, MapTransition transition, Vector2i source)
+    {
+        if (DoorSystem.HasItemWithFlag(context, player, "tool_smash"))
+            verbs.Add(new WorldVerb("Bash the door",
+                (ctx, p) => DoorSystem.ForceEntry(ctx, p, transition, source, "tool_smash", "bash", 12)));
+        if (DoorSystem.HasItemWithFlag(context, player, "tool_crowbar"))
+            verbs.Add(new WorldVerb("Pry the door",
+                (ctx, p) => DoorSystem.ForceEntry(ctx, p, transition, source, "tool_crowbar", "pry", 8)));
+        if (DoorSystem.HasItemWithFlag(context, player, "tool_lockpick"))
+            verbs.Add(new WorldVerb("Pick the door lock",
+                (ctx, p) => DoorSystem.ForceEntry(ctx, p, transition, source, "tool_lockpick", "pick", 1)));
     }
 
     public static string DescribeTargetName(GameContext context, Vector2i tile)
@@ -217,7 +253,7 @@ public static class InteractionSystem
 
         if (isPlayer && world.Has<Equipped>(attacker))
         {
-            var equipped = world.Get<Equipped>(attacker).Item;
+            var equipped = world.Get<Equipped>(attacker).Item.Resolve(world);
             if (world.IsAlive(equipped) && world.Has<Damage>(equipped))
                 damage = world.Get<Damage>(equipped).Amount;
         }
@@ -269,49 +305,6 @@ public static class InteractionSystem
         }
 
         return ActionResult.Failed;
-    }
-
-    private static ActionResult SearchContainer(GameContext context, Entity container)
-    {
-        if (!context.World.IsAlive(container)) return ActionResult.Failed;
-        context.World.Set(container, new Searched());
-        var identity = context.World.Get<WorldObjectIdentity>(container);
-        var count = context.World.Has<Container>(container)
-            ? context.World.Get<Container>(container).Items.Count
-            : 0;
-        context.Log.Add(
-            count > 0
-                ? $"You search the {identity.Name}. You find something inside."
-                : $"You search the {identity.Name}. It is empty.",
-            count > 0 ? Color4.Cyan : Color4.LightGray);
-        return ActionResult.Turn;
-    }
-
-    private static ActionResult UnlockDoor(GameContext context, Entity player, string mapId)
-    {
-        context.LockedMaps.Remove(mapId);
-        context.Log.Add("You unlock the pharmacy door quietly.", Color4.Cyan);
-        return ActionResult.Turn;
-    }
-
-    private static ActionResult ForceDoor(GameContext context, Entity player, string mapId, Vector2i tile)
-    {
-        context.LockedMaps.Remove(mapId);
-        context.Log.Add("You smash the lock. The noise carries down the street.", Color4.OrangeRed);
-        NoiseSystem.Emit(context, tile, 12, "Something is breaking into the pharmacy");
-        return ActionResult.Turn;
-    }
-
-    private static bool HasItemWithFlag(GameContext context, Entity player, string flag)
-    {
-        var world = context.World;
-        if (!world.Has<Container>(player)) return false;
-
-        return world.Get<Container>(player).Items
-            .Where(world.IsAlive)
-            .Where(item => world.Has<ItemIdentity>(item))
-            .Select(item => context.Definitions.Item(world.Get<ItemIdentity>(item).DefinitionId))
-            .Any(item => item.Flags.Contains(flag));
     }
 
     private static void ExamineWorldObject(GameContext context, Entity entity)

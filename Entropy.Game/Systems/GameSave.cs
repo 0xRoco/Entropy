@@ -23,7 +23,8 @@ public sealed record GameSaveData(
     FatigueData Fatigue,
     IReadOnlyList<InventoryItemData> Inventory,
     string? EquippedItemId,
-    CharacterData? Character);
+    CharacterData? Character,
+    int CashCents = 0);
 
 public sealed record HealthData(int Current, int Max);
 public sealed record HungerData(int Current, int Max, bool Starving);
@@ -91,6 +92,7 @@ public static class GameSave
         var hunger = world.Get<Hunger>(player);
         var thirst = world.Get<Thirst>(player);
         var fatigue = world.Get<Fatigue>(player);
+        var cashCents = world.Has<Wallet>(player) ? world.Get<Wallet>(player).CashCents : 0;
         var inventory = world.Has<Container>(player)
             ? world.Get<Container>(player).Items
                 .Where(world.IsAlive)
@@ -102,9 +104,9 @@ public static class GameSave
             : [];
 
         var equippedItemId = world.Has<Equipped>(player) &&
-                             world.IsAlive(world.Get<Equipped>(player).Item) &&
-                             world.Has<ItemIdentity>(world.Get<Equipped>(player).Item)
-            ? world.Get<ItemIdentity>(world.Get<Equipped>(player).Item).DefinitionId
+                             world.IsAlive(world.Get<Equipped>(player).Item.Resolve(world)) &&
+                             world.Has<ItemIdentity>(world.Get<Equipped>(player).Item.Resolve(world))
+            ? world.Get<ItemIdentity>(world.Get<Equipped>(player).Item.Resolve(world)).DefinitionId
             : null;
 
         return new GameSaveData(
@@ -122,6 +124,7 @@ public static class GameSave
             new FatigueData(fatigue.Current, fatigue.Max),
             inventory,
             equippedItemId,
-            character);
+            character,
+            cashCents);
     }
 }

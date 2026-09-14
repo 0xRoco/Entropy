@@ -31,6 +31,7 @@ public static class DefinitionWriter
             WriteMaterials(writer, def.Materials);
             WriteFlags(writer, def.Flags);
             if (def.Weight > 0) writer.WriteNumber("weight", def.Weight);
+            if (def.PriceCents > 0) writer.WriteNumber("price_cents", def.PriceCents);
 
             if (def.Stackable)
             {
@@ -217,6 +218,16 @@ public static class DefinitionWriter
 
             WriteFlags(writer, def.Flags);
             if (def.ContainerSlots > 0) writer.WriteNumber("container_slots", def.ContainerSlots);
+            if (!string.IsNullOrWhiteSpace(def.LootTableId))
+                writer.WriteString("loot_table", def.LootTableId);
+            if (def.Locked)
+            {
+                writer.WriteBoolean("locked", true);
+                if (!string.IsNullOrWhiteSpace(def.RequiredKeyFlag))
+                    writer.WriteString("required_key_flag", def.RequiredKeyFlag);
+                if (!string.IsNullOrWhiteSpace(def.RequiredToolFlag))
+                    writer.WriteString("required_tool_flag", def.RequiredToolFlag);
+            }
 
             if (def.StarterItems.Count > 0)
             {

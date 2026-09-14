@@ -18,6 +18,7 @@ public class DefinitionRegistry
     
     private readonly Dictionary<string, BuildingTemplate> _buildingTemplates = new();
     private readonly Dictionary<string, WorldObjectDefinition> _worldObjects = new();
+    private readonly Dictionary<string, LootTableDefinition> _lootTables = new();
 
     public void LoadItems(string directory)
     {
@@ -86,6 +87,15 @@ public class DefinitionRegistry
         }
     }
 
+    public void LoadLootTables(string directory)
+    {
+        foreach (var def in DefinitionLoader.LoadLootTables(directory))
+        {
+            if (!_lootTables.TryAdd(def.Id, def))
+                throw new InvalidOperationException($"Duplicate loot table ID '{def.Id}' found.");
+        }
+    }
+
     public ItemDefinition Item(string id) => _items.TryGetValue(id, out var def)
         ? def
         : throw new KeyNotFoundException($"Item definition with ID '{id}' not found.");
@@ -130,6 +140,10 @@ public class DefinitionRegistry
     public bool TryWorldObject(string id, out WorldObjectDefinition def) =>
         _worldObjects.TryGetValue(id, out def!);
 
+    public LootTableDefinition LootTable(string id) => _lootTables.TryGetValue(id, out var def)
+        ? def
+        : throw new KeyNotFoundException($"Loot table definition with ID '{id}' not found.");
+
     public TerrainDefinition TerrainForIndex(ushort index)
     {
         if (index == 0 || !_terrainByIndex.TryGetValue(index, out var def))
@@ -143,6 +157,7 @@ public class DefinitionRegistry
     public IReadOnlyCollection<TilesetDefinition> Tilesets => _tilesets.Values;
     public IReadOnlyCollection<BuildingTemplate> BuildingTemplates => _buildingTemplates.Values;
     public IReadOnlyCollection<WorldObjectDefinition> WorldObjects => _worldObjects.Values;
+    public IReadOnlyCollection<LootTableDefinition> LootTables => _lootTables.Values;
 
     public IReadOnlyList<string?> TerrainSpriteKeys => _terrainSpriteKeys;
 

@@ -130,7 +130,7 @@ public class InventoryDialog
 
         if (_context.World.Has<Equipped>(_player))
         {
-            var item = _context.World.Get<Equipped>(_player).Item;
+            var item = _context.World.Get<Equipped>(_player).Item.Resolve(_context.World);
             if (_context.World.IsAlive(item))
                 wielded = item;
         }
@@ -164,7 +164,7 @@ public class InventoryDialog
         if (index < 0 || index >= _rowEntities.Count || !_context.World.Has<Equipped>(_player))
             return UiTheme.Text;
 
-        var wielded = _context.World.Get<Equipped>(_player).Item;
+        var wielded = _context.World.Get<Equipped>(_player).Item.Resolve(_context.World);
         return _rowEntities[index].Equals(wielded) ? UiTheme.Info : UiTheme.Text;
     }
 }

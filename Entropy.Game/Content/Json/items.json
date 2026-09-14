@@ -3,6 +3,7 @@
     "//": "basic first aid, stops the bleeding",
     "type": "ITEM",
     "id": "bandage",
+    "price_cents": 299,
     "name": "Bandage",
     "symbol": "!",
     "color": "pink",
@@ -28,6 +29,7 @@
     "//": "first aid kit, field surgery",
     "type": "ITEM",
     "id": "first_aid_kit",
+    "price_cents": 1299,
     "name": "First Aid Kit",
     "symbol": "\u002B",
     "color": "red",
@@ -104,6 +106,7 @@
     "//": "improvised bludgeon",
     "type": "ITEM",
     "id": "baseball_bat",
+    "price_cents": 1899,
     "name": "Baseball Bat",
     "symbol": "/",
     "color": "brown",
@@ -155,6 +158,7 @@
     "//": "dry sustenance",
     "type": "ITEM",
     "id": "crackers",
+    "price_cents": 199,
     "name": "Crackers",
     "symbol": "%",
     "color": "light_yellow",
@@ -180,6 +184,7 @@
     "//": "canned protein, keeps for years",
     "type": "ITEM",
     "id": "canned_beans",
+    "price_cents": 249,
     "name": "Canned Beans",
     "symbol": "%",
     "color": "brown",
@@ -206,6 +211,7 @@
     "//": "bottled water, empty bottle after",
     "type": "ITEM",
     "id": "water_bottle",
+    "price_cents": 149,
     "name": "Bottle of Water",
     "symbol": "!",
     "color": "light_blue",
@@ -374,5 +380,40 @@
       "key_pharmacy"
     ],
     "weight": 20
+  },
+  {
+    "//": "a basic tool for prying locked containers",
+    "type": "ITEM",
+    "id": "crowbar",
+    "name": "Crowbar",
+    "symbol": "/",
+    "color": "light_gray",
+    "description": "A stout steel bar useful for forcing locks.",
+    "category": "tools",
+    "material": [
+      "Steel"
+    ],
+    "flags": [
+      "tool_crowbar",
+      "rigid"
+    ],
+    "weight": 1800
+  },
+  {
+    "//": "a simple set of lock picks",
+    "type": "ITEM",
+    "id": "lockpick",
+    "name": "Lock Pick",
+    "symbol": ",",
+    "color": "yellow",
+    "description": "A small set of improvised picks.",
+    "category": "tools",
+    "material": [
+      "Steel"
+    ],
+    "flags": [
+      "tool_lockpick"
+    ],
+    "weight": 80
   }
 ]

@@ -121,7 +121,8 @@ public class InventoryActionTests
             Visibilities = new Dictionary<string, VisibilityMap> { ["test"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,
-            LockedMaps = new HashSet<string>()
+            DoorDefinitions = new(),
+            DoorStates = new()
         };
 
         return new Fixture(world, player, context);

@@ -10,6 +10,12 @@ public static class NoiseSystem
     public static void Emit(GameContext context, Vector2i source, int radius, string description)
     {
         var world = context.World;
+        context.Events.Publish(new SimEvent(
+            "noise",
+            description,
+            context.MapId,
+            source,
+            context.Clock.MinuteOfDay));
         var affected = 0;
 
         foreach (var entity in world.Query<Position, AIState>())

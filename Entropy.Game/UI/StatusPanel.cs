@@ -18,6 +18,7 @@ public class StatusPanel : Panel
 
     private readonly Label _wieldLabel;
     private readonly Label _wantedLabel;
+    private readonly Label _cashLabel;
 
     private readonly World _world;
     private readonly Entity _player;
@@ -26,7 +27,7 @@ public class StatusPanel : Panel
     {
         _world = world;
         _player = player;
-        Height = 15;
+        Height = 16;
 
         const int innerX = 1;
         Add(new Label { X = innerX, Y = 1, Width = 22, Text = "STATUS", Color = UiTheme.Keybind });
@@ -48,6 +49,8 @@ public class StatusPanel : Panel
         Add(new Label { X = innerX, Y = 12, Width = 22, Text = $"Seed: {seed}", Color = UiTheme.TextDim });
         _wantedLabel = new Label { X = innerX, Y = 13, Width = 22 };
         Add(_wantedLabel);
+        _cashLabel = new Label { X = innerX, Y = 14, Width = 22 };
+        Add(_cashLabel);
     }
 
     public override void Draw(DrawContext context, int offsetX, int offsetY)
@@ -82,11 +85,15 @@ public class StatusPanel : Panel
         }
 
         _wieldLabel.Text = _world.Has<Equipped>(_player)
-            ? $"Wielded: {_world.Get<ItemIdentity>(_world.Get<Equipped>(_player).Item).Name}"
+            ? $"Wielded: {_world.Get<ItemIdentity>(_world.Get<Equipped>(_player).Item.Resolve(_world)).Name}"
             : "Wielded: Fists";
 
         _wantedLabel.Text = _world.Has<Wanted>(_player) ? "WANTED" : "";
         _wantedLabel.Color = _world.Has<Wanted>(_player) ? UiTheme.Danger : UiTheme.Text;
+
+        _cashLabel.Text = _world.Has<Wallet>(_player)
+            ? $"Cash: ${_world.Get<Wallet>(_player).CashCents / 100}.{_world.Get<Wallet>(_player).CashCents % 100:00}"
+            : "Cash: $0.00";
 
         base.Draw(context, offsetX, offsetY);
     }

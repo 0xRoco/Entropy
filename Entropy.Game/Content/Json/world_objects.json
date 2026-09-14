@@ -10,10 +10,21 @@
       "container"
     ],
     "container_slots": 6,
-    "starter_items": [
-      "crackers",
-      "canned_beans"
-    ]
+    "loot_table": "shelf_food"
+  },
+  {
+    "type": "WORLD_OBJECT",
+    "id": "store_shelf",
+    "name": "Store Shelf",
+    "symbol": "=",
+    "color": "brown",
+    "description": "A metal shelf stocked for sale.",
+    "flags": [
+      "container",
+      "shop_stock"
+    ],
+    "container_slots": 6,
+    "loot_table": "shelf_food"
   },
   {
     "type": "WORLD_OBJECT",
@@ -23,7 +34,8 @@
     "color": "gray",
     "description": "A dusty cash register. The drawer hangs open, empty.",
     "flags": [
-      "container"
+      "container",
+      "shop_stock"
     ],
     "container_slots": 4
   },

@@ -6,19 +6,40 @@ namespace Entropy.Engine.ECS;
 public class World
 {
     private int _nextId = 1;
+    private long _nextStableId = 1;
     private readonly Dictionary<Type, object> _storages = new();
     private readonly HashSet<int> _entities = [];
+    private readonly Dictionary<int, long> _stableIds = [];
+    private readonly Dictionary<long, int> _entitiesByStableId = [];
 
     public Entity Create()
     {
         var id = _nextId++;
         _entities.Add(id);
+        var stableId = _nextStableId++;
+        _stableIds[id] = stableId;
+        _entitiesByStableId[stableId] = id;
         return new Entity(id);
+    }
+
+    public Entity Create(long stableId)
+    {
+        if (stableId <= 0 || _entitiesByStableId.ContainsKey(stableId))
+            throw new ArgumentOutOfRangeException(nameof(stableId));
+
+        var entity = Create();
+        _entitiesByStableId.Remove(_stableIds[entity.Id]);
+        _stableIds[entity.Id] = stableId;
+        _entitiesByStableId[stableId] = entity.Id;
+        _nextStableId = Math.Max(_nextStableId, stableId + 1);
+        return entity;
     }
 
     public void Destroy(Entity entity)
     {
         if (!_entities.Remove(entity.Id)) return;
+        if (_stableIds.Remove(entity.Id, out var stableId))
+            _entitiesByStableId.Remove(stableId);
         foreach (var storage in _storages.Values)
         {
             ((IComponentStorage)storage).Remove(entity.Id);
@@ -26,6 +47,17 @@ public class World
     }
 
     public bool IsAlive(Entity entity) => _entities.Contains(entity.Id);
+
+    public long StableId(Entity entity)
+    {
+        EnsureAlive(entity);
+        return _stableIds[entity.Id];
+    }
+
+    public Entity ResolveStableId(long stableId) =>
+        _entitiesByStableId.TryGetValue(stableId, out var id)
+            ? new Entity(id)
+            : default;
     
     public void Set<T>(Entity entity, T component)
     {
@@ -39,7 +71,7 @@ public class World
         ref var value = ref CollectionsMarshal.GetValueRefOrNullRef(GetStorage<T>(), entity.Id);
         if (Unsafe.IsNullRef(ref value))
             throw new InvalidOperationException($"Entity {entity.Id} does not have component of type {typeof(T)}");
-        return ref value;
+        return ref value!;
     }
     
     public bool Has<T>(Entity entity)

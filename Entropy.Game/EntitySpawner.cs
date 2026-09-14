@@ -7,9 +7,9 @@ using Entropy.Content;
 using Entropy.Game.Components.AI;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Inventory;
+using Entropy.Game.Components.Spatial;
 using Entropy.Game.Components.ItemEffects;
 using Entropy.Game.Components.Simulation;
-using Entropy.Game.Components.Spatial;
 using Entropy.Game.Components.Tags;
 using Entropy.Game.Components.Vitals;
 using OpenTK.Mathematics;
@@ -32,7 +32,8 @@ public static class EntitySpawner
             .With(world, new Facing { Direction = new Vector2i(1, 0) })
             .With(world, new Hunger { Current = 480, Max = 480 })
             .With(world, new Thirst { Current = 240, Max = 240 })
-            .With(world, new Fatigue { Current = 960, Max = 960 });
+            .With(world, new Fatigue { Current = 960, Max = 960 })
+            .With(world, new Wallet { CashCents = 5000 });
 
         return e;
     }
@@ -99,6 +100,14 @@ public static class EntitySpawner
 
         if (def.IsContainer)
             e.With(world, Container.WithSlots(def.ContainerSlots));
+
+        if (def.Locked)
+            e.With(world, new LockState
+            {
+                Locked = true,
+                RequiredKeyFlag = def.RequiredKeyFlag,
+                RequiredToolFlag = def.RequiredToolFlag
+            });
 
         return e;
     }

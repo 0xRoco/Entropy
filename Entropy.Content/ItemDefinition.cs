@@ -17,6 +17,7 @@ public class ItemDefinition
     public HashSet<string> Flags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public int Weight { get; set; }
+    public int PriceCents { get; set; }
 
     public bool Stackable { get; set; }
     public int MaxStack { get; set; } = 10;

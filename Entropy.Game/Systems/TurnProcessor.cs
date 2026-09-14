@@ -94,7 +94,7 @@ public class TurnProcessor
 
         if (transition != null)
         {
-            if (context.LockedMaps.Contains(transition.ToMap))
+            if (!DoorSystem.IsPassable(context, transition))
             {
                 context.Log.Add("The door is locked.", Color4.Yellow);
                 return ActionResult.Failed;
@@ -113,6 +113,18 @@ public class TurnProcessor
             context.MapId = transition.ToMap;
             context.Map = context.Maps[transition.ToMap];
             context.Visibility = context.Visibilities[transition.ToMap];
+
+            if (DoorSystem.TryGet(context, transition, out var door, out var doorState) &&
+                door.Trespass && doorState.Broken && !doorState.TrespassReported)
+            {
+                doorState.TrespassReported = true;
+                context.DoorStates[DoorSystem.KeyFor(transition)] = doorState;
+                var victim = context.World.Query<Home>()
+                    .FirstOrDefault(entity => context.World.Has<Home>(entity) &&
+                        context.World.Get<Home>(entity).MapId == transition.ToMap);
+                ConsequenceSystem.Report(context, "trespass", "someone forced entry into a home",
+                    transition.ToTile, context.Player, victim);
+            }
 
             Fov.Compute(
                 transition.ToTile,
