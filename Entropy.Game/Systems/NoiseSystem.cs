@@ -7,12 +7,12 @@ namespace Entropy.Game.Systems;
 
 public static class NoiseSystem
 {
-    public static void Emit(GameContext context, Vector2i source, int radius, string description)
+    public static void Emit(IGameRuntimeContext context, Vector2i source, int radius, string description)
     {
         var world = context.World;
         context.Events.Publish(new SimEvent(
             "noise",
-            description,
+            $"{description}.",
             context.MapId,
             source,
             context.Clock.MinuteOfDay));
@@ -38,8 +38,12 @@ public static class NoiseSystem
             affected++;
         }
 
-        context.Log.Add($"{description}.", Color4.OrangeRed);
         if (affected > 0)
-            context.Log.Add("Something nearby is investigating the noise.", Color4.Yellow);
+            context.Events.Publish(new SimEvent(
+                "noise.response",
+                "Something nearby is investigating the noise.",
+                context.MapId,
+                source,
+                context.Clock.MinuteOfDay));
     }
 }

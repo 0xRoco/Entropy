@@ -2,7 +2,7 @@ using Entropy.Content;
 using Entropy.Content.Loading;
 using Entropy.Engine.World;
 
-namespace Entropy.Game.Systems;
+namespace Entropy.Simulation;
 
 public class DefinitionRegistry
 {

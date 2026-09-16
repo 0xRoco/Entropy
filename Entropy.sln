@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Content", "Entropy.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Game.Tests", "Entropy.Game.Tests\Entropy.Game.Tests.csproj", "{B920F778-9C9A-4BBC-954C-60CC31374CF3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entropy.Simulation", "Entropy.Simulation\Entropy.Simulation.csproj", "{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,6 +82,18 @@ Global
 		{B920F778-9C9A-4BBC-954C-60CC31374CF3}.Release|x64.Build.0 = Release|Any CPU
 		{B920F778-9C9A-4BBC-954C-60CC31374CF3}.Release|x86.ActiveCfg = Release|Any CPU
 		{B920F778-9C9A-4BBC-954C-60CC31374CF3}.Release|x86.Build.0 = Release|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Debug|x64.Build.0 = Debug|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Debug|x86.Build.0 = Debug|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Release|x64.ActiveCfg = Release|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Release|x64.Build.0 = Release|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Release|x86.ActiveCfg = Release|Any CPU
+		{8551B418-71E8-405A-B41E-BD1F3DDFA9BA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

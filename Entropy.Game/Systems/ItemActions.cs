@@ -4,6 +4,7 @@ using Entropy.Game.Components;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Inventory;
 using Entropy.Game.Components.ItemEffects;
+using Entropy.Simulation;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game.Systems;
@@ -36,7 +37,6 @@ public static class ItemActions
     private static ActionResult Wield(GameContext context, Entity player, Entity item)
     {
         var world = context.World;
-        var log = context.Log;
         var items = ItemSystem.GetItems(world, player);
         var index = items.IndexOf(item);
 
@@ -44,12 +44,12 @@ public static class ItemActions
 
         if (!world.Has<Damage>(item))
         {
-            log.Add($"You can't wield the {world.Get<ItemIdentity>(item).Name}.", Color4.LightGray);
+            Publish(context, player, "item.use.failed", $"You can't wield the {world.Get<ItemIdentity>(item).Name}.", item);
             return ActionResult.Failed;
         }
 
         world.Set(player, new Equipped { Item = StableEntityReference.From(world, item) });
-        log.Add($"You wield the {world.Get<ItemIdentity>(item).Name}.", Color4.Cyan);
+        Publish(context, player, "item.wielded", $"You wield the {world.Get<ItemIdentity>(item).Name}.", item);
         return ActionResult.Free;
     }
 
@@ -65,7 +65,14 @@ public static class ItemActions
             context.World.Remove<Equipped>(player);
 
         ItemSystem.Drop(context.World, mapId, item, (int)pos.X, (int)pos.Y);
-        context.Log.Add($"You drop the {name}.");
+        context.Events.Publish(new Entropy.Simulation.SimEvent(
+            "item.dropped",
+            $"You drop the {name}.",
+            mapId,
+            new Vector2i((int)pos.X, (int)pos.Y),
+            context.Clock.MinuteOfDay,
+            context.World.StableId(player),
+            context.World.StableId(item)));
         return ActionResult.Turn;
     }
 
@@ -81,7 +88,20 @@ public static class ItemActions
         if (!context.World.IsAlive(item)) return ActionResult.Failed;
         var identity = context.World.Get<ItemIdentity>(item);
         var def = context.Definitions.Item(identity.DefinitionId);
-        context.Log.Add($"{identity.Name}: {def.Description ?? "No Description"}", Color4.LightGray);
+        Publish(context, player, "item.examined", $"{identity.Name}: {def.Description ?? "No Description"}", item);
         return ActionResult.Free;
+    }
+
+    private static void Publish(GameContext context, Entity actor, string type, string description, Entity target)
+    {
+        var position = context.World.Get<Position>(actor).Value;
+        context.Events.Publish(new SimEvent(
+            type,
+            description,
+            context.World.Get<Location>(actor).MapId,
+            new Vector2i((int)position.X, (int)position.Y),
+            context.Clock.MinuteOfDay,
+            context.World.StableId(actor),
+            context.World.IsAlive(target) ? context.World.StableId(target) : null));
     }
 }

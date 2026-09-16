@@ -5,30 +5,32 @@ using Entropy.Game.Components.AI;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using Entropy.Game.WorldGen;
+using Entropy.Simulation;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game;
 
 public class WorldSetup
 {
-    public record NewGameResult(
+        public record NewGameResult(
         TileMap Map,
         string MapId,
         MapGraph Maps,
         Dictionary<string, VisibilityMap> Visibilities,
         World World,
-        Entity Player,
-        TurnProcessor Turns,
-        IReadOnlyDictionary<string, BuildingInstance> Buildings);
+            Entity Player,
+            IReadOnlyDictionary<string, BuildingInstance> Buildings,
+            SimulationState Simulation);
 
     public static NewGameResult StartNewGame(
         Rng rng,
         MessageLog log,
         DefinitionRegistry defs,
-        int viewRadius)
+        int viewRadius,
+        WorldClock clock)
     {
         var world = new World();
-        var turns = new TurnProcessor();
+        var scheduler = new ActorScheduler();
 
         var block = CityBlockGenerator.Generate(defs);
         var maps = block.Maps;
@@ -46,7 +48,7 @@ public class WorldSetup
             playerStart.X,
             playerStart.Y);
 
-        turns.AddActor(player);
+        scheduler.Add(player);
 
         foreach (var building in block.Buildings.Values)
         {
@@ -107,7 +109,7 @@ public class WorldSetup
             sleepStart: 22 * 60,
             sleepEnd: 7 * 60));
 
-        turns.AddActor(dana);
+        scheduler.Add(dana);
 
         var marcusHome = marcusApartment.Anchors["home"];
         var marcusBed = marcusApartment.Anchors["bed"];
@@ -138,7 +140,7 @@ public class WorldSetup
             sleepStart: 8 * 60,
             sleepEnd: 16 * 60));
 
-        turns.AddActor(marcus);
+        scheduler.Add(marcus);
 
         var priya = EntitySpawner.CreateHuman(
             world,
@@ -158,7 +160,7 @@ public class WorldSetup
             sleepStart: 23 * 60,
             sleepEnd: 7 * 60));
 
-        turns.AddActor(priya);
+        scheduler.Add(priya);
 
         var house = block.Buildings["neighborhood_house"];
         var keyTile = house.Anchors["home"];
@@ -194,7 +196,7 @@ public class WorldSetup
             108,
             20,
             "Zombie");
-        turns.AddActor(zombie);
+        scheduler.Add(zombie);
 
         Fov.Compute(
             playerStart,
@@ -205,6 +207,18 @@ public class WorldSetup
         log.Add($"Seed: {rng.Seed}", Color4.LightGray);
         log.Add("Welcome to the block.", Color4.Red);
 
+        var simulation = new SimulationState(new SimulationContext
+        {
+            World = world,
+            Maps = maps,
+            Definitions = defs,
+            Rng = rng,
+            Player = player,
+            Clock = clock,
+            Events = new SimulationEventBus(),
+            Scheduler = scheduler
+        });
+
         return new NewGameResult(
             streetMap,
             block.StreetMapId,
@@ -212,8 +226,8 @@ public class WorldSetup
             visibilities,
             world,
             player,
-            turns,
-            block.Buildings);
+            block.Buildings,
+            simulation);
     }
 
     private static Schedule ShiftWork(

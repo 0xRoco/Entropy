@@ -13,7 +13,7 @@ public class ZombieBehavior : IBehavior
     private const int GiveUpAfterTurns = 5;
     private const float WanderChance = 0.3f;
     
-    public AiIntent Decide(World world, Entity self, GameContext context)
+    public AiIntent Decide(World world, Entity self, AiContext context)
     {
         if (!world.IsAlive(self)) return new AiIntent(AiIntentType.None);
 

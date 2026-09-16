@@ -117,7 +117,9 @@ public class InventoryDialog
 
     private void ExecuteAction(ItemAction action)
     {
-        ActionCompleted?.Invoke(action.Execute(_context, _player, _contextMenuItem));
+        var result = action.Execute(_context, _player, _contextMenuItem);
+        EventProjector.Project(_context.Events, _context.Log);
+        ActionCompleted?.Invoke(result);
         Refresh();
     }
 

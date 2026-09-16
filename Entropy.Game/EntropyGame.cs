@@ -4,13 +4,9 @@ using Entropy.Engine.ECS.Components;
 using Entropy.Engine.Rendering;
 using Entropy.Engine.UI;
 using Entropy.Engine.World;
-using Entropy.Game.Components;
-using Entropy.Game.Components.Simulation;
 using Entropy.Content;
-using Entropy.Content.Validation;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Inventory;
-using Entropy.Game.Components.ItemEffects;
 using Entropy.Game.Components.Spatial;
 using Entropy.Game.Components.Vitals;
 using Entropy.Game.Systems;
@@ -44,32 +40,22 @@ public class EntropyGame : IGameClient
     private QuadBatcher _uiBatcher = null!;
     private FontAtlas _fontAtlas = null!;
     private GlyphAtlas _atlas = null!;
-    private TilesetDefinition _tileset = null!;
-    private GlyphAtlas _terrainAtlas = null!;
     private string _contentRoot = null!;
-    private QuadBatcher _terrainBatcher = null!;
+    private ContentRuntime _content = null!;
     private LoadingScreen _loadingScreen = null!;
-    private List<(string Name, Action Load)> _loadSteps = [];
-    private int _loadStep;
 
     private IGameInput _input = null!;
-    private TileMap _map = null!;
-    private World _world = null!;
-    private MapGraph _maps = null!;
-    private IReadOnlyDictionary<string, BuildingInstance> _buildings = null!;
-    private DefinitionRegistry _definitions = null!;
     private CharacterCatalog _characterCatalog = null!;
-    private Entity _player;
-    private VisibilityMap _visibility = null!;
-    private Dictionary<string, VisibilityMap> _visibilities = null!;
     private Rng _rng = new(Random.Shared.Next(int.MinValue, int.MaxValue));
     private MessageLog _log = null!;
     private GameContext _context = null!;
-    private TurnProcessor _turnProcessor = null!;
+    private GameSession _session = null!;
+    private ISimulation _simulation = null!;
     private WorldClock _clock = null!;
 
     private DrawContext _drawContext = null!;
     private GameHud _hud = null!;
+    private PlayerActions _actions = null!;
 
     private bool _disposed;
 
@@ -99,47 +85,23 @@ public class EntropyGame : IGameClient
         _drawContext = new DrawContext { Batcher = _uiBatcher, Atlas = _fontAtlas };
         _clock = new WorldClock(2001, 3, 12, 7, 30);
 
-        var jsonFolder = Path.Combine(_contentRoot, "Json");
-        _definitions = new DefinitionRegistry();
-
-        _loadSteps =
-        [
-            ("Items", () => _definitions.LoadItems(jsonFolder)),
-            ("Creatures", () => _definitions.LoadCreatures(jsonFolder)),
-            ("Terrain", () => _definitions.LoadTerrains(jsonFolder)),
-            ("Tilesets", () => _definitions.LoadTilesets(jsonFolder)),
-            ("Building templates", () => _definitions.LoadBuildingTemplates(jsonFolder)),
-            ("World objects", () => _definitions.LoadWorldObjects(jsonFolder)),
-            ("Loot tables", () => _definitions.LoadLootTables(jsonFolder)),
-            ("Tileset atlas", FinishContentLoad)
-        ];
-
-        _loadingScreen = new LoadingScreen([.. _loadSteps.Select(step => step.Name)]);
+        _content = new ContentRuntime(_contentRoot, _shader, _camera, _atlas);
+        _loadingScreen = new LoadingScreen(_content.LoadStepNames);
     }
 
     private void ProcessLoadStep()
     {
-        if (_loadStep >= _loadSteps.Count)
-            return;
+        var name = _content.ProcessLoadStep();
+        if (name is null) return;
 
-        var (name, load) = _loadSteps[_loadStep];
-        load();
         _loadingScreen.Complete(name);
-        _loadStep++;
+        if (name != "Tileset atlas") return;
+
+        FinishContentLoad();
     }
 
     private void FinishContentLoad()
     {
-        _tileset = _definitions.Tileset("entropy_art");
-
-        _terrainAtlas = _tileset.Mode == "art"
-            ? new GlyphAtlas(Path.Combine(
-                Path.GetDirectoryName(_contentRoot)!,
-                _tileset.Atlas.Replace('/', Path.DirectorySeparatorChar)))
-            : _atlas;
-
-        _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
-
         _mainMenu = new MainMenuScreen(ToUiSize(_clientSize));
         _characterCatalog = CharacterCatalog.Load(Path.Combine(_contentRoot, "Characters", "character_options.json"));
         _characterCreation = new CharacterCreationScreen(_characterCatalog, ToUiSize(_clientSize));
@@ -183,19 +145,9 @@ public class EntropyGame : IGameClient
             return;
         }
 
-        if (ActivitySystem.IsActive(_world, _player))
+        if (ActivitySystem.IsActive(_context.World, _context.Player))
         {
-            if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0)
-            {
-                ActivitySystem.Cancel(_context, _player, "Your activity is interrupted.");
-                return;
-            }
-
-            AdvanceTurn();
-            var tick = ActivitySystem.Advance(_context, _player);
-            if (tick.State == ActivityState.InProgress && _input.GetKeyPressed() != null)
-                ActivitySystem.Interrupt(_context, _player, "You wake up.");
-
+            _actions.ProcessActivity();
             return;
         }
 
@@ -210,11 +162,7 @@ public class EntropyGame : IGameClient
         {
             var tx = (int)inspectedTile.Value.X;
             var ty = (int)inspectedTile.Value.Y;
-            if (tx >= 0 && tx < _context.Map.Width &&
-                ty >= 0 && ty < _context.Map.Height)
-            {
-                InteractionSystem.ExamineAt(_context, new Vector2i(tx, ty));
-            }
+            _simulation.Execute(new ExamineCommand(new Vector2i(tx, ty)));
         }
 
         var rightClicked = Controls.GetClickedTile(_input, _camera, MouseButton.Right);
@@ -259,11 +207,11 @@ public class EntropyGame : IGameClient
 
         if (key != null && _hud.HandleKey(key.Value)) return;
 
-        if (!_world.IsAlive(_player) || _world.Get<Health>(_player).Current <= 0) return;
+        if (!_context.World.IsAlive(_context.Player) || _context.World.Get<Health>(_context.Player).Current <= 0) return;
         Controls.GetMoveDirection(_input);
 
-        var action = ProcessPlayerAction();
-        ProcessActionResult(action);
+        var action = _actions.ProcessPlayerAction();
+        _actions.ProcessActionResult(action);
     }
 
     public void Render(FrameEventArgs args)
@@ -304,40 +252,18 @@ public class EntropyGame : IGameClient
             return;
         }
 
-        ApplyMapViewport();
-        GL.Enable(EnableCap.ScissorTest);
-        GL.Scissor(
-            _hud.Layout.Map.X * UiCellPixelWidth,
-            _clientSize.Y - (_hud.Layout.Map.Y + _hud.Layout.Map.Height) * UiCellPixelHeight,
-            _hud.Layout.Map.Width * UiCellPixelWidth,
-            _hud.Layout.Map.Height * UiCellPixelHeight);
-
-        TileRenderer.Draw(
-            _context.Map,
-            _context.Visibility,
+        GameplayRenderer.Draw(
+            _context,
+            _hud,
             _camera,
-            _terrainBatcher,
-            tilesetMode: _tileset.Mode,
-            artAtlas: _terrainAtlas,
-            artCellSize: (int)Camera.TilePixelSize,
-            spriteMap: _tileset.Sprites,
-            terrainSpriteKeys: _definitions.TerrainSpriteKeys);
-
-        EntityRenderer.Draw(
-            _world,
-            _context.MapId,
-            _context.Visibility,
             _batcher,
-            _terrainBatcher,
-            SpriteKeyOf,
-            _tileset.Sprites,
-            _terrainAtlas,
-            _tileset.CellSize);
-
-        GL.Disable(EnableCap.ScissorTest);
-        GL.Viewport(0, 0, _clientSize.X, _clientSize.Y);
-
-        _hud.Draw(_drawContext);
+            _content.TerrainBatcher,
+            _uiBatcher,
+            _fontAtlas,
+            _content.Tileset,
+            _content.TerrainAtlas,
+            _content.Definitions,
+            _clientSize);
         _uiBatcher.Flush();
     }
 
@@ -368,51 +294,21 @@ public class EntropyGame : IGameClient
         _clock = new WorldClock(2001, 3, 12, 7, 30);
         _log = new MessageLog();
 
-        var result = WorldSetup.StartNewGame(_rng, _log, _definitions, ViewRadius);
+        var result = WorldSetup.StartNewGame(_rng, _log, _content.Definitions, ViewRadius, _clock);
 
-        _map = result.Map;
-        _maps = result.Maps;
-        _buildings = result.Buildings;
-        _world = result.World;
-        _player = result.Player;
-        _visibilities = result.Visibilities;
-        _visibility = _visibilities[result.MapId];
-        _turnProcessor = result.Turns;
-        var pharmacyTransition = result.Maps.Transitions.Single(transition =>
-            transition.ToMap.Equals("neighborhood_pharmacy_interior", StringComparison.OrdinalIgnoreCase));
-        var pharmacyDoor = DoorSystem.KeyFor(pharmacyTransition);
-        _context = new GameContext
-        {
-            Map = result.Map,
-            MapId = result.MapId,
-            Maps = result.Maps,
-            Log = _log,
-            World = _world,
-            Definitions = _definitions,
-            Player = _player,
-            Rng = _rng,
-            Clock = _clock,
-            Turns = _turnProcessor,
-            Visibilities = result.Visibilities,
-            Visibility = _visibility,
-            ViewRadius = ViewRadius,
-            DoorDefinitions = new()
-            {
-                [pharmacyDoor] = new DoorDefinition("pharmacy_door", "key_pharmacy", "tool_smash", Trespass: false)
-            },
-            DoorStates = new()
-            {
-                [pharmacyDoor] = new DoorState { Locked = true }
-            }
-        };
+        var session = GameSession.Create(result, _log, _content.Definitions, _rng, ViewRadius);
+        _session = session;
+        _context = session.Context;
+        _simulation = session.Simulation;
 
-        _hud = new GameHud(_context, _clock, _rng.Seed, ToUiSize(_clientSize));
+        _hud = new GameHud(_context, _simulation, _clock, _rng.Seed, ToUiSize(_clientSize));
         _hud.NewCharacterRequested += RestartGame;
         _hud.MainMenuRequested += ReturnToMainMenu;
-        _hud.ActionCompleted += ProcessActionResult;
+        _actions = new PlayerActions(_context, _simulation, _input, _camera, _hud);
+        _hud.ActionCompleted += _actions.ProcessActionResult;
 
         ConfigureMapCamera();
-        _camera.Position = _world.Get<Position>(_player).Value;
+        _camera.Position = _context.World.Get<Position>(_context.Player).Value;
 
         _mode = GameMode.Gameplay;
 
@@ -423,43 +319,8 @@ public class EntropyGame : IGameClient
     {
         if (character is null)
             return;
-
-        var scenario = _characterCatalog.Scenarios.Single(option => option.Id == character.ScenarioId);
-        if (_maps.Maps.ContainsKey(scenario.StartMapId))
-        {
-            context.MapId = scenario.StartMapId;
-            context.Map = _maps[scenario.StartMapId];
-            context.Visibility = _visibilities[scenario.StartMapId];
-            _world.Set(_player, new Location { MapId = scenario.StartMapId });
-            _world.Get<Position>(_player).Value = new Vector2(scenario.StartX, scenario.StartY);
-            Fov.Compute(new Vector2i(scenario.StartX, scenario.StartY), ViewRadius, context.Map, context.Visibility);
-        }
-
-        var profession = _characterCatalog.Professions.Single(option => option.Id == character.ProfessionId);
-        var background = _characterCatalog.Backgrounds.Single(option => option.Id == character.BackgroundId);
-        _world.Set(_player, new CharacterIdentity
-        {
-            Name = character.Name,
-            ProfessionId = profession.Id,
-            BackgroundId = background.Id,
-            Stats = new(character.Stats, StringComparer.OrdinalIgnoreCase),
-            TraitIds = [.. character.TraitIds],
-            SkillIds = [.. profession.Skills.Concat(background.Skills).Concat(character.SkillIds).Distinct()]
-        });
-        _world.Set(_player, new Named { Name = character.Name });
-        foreach (var itemId in profession.StartingItems.Concat(background.StartingItems))
-        {
-            var item = EntitySpawner.CreateItem(
-                _world,
-                context.MapId,
-                _definitions.Item(itemId),
-                (int)_world.Get<Position>(_player).Value.X,
-                (int)_world.Get<Position>(_player).Value.Y);
-            ItemSystem.Transfer(_world, item, _player);
-        }
-
-        context.Log.Add($"You are {character.Name}, a {profession.Name} from {background.Name}.", Color4.Cyan);
-        _camera.Position = _world.Get<Position>(_player).Value;
+        CharacterSetupSystem.Apply(context, _characterCatalog, character);
+        _camera.Position = _context.World.Get<Position>(_context.Player).Value;
     }
 
     private void LoadGame()
@@ -473,100 +334,26 @@ public class EntropyGame : IGameClient
         _rng = new Rng(save.Seed);
         StartNewGame();
 
-        if (!_maps.Maps.ContainsKey(save.MapId))
+        if (!_context.Maps.Maps.ContainsKey(save.MapId))
         {
             _log.Add($"Save refers to unknown map '{save.MapId}'. Starting at the street.", Color4.Yellow);
             return;
         }
 
-        _clock.Advance(save.ElapsedMinutes);
-
-        ref var position = ref _world.Get<Position>(_player);
-        position.Value = new Vector2(save.PlayerX, save.PlayerY);
-        _world.Set(_player, new Location { MapId = save.MapId });
-        _world.Set(_player, new Facing { Direction = new Vector2i(save.FacingX, save.FacingY) });
-        _world.Set(_player, new Health { Current = save.Health.Current, Max = save.Health.Max });
-        _world.Set(_player, new Hunger
-        {
-            Current = save.Hunger.Current,
-            Max = save.Hunger.Max,
-            Starving = save.Hunger.Starving
-        });
-        _world.Set(_player, new Thirst
-        {
-            Current = save.Thirst.Current,
-            Max = save.Thirst.Max,
-            Parched = save.Thirst.Parched
-        });
-        _world.Set(_player, new Fatigue { Current = save.Fatigue.Current, Max = save.Fatigue.Max });
-        _world.Set(_player, new Wallet { CashCents = save.CashCents });
-        if (save.Character is { } character)
-        {
-            _world.Set(_player, new CharacterIdentity
-            {
-                Name = character.Name,
-                ProfessionId = character.ProfessionId,
-                BackgroundId = character.BackgroundId,
-                Stats = new(character.Stats, StringComparer.OrdinalIgnoreCase),
-                TraitIds = [.. character.TraitIds],
-                SkillIds = [.. character.SkillIds]
-            });
-            _world.Set(_player, new Named { Name = character.Name });
-        }
-
-        foreach (var item in save.Inventory)
-        {
-            var entity = EntitySpawner.CreateItem(
-                _world,
-                save.MapId,
-                _definitions.Item(item.DefinitionId),
-                save.PlayerX,
-                save.PlayerY,
-                item.Count);
-            ItemSystem.Transfer(_world, entity, _player);
-
-            if (save.EquippedItemId == item.DefinitionId && _world.Has<Damage>(entity))
-                _world.Set(_player, new Equipped { Item = StableEntityReference.From(_world, entity) });
-        }
-
-        _context.MapId = save.MapId;
-        _context.Map = _maps[save.MapId];
-        _context.Visibility = _visibilities[save.MapId];
-        Fov.Compute(
-            new Vector2i(save.PlayerX, save.PlayerY),
-            ViewRadius,
-            _context.Map,
-            _context.Visibility);
-        _camera.Position = position.Value;
+        _session.RestoreSave(save);
+        _camera.Position = _context.World.Get<Position>(_context.Player).Value;
         _log.Add("Game loaded.", Color4.LightGray);
     }
 
     private void SaveCurrentGame()
     {
-        if (_mode != GameMode.Gameplay || !_world.IsAlive(_player))
+        if (_mode != GameMode.Gameplay || !_context.World.IsAlive(_context.Player))
             return;
 
-        var save = GameSave.Capture(
-            _world,
-            _player,
-            _rng.Seed,
-            _clock.TotalMinutes,
-            _context.MapId,
-            _world.Has<CharacterIdentity>(_player)
-                ? ToCharacterData(_world.Get<CharacterIdentity>(_player))
-                : null);
+        var save = _session.CaptureSave();
         GameSave.Write(save);
         _log.Add("Game saved.", Color4.LightGray);
     }
-
-    private static CharacterData ToCharacterData(CharacterIdentity identity) =>
-        new(
-            identity.Name,
-            identity.ProfessionId,
-            identity.BackgroundId,
-            new(identity.Stats, StringComparer.OrdinalIgnoreCase),
-            [.. identity.TraitIds],
-            [.. identity.SkillIds]);
 
     private void RestartGame()
     {
@@ -597,183 +384,10 @@ public class EntropyGame : IGameClient
             rect.Height * UiCellPixelHeight);
     }
 
-    private void ApplyMapViewport()
-    {
-        var origin = _camera.ViewportOrigin;
-        var size = _camera.ViewportSize;
-
-        GL.Viewport(
-            origin.X,
-            _clientSize.Y - origin.Y - size.Y,
-            size.X,
-            size.Y);
-    }
-
-    private void ProcessActionResult(ActionResult action)
-    {
-        ActionScheduler.Process(action, AdvanceTurn);
-    }
-
-    private void AdvanceTurn(int timeCostMinutes = 1)
-    {
-        SimulationTime.Advance(_context, timeCostMinutes);
-        _camera.Position = _world.Get<Position>(_player).Value;
-    }
-
-    private ActionResult ProcessPlayerAction()
-    {
-        var move = Controls.GetMoveDirection(_input);
-        if (move != null)
-            return _turnProcessor.ProcessPlayerTurn(
-                _player,
-                (Vector2i)move,
-                _context,
-                _context.Visibility,
-                ViewRadius);
-
-        var key = _input.GetKeyPressed();
-
-        return key switch
-        {
-            Keys.G => TryPickupAtPlayer() ? ActionResult.Turn : ActionResult.Failed,
-            Keys.E => OpenInteractMenu() ? ActionResult.Turn : ActionResult.Failed,
-            Keys.Period => ActionResult.Turn,
-            _ => ActionResult.Failed
-        };
-    }
-
-    private bool OpenInteractMenu()
-    {
-        if (_hud.HasOpenModal)
-            return false;
-
-        var pos = _world.Get<Position>(_player).Value;
-        var facing = _world.Has<Facing>(_player)
-            ? _world.Get<Facing>(_player).Direction
-            : new Vector2i(1, 0);
-
-        var target = new Vector2i((int)pos.X + facing.X, (int)pos.Y + facing.Y);
-        if (target.X < 0 || target.X >= _context.Map.Width ||
-            target.Y < 0 || target.Y >= _context.Map.Height)
-        {
-            target = new Vector2i((int)pos.X, (int)pos.Y);
-        }
-
-        _hud.OpenWorldMenu(target);
-        return false;
-    }
-
-    private bool TryPickupAtPlayer()
-    {
-        var pos = _world.Get<Position>(_player).Value;
-        var items = ItemSystem.ItemsAt(_world, _context.MapId, pos);
-        if (items.Count == 0) return false;
-
-        foreach (var item in items)
-        {
-            var name = _world.Get<ItemIdentity>(item).Name;
-            if (ItemSystem.TryPickup(_world, _player, item))
-                _log.Add($"You pick up the {name}.");
-        }
-
-        return true;
-    }
 
     private void ReloadContent()
     {
-        try
-        {
-            var jsonFolder = Path.Combine(_contentRoot, "Json");
-            var fresh = new DefinitionRegistry();
-            fresh.LoadItems(jsonFolder);
-            fresh.LoadCreatures(jsonFolder);
-            fresh.LoadTerrains(jsonFolder);
-            fresh.LoadTilesets(jsonFolder);
-            fresh.LoadBuildingTemplates(jsonFolder);
-            fresh.LoadWorldObjects(jsonFolder);
-            fresh.LoadLootTables(jsonFolder);
-
-            var errors = DefinitionValidator.Validate(
-                fresh.Items, fresh.Creatures, fresh.Terrains,
-                fresh.Tilesets, fresh.BuildingTemplates, fresh.WorldObjects, fresh.LootTables);
-            if (errors.Count > 0)
-            {
-                _log.Add($"Content reload blocked, {errors.Count} validation error(s):", Color4.Red);
-                foreach (var error in errors.Take(3))
-                    _log.Add("  " + error, Color4.Red);
-                return;
-            }
-
-            _definitions = fresh;
-            _tileset = _definitions.Tileset("entropy_art");
-
-            _terrainAtlas.Dispose();
-            _terrainAtlas = _tileset.Mode == "art"
-                ? new GlyphAtlas(Path.Combine(
-                    Path.GetDirectoryName(_contentRoot)!,
-                    _tileset.Atlas.Replace('/', Path.DirectorySeparatorChar)))
-                : _atlas;
-            _terrainBatcher.Dispose();
-            _terrainBatcher = new QuadBatcher(_shader, _camera, _terrainAtlas);
-
-            foreach (var map in _maps.Maps.Values)
-                RestampTerrainTiles(map);
-
-            var restamped = 0;
-            foreach (var building in _buildings.Values)
-            {
-                var template = _definitions.BuildingTemplate(building.TemplateId);
-                var map = _maps[building.MapId];
-                if (map.Width != template.Width || map.Height != template.Height)
-                {
-                    _log.Add(
-                        $"  '{building.Id}' changed size. restart to apply.",
-                        Color4.Yellow);
-                    continue;
-                }
-
-                for (var y = 0; y < template.Height; y++)
-                for (var x = 0; x < template.Width; x++)
-                {
-                    var marker = template.Grid[y][x];
-                    map.SetTile(x, y, _definitions.TileOf(template.Legend[marker]));
-                }
-
-                restamped++;
-            }
-
-            _log.Add(
-                $"Content reloaded: {_definitions.Terrains.Count} terrains, " +
-                $"{_definitions.Items.Count} items, {_definitions.Creatures.Count} creatures, " +
-                $"{restamped} building interior(s) restamped.",
-                Color4.LightGray);
-        }
-        catch (Exception ex)
-        {
-            _log.Add($"Content reload failed: {ex.Message}", Color4.Red);
-        }
-    }
-
-    private void RestampTerrainTiles(TileMap map)
-    {
-        for (var y = 0; y < map.Height; y++)
-        for (var x = 0; x < map.Width; x++)
-        {
-            var tile = map[x, y];
-            if (tile.TerrainDefIndex == 0) continue;
-            map.SetTile(x, y, _definitions.TileForIndex(tile.TerrainDefIndex));
-        }
-    }
-
-    private string? SpriteKeyOf(Entity entity)
-    {
-        if (_world.Has<WorldObjectIdentity>(entity))
-            return "furniture:" + _world.Get<WorldObjectIdentity>(entity).DefinitionId;
-        if (_world.Has<CreatureIdentity>(entity))
-            return "creature:" + _world.Get<CreatureIdentity>(entity).DefinitionId;
-        if (_world.Has<Item>(entity) && _world.Has<ItemIdentity>(entity))
-            return "item:" + _world.Get<ItemIdentity>(entity).DefinitionId;
-        return null;
+        _content.Reload(_context.Maps, _session.Buildings, (message, color) => _log.Add(message, color));
     }
 
     private static Vector2i ToUiSize(Vector2i pixels) =>
@@ -789,7 +403,7 @@ public class EntropyGame : IGameClient
         _batcher.Dispose();
         _uiBatcher.Dispose();
         _fontAtlas.Dispose();
-        _terrainBatcher.Dispose();
+        _content.Dispose();
         _shader.Dispose();
         _atlas.Dispose();
     }

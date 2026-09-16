@@ -5,6 +5,7 @@ using Entropy.Game.Components.Simulation;
 using Entropy.Game.Components.Tags;
 using Entropy.Game.Components.Vitals;
 using OpenTK.Mathematics;
+using Entropy.Simulation;
 
 namespace Entropy.Game.Systems;
 
@@ -12,7 +13,7 @@ public static class SleepSystem
 {
     public const int RecoveryPerTurn = 3;
 
-    public static ActionResult FallAsleep(GameContext context, Entity player, Entity bed)
+    public static ActionResult FallAsleep(IGameRuntimeContext context, Entity player, Entity bed)
     {
         if (!context.World.IsAlive(bed) || ActivitySystem.IsActive(context.World, player))
             return ActionResult.Failed;
@@ -24,22 +25,29 @@ public static class SleepSystem
             TotalMinutes = 480,
             Target = StableEntityReference.From(context.World, bed)
         });
-        context.Log.Add("You lie down and fall asleep.");
+        context.Events.Publish(new SimEvent(
+            "sleep.started",
+            "You lie down and fall asleep.",
+            context.World.Get<Location>(player).MapId,
+            new Vector2i((int)context.World.Get<Position>(player).Value.X, (int)context.World.Get<Position>(player).Value.Y),
+            context.Clock.MinuteOfDay,
+            context.World.StableId(player),
+            context.World.IsAlive(bed) ? context.World.StableId(bed) : null));
         return ActionResult.Turn;
     }
 
-    public static void Wake(GameContext context, Entity player, string reason)
+    public static void Wake(IGameRuntimeContext context, Entity player, string reason)
     {
         ActivitySystem.Interrupt(context, player, reason);
     }
 
-    public static void Recover(GameContext context, Entity player)
+    public static void Recover(IGameRuntimeContext context, Entity player)
     {
         ref var fatigue = ref context.World.Get<Fatigue>(player);
         fatigue.Current = Math.Min(fatigue.Max, fatigue.Current + RecoveryPerTurn);
     }
 
-    public static string? WakeReason(GameContext context, Entity player)
+    public static string? WakeReason(IGameRuntimeContext context, Entity player)
     {
         var world = context.World;
 
@@ -59,7 +67,7 @@ public static class SleepSystem
         return null;
     }
 
-    private static bool HostileNearby(GameContext context, Entity player)
+    private static bool HostileNearby(IGameRuntimeContext context, Entity player)
     {
         var world = context.World;
         if (!world.Has<Location>(player))

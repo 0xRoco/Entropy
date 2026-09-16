@@ -5,6 +5,7 @@ using Entropy.Engine.World;
 using Entropy.Game.Components.Vitals;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
+using Entropy.Simulation;
 using OpenTK.Mathematics;
 using Xunit;
 
@@ -17,7 +18,8 @@ public class SimulationTimeTests
     {
         var context = CreateContext();
 
-        var advanced = SimulationTime.Advance(context, 5);
+        var state = CreateState(context);
+         var advanced = state.Advance(5, new MinuteProcessor(context, new TurnProcessor(context.Scheduler)).Process);
 
         Assert.Equal(5, advanced);
         Assert.Equal(5, context.Clock.TotalMinutes);
@@ -33,7 +35,8 @@ public class SimulationTimeTests
         context.World.Set(context.Player, new Health { Current = 1, Max = 1 });
         context.World.Set(context.Player, new Hunger { Current = 0, Max = 1, Starving = true });
 
-        var advanced = SimulationTime.Advance(context, 30);
+        var state = CreateState(context);
+         var advanced = state.Advance(30, new MinuteProcessor(context, new TurnProcessor(context.Scheduler)).Process);
 
         Assert.Equal(30, advanced);
         Assert.Equal(30, context.Clock.TotalMinutes);
@@ -70,7 +73,7 @@ public class SimulationTimeTests
             Rng = new Rng(1234),
             Player = player,
             Clock = new WorldClock(2001, 3, 12, 7, 30),
-            Turns = new TurnProcessor(),
+             Scheduler = new ActorScheduler(),
             Visibilities = new Dictionary<string, VisibilityMap> { ["test"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,
@@ -78,4 +81,17 @@ public class SimulationTimeTests
             DoorStates = new()
         };
     }
+
+    private static SimulationState CreateState(GameContext context) =>
+        new(new SimulationContext
+        {
+            World = context.World,
+            Maps = context.Maps,
+            Definitions = context.Definitions,
+            Rng = context.Rng,
+            Player = context.Player,
+            Clock = context.Clock,
+            Events = context.Events,
+             Scheduler = context.Scheduler
+        });
 }

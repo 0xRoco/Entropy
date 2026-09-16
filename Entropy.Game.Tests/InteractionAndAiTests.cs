@@ -154,7 +154,7 @@ public class InteractionAndAiTests
             Rng = new Rng(1234),
             Player = player,
             Clock = new WorldClock(2001, 3, 12, 7, 30),
-            Turns = turns,
+             Scheduler = turns.Scheduler,
             Visibilities = new Dictionary<string, VisibilityMap> { ["test"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,

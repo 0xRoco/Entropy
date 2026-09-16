@@ -14,7 +14,7 @@ public static class ConsequenceSystem
 {
     private static VisibilityMap? _scratch;
 
-    public static void Report(GameContext ctx, string type, string description, Vector2i location, Entity attacker, Entity victim)
+    public static void Report(IGameRuntimeContext ctx, string type, string description, Vector2i location, Entity attacker, Entity victim)
     {
         var simEvent = new SimEvent(
             type,
@@ -53,7 +53,14 @@ public static class ConsequenceSystem
                 var name = ctx.World.Has<Named>(witness)
                     ? ctx.World.Get<Named>(witness).Name
                     : "Someone";
-                ctx.Log.Add($"{name} witnessed the {type} and calls the police!", Color4.Yellow);
+                ctx.Events.Publish(new SimEvent(
+                    "crime.witnessed",
+                    $"{name} witnessed the {type} and calls the police!",
+                    ctx.MapId,
+                    location,
+                    ctx.Clock.MinuteOfDay,
+                    ctx.World.IsAlive(witness) ? ctx.World.StableId(witness) : null,
+                    ctx.World.IsAlive(attacker) ? ctx.World.StableId(attacker) : null));
 
                 ctx.World.Set(attacker, new Wanted { Crime = simEvent });
             }
@@ -63,7 +70,7 @@ public static class ConsequenceSystem
             Dispatch(ctx, simEvent);
     }
 
-    private static List<Entity> FindWitnesses(GameContext ctx, Vector2i location, Entity attacker)
+    private static List<Entity> FindWitnesses(IGameRuntimeContext ctx, Vector2i location, Entity attacker)
     {
         var result = new List<Entity>();
         var map = ctx.Map;
@@ -95,7 +102,7 @@ public static class ConsequenceSystem
         return result;
     }
 
-    private static void Dispatch(GameContext ctx, SimEvent simEvent)
+    private static void Dispatch(IGameRuntimeContext ctx, SimEvent simEvent)
     {
         var edge = FindEdgeSpawn(ctx.Map, simEvent.Location, ctx.Rng);
         var cop = EntitySpawner.CreateCop(
@@ -105,8 +112,15 @@ public static class ConsequenceSystem
             edge.X,
             edge.Y,
             ctx.Player);
-        ctx.Turns.AddActor(cop);
-        ctx.Log.Add("A police officer is responding.", Color4.LightGray);
+        ctx.Scheduler.Add(cop);
+         ctx.Events.Publish(new SimEvent(
+             "police.response",
+             "A police officer is responding.",
+             ctx.MapId,
+             edge,
+             ctx.Clock.MinuteOfDay,
+             ctx.World.IsAlive(cop) ? ctx.World.StableId(cop) : null,
+             ctx.World.IsAlive(ctx.Player) ? ctx.World.StableId(ctx.Player) : null));
     }
 
     public static Vector2i FindEdgeSpawn(TileMap map, Vector2i scene, Rng rng)

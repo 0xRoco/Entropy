@@ -11,7 +11,7 @@ public class ScheduleBehavior : IBehavior
 {
     private const int WanderRadius = 6;
 
-    public AiIntent Decide(World world, Entity self, GameContext context)
+    public AiIntent Decide(World world, Entity self, AiContext context)
     {
         if (!world.Has<Schedule>(self) || !world.Has<Home>(self))
             return new AiIntent(AiIntentType.None);
@@ -44,7 +44,7 @@ public class ScheduleBehavior : IBehavior
     private static void GoTo(
         World world,
         Entity self,
-        GameContext context,
+        AiContext context,
         string destinationMapId,
         Vector2i anchor)
     {
@@ -58,20 +58,20 @@ public class ScheduleBehavior : IBehavior
                 return;
         }
 
-        AiUtil.TravelToward(world, self, context, destinationMapId, anchor);
+        AiUtil.TravelToward(world, self, context.Maps, destinationMapId, anchor);
     }
 
     private static void WanderAtHome(
         World world,
         Entity self,
-        GameContext context,
+        AiContext context,
         Home home)
     {
         var currentMapId = world.Get<Location>(self).MapId;
 
         if (currentMapId != home.MapId)
         {
-            AiUtil.TravelToward(world, self, context, home.MapId, home.Tile);
+        AiUtil.TravelToward(world, self, context.Maps, home.MapId, home.Tile);
             return;
         }
 

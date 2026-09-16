@@ -6,6 +6,7 @@ using Entropy.Game.Components;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Inventory;
 using Entropy.Game.Systems;
+using Entropy.Simulation;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -17,6 +18,7 @@ public class ContainerDialog
     public event Action<ActionResult>? ActionCompleted;
 
     private readonly Ui _ui;
+    private readonly ISimulation _simulation;
     private readonly Panel _panel;
     private readonly Label _title;
     private readonly Label _hint;
@@ -29,10 +31,11 @@ public class ContainerDialog
     private Entity _container;
     private bool _showingInventory;
 
-    public ContainerDialog(Ui ui, GameContext context)
+    public ContainerDialog(Ui ui, GameContext context, ISimulation simulation)
     {
         _ui = ui;
         _context = context;
+        _simulation = simulation;
         _player = context.Player;
 
         _panel = new Panel
@@ -146,7 +149,7 @@ public class ContainerDialog
 
         if (ItemSystem.Transfer(_context.World, item, _player))
         {
-            _context.Log.Add($"You take the {name}.");
+            Publish("container.item_taken", $"You take the {name}.", item);
             ActionCompleted?.Invoke(ActionResult.Turn);
         }
 
@@ -160,7 +163,7 @@ public class ContainerDialog
 
         if (ItemSystem.Transfer(_context.World, item, _container))
         {
-            _context.Log.Add($"You put the {name} away.");
+            Publish("container.item_put", $"You put the {name} away.", item);
             ActionCompleted?.Invoke(ActionResult.Turn);
         }
 
@@ -172,7 +175,7 @@ public class ContainerDialog
         if (_context is null)
             return;
 
-        if (PurchaseSystem.TryPurchase(_context, _player, item, _container))
+        if (_simulation.Execute(new PurchaseCommand(item, _container)).Succeeded)
             ActionCompleted?.Invoke(ActionResult.Turn);
 
         Refresh();
@@ -183,7 +186,7 @@ public class ContainerDialog
         if (_context is null)
             return;
 
-        if (PurchaseSystem.TrySteal(_context, _player, item, _container))
+        if (_simulation.Execute(new StealCommand(item, _container)).Succeeded)
             ActionCompleted?.Invoke(ActionResult.Turn);
 
         Refresh();
@@ -196,7 +199,22 @@ public class ContainerDialog
 
         var identity = _context.World.Get<ItemIdentity>(item);
         var def = _context.Definitions.Item(identity.DefinitionId);
-        _context.Log.Add($"{identity.Name}: {def.Description}", Color4.LightGray);
+        Publish("item.examined", $"{identity.Name}: {def.Description}", item);
+    }
+
+    private void Publish(string type, string description, Entity? target = null)
+    {
+        if (_context is null || !_context.World.Has<Position>(_player) || !_context.World.Has<Location>(_player)) return;
+        var position = _context.World.Get<Position>(_player).Value;
+        _context.Events.Publish(new SimEvent(
+            type,
+            description,
+            _context.World.Get<Location>(_player).MapId,
+            new OpenTK.Mathematics.Vector2i((int)position.X, (int)position.Y),
+            _context.Clock.MinuteOfDay,
+            _context.World.StableId(_player),
+            target is { } entity && _context.World.IsAlive(entity) ? _context.World.StableId(entity) : null));
+        EventProjector.Project(_context.Events, _context.Log);
     }
 
     private void Refresh()

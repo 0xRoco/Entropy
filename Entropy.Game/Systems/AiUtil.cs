@@ -130,7 +130,7 @@ public static class AiUtil
     public static bool TravelToward(
         World world,
         Entity self,
-        GameContext context,
+        MapGraph maps,
         string destinationMapId,
         Vector2i destinationTile)
     {
@@ -138,7 +138,7 @@ public static class AiUtil
             return false;
 
         var currentMapId = world.Get<Location>(self).MapId;
-        var currentMap = context.Maps[currentMapId];
+        var currentMap = maps[currentMapId];
 
         ref var position = ref world.Get<Position>(self);
         var here = ToTile(position.Value);
@@ -146,7 +146,7 @@ public static class AiUtil
         if (currentMapId == destinationMapId)
             return StepToward(world, self, currentMap, destinationTile);
 
-        var transition = context.Maps.NextTransitionToward(currentMapId, destinationMapId);
+        var transition = maps.NextTransitionToward(currentMapId, destinationMapId);
         if (transition == null)
             return false;
 

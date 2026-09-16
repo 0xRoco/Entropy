@@ -97,7 +97,7 @@ public class PurchaseSystemTests
             Rng = new Entropy.Engine.Core.Rng(1234),
             Player = player,
             Clock = new WorldClock(2001, 3, 12, 7, 30),
-            Turns = new TurnProcessor(),
+             Scheduler = new ActorScheduler(),
             Visibilities = new Dictionary<string, VisibilityMap> { ["test"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,

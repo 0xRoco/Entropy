@@ -5,13 +5,14 @@ using Entropy.Game.Components;
 using Entropy.Game.Components.AI;
 using Entropy.Game.Components.Tags;
 using Entropy.Game.Systems;
+using Entropy.Simulation;
 using OpenTK.Mathematics;
 
 namespace Entropy.Game.Behaviors;
 
 public class RespondBehavior : IBehavior
 {
-    public AiIntent Decide(World world, Entity self, GameContext context)
+    public AiIntent Decide(World world, Entity self, AiContext context)
     {
         if (!world.Has<AIState>(self)) return new AiIntent(AiIntentType.None);
         var target = world.Get<AIState>(self).Target;
@@ -36,7 +37,7 @@ public class RespondBehavior : IBehavior
             Destination: new Vector2i((int)targetPosition.X, (int)targetPosition.Y));
     }
 
-    public static ActionResult ExecuteArrest(World world, Entity officer, Entity target, GameContext context)
+    public static ActionResult ExecuteArrest(World world, Entity officer, Entity target, IGameRuntimeContext context)
     {
         if (!world.IsAlive(officer) || !world.IsAlive(target) || !world.Has<Location>(target))
             return ActionResult.Failed;
@@ -50,8 +51,15 @@ public class RespondBehavior : IBehavior
         context.Visibility = context.Visibilities[targetMapId];
         Fov.Compute(holding, context.ViewRadius, context.Map, context.Visibility);
         world.Remove<Wanted>(target);
-        context.Log.Add("The officer grabs you. \"You're under arrest.\"", Color4.Red);
-        context.Log.Add("You are held at the station. (Prison arrives later.)", Color4.LightGray);
+        var position = world.Get<Position>(target).Value;
+        context.Events.Publish(new SimEvent(
+            "police.arrest",
+            "The officer grabs you. \"You're under arrest.\" You are held at the station. (Prison arrives later.)",
+            targetMapId,
+            new Vector2i((int)position.X, (int)position.Y),
+            context.Clock.MinuteOfDay,
+            world.StableId(target),
+            world.StableId(officer)));
         world.Destroy(officer);
         return ActionResult.Turn;
     }

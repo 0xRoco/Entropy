@@ -96,7 +96,7 @@ public class ActivityTests
 
         Assert.Equal(ActivityState.Cancelled, result.State);
         Assert.False(fixture.World.Has<Activity>(fixture.Player));
-        Assert.Contains(fixture.Context.Log.Messages, message => message.Text == "You stop.");
+        Assert.Contains(fixture.Context.Events.Drain(), simulationEvent => simulationEvent.Description == "You stop.");
     }
 
     private static Fixture CreateFixture()
@@ -129,7 +129,7 @@ public class ActivityTests
             Rng = new Rng(1234),
             Player = player,
             Clock = new WorldClock(2001, 3, 12, 7, 30),
-            Turns = new TurnProcessor(),
+             Scheduler = new ActorScheduler(),
             Visibilities = new Dictionary<string, VisibilityMap> { ["test"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,

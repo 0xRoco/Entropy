@@ -4,6 +4,7 @@ using Entropy.Engine.UI.Widgets;
 using Entropy.Game.Systems;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Entropy.Simulation;
 
 namespace Entropy.Game.UI;
 
@@ -14,13 +15,15 @@ public class WorldMenu
     public event Action<ActionResult>? ActionCompleted;
 
     private readonly ContextMenu _menu;
+    private readonly ISimulation _simulation;
     private List<WorldVerb> _verbs = [];
     private GameContext? _context;
     private Entity _player;
 
-    public WorldMenu(Ui ui)
+    public WorldMenu(Ui ui, ISimulation simulation)
     {
         _menu = new ContextMenu(ui);
+        _simulation = simulation;
     }
 
     public void Open(GameContext context, Entity player, Vector2i tile, UiRect mapBounds)
@@ -29,7 +32,7 @@ public class WorldMenu
         _player = player;
 
         _verbs = InteractionSystem.GetVerbs(context, player, tile,
-            (ctx, container) => ContainerRequested?.Invoke(ctx, container));
+            container => ContainerRequested?.Invoke(context, container));
         if (_verbs.Count == 0)
             return;
 
@@ -52,6 +55,9 @@ public class WorldMenu
     private void Execute(WorldVerb verb)
     {
         var context = _context ?? throw new InvalidOperationException("World menu opened without a context.");
-        ActionCompleted?.Invoke(verb.Execute(context, _player));
+        var result = verb.Command is { } command
+            ? _simulation.Execute(command)
+            : verb.Execute(context, _player);
+        ActionCompleted?.Invoke(result);
     }
 }

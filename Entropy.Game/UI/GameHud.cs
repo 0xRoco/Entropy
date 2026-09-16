@@ -5,6 +5,7 @@ using Entropy.Engine.UI.Widgets;
 using Entropy.Game.Components;
 using Entropy.Game.Components.Vitals;
 using Entropy.Game.Systems;
+using Entropy.Simulation;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -29,7 +30,7 @@ public class GameHud
     private readonly CommandBar _commandBar;
     private readonly GameContext _context;
 
-    public GameHud(GameContext context, WorldClock clock, int seed, Vector2i viewportTiles)
+    public GameHud(GameContext context, ISimulation simulation, WorldClock clock, int seed, Vector2i viewportTiles)
     {
         _context = context;
         _ui = new Ui { ViewportTiles = viewportTiles };
@@ -70,10 +71,10 @@ public class GameHud
         _inventoryDialog.ActionCompleted += OnActionCompleted;
         _helpDialog = new HelpDialog(_ui);
 
-        _containerDialog = new ContainerDialog(_ui, context);
+        _containerDialog = new ContainerDialog(_ui, context, simulation);
         _containerDialog.ActionCompleted += OnActionCompleted;
 
-        _worldMenu = new WorldMenu(_ui);
+        _worldMenu = new WorldMenu(_ui, simulation);
         _worldMenu.ContainerRequested += (ctx, container) => _containerDialog.Open(ctx, ctx.Player, container);
         _worldMenu.ActionCompleted += OnActionCompleted;
 

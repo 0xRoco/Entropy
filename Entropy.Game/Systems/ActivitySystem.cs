@@ -1,7 +1,9 @@
 using Entropy.Engine.ECS;
+using Entropy.Engine.ECS.Components;
 using Entropy.Game.Components.Simulation;
 using Entropy.Game.Components.Inventory;
 using OpenTK.Mathematics;
+using Entropy.Simulation;
 
 namespace Entropy.Game.Systems;
 
@@ -24,7 +26,7 @@ public static class ActivitySystem
     public static bool IsActive(World world, Entity actor) =>
         world.IsAlive(actor) && world.Has<Activity>(actor);
 
-    public static bool Start(GameContext context, Entity actor, Activity activity)
+    public static bool Start(IGameRuntimeContext context, Entity actor, Activity activity)
     {
         if (!context.World.IsAlive(actor) || context.World.Has<Activity>(actor))
             return false;
@@ -35,7 +37,7 @@ public static class ActivitySystem
         return true;
     }
 
-    public static ActivityTick Advance(GameContext context, Entity actor, int minutes = 1)
+    public static ActivityTick Advance(IGameRuntimeContext context, Entity actor, int minutes = 1)
     {
         if (!IsActive(context.World, actor))
             return new ActivityTick(ActivityState.NotActive, 0);
@@ -74,7 +76,7 @@ public static class ActivitySystem
         return new ActivityTick(ActivityState.InProgress, activity.RemainingMinutes);
     }
 
-    public static ActivityTick Complete(GameContext context, Entity actor)
+    public static ActivityTick Complete(IGameRuntimeContext context, Entity actor)
     {
         if (!IsActive(context.World, actor))
             return new ActivityTick(ActivityState.NotActive, 0);
@@ -82,7 +84,7 @@ public static class ActivitySystem
         var activity = context.World.Get<Activity>(actor);
         context.World.Remove<Activity>(actor);
         if (activity.Kind == ActivityKind.Sleep)
-            context.Log.Add("You wake up feeling rested.", Color4.LightGray);
+            Publish(context, actor, "activity.completed", "You wake up feeling rested.");
         if (activity.Kind == ActivityKind.Search && activity.Target is { } targetReference)
         {
             var target = targetReference.Resolve(context.World);
@@ -92,25 +94,38 @@ public static class ActivitySystem
         return new ActivityTick(ActivityState.Completed, 0);
     }
 
-    public static ActivityTick Cancel(GameContext context, Entity actor, string reason)
+    public static ActivityTick Cancel(IGameRuntimeContext context, Entity actor, string reason)
     {
         if (!IsActive(context.World, actor))
             return new ActivityTick(ActivityState.NotActive, 0);
 
         context.World.Remove<Activity>(actor);
         if (!string.IsNullOrWhiteSpace(reason))
-            context.Log.Add(reason, Color4.LightGray);
+            Publish(context, actor, "activity.cancelled", reason);
         return new ActivityTick(ActivityState.Cancelled, 0);
     }
 
-    public static ActivityTick Interrupt(GameContext context, Entity actor, string reason)
+    public static ActivityTick Interrupt(IGameRuntimeContext context, Entity actor, string reason)
     {
         if (!IsActive(context.World, actor))
             return new ActivityTick(ActivityState.NotActive, 0);
 
         context.World.Remove<Activity>(actor);
         if (!string.IsNullOrWhiteSpace(reason))
-            context.Log.Add(reason, Color4.LightGray);
+            Publish(context, actor, "activity.interrupted", reason);
         return new ActivityTick(ActivityState.Interrupted, 0);
+    }
+
+    private static void Publish(IGameRuntimeContext context, Entity actor, string type, string description)
+    {
+        if (!context.World.Has<Position>(actor) || !context.World.Has<Location>(actor)) return;
+        var position = context.World.Get<Position>(actor).Value;
+        context.Events.Publish(new SimEvent(
+            type,
+            description,
+            context.World.Get<Location>(actor).MapId,
+            new Vector2i((int)position.X, (int)position.Y),
+            context.Clock.MinuteOfDay,
+            context.World.StableId(actor)));
     }
 }

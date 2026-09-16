@@ -33,16 +33,18 @@ public static class EntitySpawner
             .With(world, new Hunger { Current = 480, Max = 480 })
             .With(world, new Thirst { Current = 240, Max = 240 })
             .With(world, new Fatigue { Current = 960, Max = 960 })
-            .With(world, new Wallet { CashCents = 5000 });
+             .With(world, new Wallet { CashCents = 5000 });
+        world.Set(e, new PersistentIdentity("player"));
 
         return e;
     }
 
-    public static Entity CreateHuman(World world, string mapId, CreatureDefinition def, int x, int y, string name)
+    public static Entity CreateHuman(World world, string mapId, CreatureDefinition def, int x, int y, string name, string? persistentId = null, long? stableId = null)
     {
-        var e = BuildCreature(world, mapId, def, x, y);
+        var e = BuildCreature(world, mapId, def, x, y, stableId);
         e.With(world, new Named { Name = name });
         e.With(world, new CreatureIdentity { DefinitionId = def.Id });
+        e.With(world, new PersistentIdentity(persistentId ?? $"creature:{mapId}:{name}"));
         return e;
     }
 
@@ -61,18 +63,23 @@ public static class EntitySpawner
             .With(world, Awareness.Create())
             .With(world, WitnessMemory.Create())
             .With(world, new AIState { Mode = AIMode.Hunt, Target = target })
-            .With(world, new Behavior { BehaviorId = "respond" });
+             .With(world, new Behavior { BehaviorId = "respond" });
+        e.With(world, new PersistentIdentity($"cop:{mapId}:{target.Id}"));
         return e;
     }
 
-    public static Entity CreateItem(World world, string mapId, ItemDefinition def, int x, int y, int count = 1)
+    public static Entity CreateItem(World world, string mapId, ItemDefinition def, int x, int y, int count = 1, long? stableId = null)
     {
-        var e = world.Create()
+        var e = (stableId is long id
+            ? world.Create(id, out _)
+            : world.Create())
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Location { MapId = mapId })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color, RememberedInFog = true })
             .With(world, new Item())
             .With(world, new ItemIdentity { Name = def.Name, DefinitionId = def.Id });
+
+        e.With(world, new PersistentIdentity($"item:{mapId}:{x}:{y}:{def.Id}:{world.StableId(e)}"));
 
         if (def.Stackable)
             e.With(world, new Stackable { Count = count, MaxStack = def.MaxStack });
@@ -88,14 +95,17 @@ public static class EntitySpawner
         return e;
     }
     
-    public static Entity CreateWorldObject(World world, string mapId, WorldObjectDefinition def, int x, int y)
+    public static Entity CreateWorldObject(World world, string mapId, WorldObjectDefinition def, int x, int y, string? persistentId = null, long? stableId = null)
     {
-        var e = world.Create()
+        var e = (stableId is long id
+            ? world.Create(id, out _)
+            : world.Create())
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Location { MapId = mapId })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color, RememberedInFog = true })
             .With(world, new Named { Name = def.Name })
-            .With(world, new WorldObjectIdentity { Name = def.Name, DefinitionId = def.Id })
+             .With(world, new WorldObjectIdentity { Name = def.Name, DefinitionId = def.Id })
+             .With(world, new PersistentIdentity(persistentId ?? $"object:{mapId}:{x}:{y}:{def.Id}"))
             .With(world, new Solid { Blocks = !def.HasFlag("walkable") });
 
         if (def.IsContainer)
@@ -121,9 +131,11 @@ public static class EntitySpawner
         return item;
     }
 
-    private static Entity BuildCreature(World world, string mapId, CreatureDefinition def, int x, int y)
+    private static Entity BuildCreature(World world, string mapId, CreatureDefinition def, int x, int y, long? stableId = null)
     {
-        var e = world.Create()
+        var e = (stableId is long id
+            ? world.Create(id, out _)
+            : world.Create())
             .With(world, new Position { Value = new Vector2(x, y) })
             .With(world, new Location { MapId = mapId })
             .With(world, new Glyph { Character = def.Symbol, Foreground = def.Color })

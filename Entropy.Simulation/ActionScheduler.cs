@@ -1,4 +1,4 @@
-namespace Entropy.Game.Systems;
+namespace Entropy.Simulation;
 
 public static class ActionScheduler
 {

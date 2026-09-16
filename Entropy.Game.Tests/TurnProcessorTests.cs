@@ -17,8 +17,8 @@ public class TurnProcessorTests
     {
         var fixture = CreateFixture();
 
-        var result = fixture.Turns.ProcessPlayerTurn(
-            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6);
+        var result = PlayerActions.Move(
+            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6, fixture.Turns.Scheduler);
 
         Assert.True(result.AdvancesTime);
         Assert.Equal(1, result.TimeCostMinutes);
@@ -31,8 +31,8 @@ public class TurnProcessorTests
         var fixture = CreateFixture();
         fixture.Map.SetTile(2, 1, Tile.Wall);
 
-        var result = fixture.Turns.ProcessPlayerTurn(
-            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6);
+        var result = PlayerActions.Move(
+            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6, fixture.Turns.Scheduler);
 
         Assert.False(result.AdvancesTime);
         Assert.False(result.Succeeded);
@@ -70,7 +70,7 @@ public class TurnProcessorTests
             Rng = new Rng(1234),
             Player = player,
             Clock = new WorldClock(2001, 3, 12, 7, 30),
-            Turns = turns,
+             Scheduler = turns.Scheduler,
             Visibilities = new Dictionary<string, VisibilityMap> { ["test"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,

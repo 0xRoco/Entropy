@@ -20,6 +20,6 @@ public static class BehaviorCatalog
 
     private sealed class NullBehavior : IBehavior
     {
-        public AiIntent Decide(World world, Entity self, GameContext context) => new(AiIntentType.None);
+        public AiIntent Decide(World world, Entity self, AiContext context) => new(AiIntentType.None);
     }
 }

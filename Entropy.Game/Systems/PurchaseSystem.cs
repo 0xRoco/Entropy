@@ -4,12 +4,13 @@ using Entropy.Game.Components;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Inventory;
 using OpenTK.Mathematics;
+using Entropy.Simulation;
 
 namespace Entropy.Game.Systems;
 
 public static class PurchaseSystem
 {
-    public static bool IsShopStock(GameContext context, Entity container)
+    public static bool IsShopStock(IGameRuntimeContext context, Entity container)
     {
         if (!context.World.Has<WorldObjectIdentity>(container))
             return false;
@@ -18,7 +19,7 @@ public static class PurchaseSystem
         return context.Definitions.WorldObject(definitionId).HasFlag("shop_stock");
     }
 
-    public static bool TryPurchase(GameContext context, Entity buyer, Entity item, Entity shop)
+    public static bool TryPurchase(IGameRuntimeContext context, Entity buyer, Entity item, Entity shop)
     {
         if (!CanTrade(context, buyer, item, shop) || !context.World.Has<Wallet>(buyer))
             return false;
@@ -30,7 +31,14 @@ public static class PurchaseSystem
         ref var wallet = ref context.World.Get<Wallet>(buyer);
         if (definition.PriceCents <= 0 || cost > int.MaxValue || wallet.CashCents < cost)
         {
-            context.Log.Add($"You cannot afford the {identity.Name}.", Color4.Yellow);
+            context.Events.Publish(new SimEvent(
+                "purchase.failed",
+                $"You cannot afford the {identity.Name}.",
+                context.MapId,
+                new Vector2i((int)context.World.Get<Position>(buyer).Value.X, (int)context.World.Get<Position>(buyer).Value.Y),
+                context.Clock.MinuteOfDay,
+                context.World.StableId(buyer),
+                context.World.StableId(item)));
             return false;
         }
 
@@ -38,11 +46,18 @@ public static class PurchaseSystem
             return false;
 
         wallet.CashCents -= (int)cost;
-        context.Log.Add($"You buy the {identity.Name} for ${cost / 100}.{cost % 100:00}.");
+        context.Events.Publish(new SimEvent(
+            "purchase.completed",
+            $"You buy the {identity.Name} for ${cost / 100}.{cost % 100:00}.",
+            context.MapId,
+            new Vector2i((int)context.World.Get<Position>(buyer).Value.X, (int)context.World.Get<Position>(buyer).Value.Y),
+            context.Clock.MinuteOfDay,
+            context.World.StableId(buyer),
+            context.World.StableId(item)));
         return true;
     }
 
-    public static bool TrySteal(GameContext context, Entity thief, Entity item, Entity shop)
+    public static bool TrySteal(IGameRuntimeContext context, Entity thief, Entity item, Entity shop)
     {
         if (!CanTrade(context, thief, item, shop))
             return false;
@@ -61,11 +76,18 @@ public static class PurchaseSystem
             new Vector2i((int)location.X, (int)location.Y),
             thief,
             shop);
-        context.Log.Add($"You steal the {identity.Name}.", Color4.Yellow);
+        context.Events.Publish(new SimEvent(
+            "theft.completed",
+            $"You steal the {identity.Name}.",
+            context.MapId,
+            new Vector2i((int)location.X, (int)location.Y),
+            context.Clock.MinuteOfDay,
+            context.World.StableId(thief),
+            context.World.StableId(item)));
         return true;
     }
 
-    private static bool CanTrade(GameContext context, Entity actor, Entity item, Entity shop)
+    private static bool CanTrade(IGameRuntimeContext context, Entity actor, Entity item, Entity shop)
     {
         return context.World.IsAlive(actor) &&
                context.World.IsAlive(item) &&

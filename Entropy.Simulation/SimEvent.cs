@@ -1,6 +1,6 @@
 using OpenTK.Mathematics;
 
-namespace Entropy.Game;
+namespace Entropy.Simulation;
 
 public record SimEvent(
     string Type,

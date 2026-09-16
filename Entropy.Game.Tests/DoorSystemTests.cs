@@ -27,8 +27,8 @@ public class DoorSystemTests
     {
         var fixture = CreateFixture();
 
-        var result = fixture.Turns.ProcessPlayerTurn(
-            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6);
+        var result = PlayerActions.Move(
+            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6, fixture.Turns.Scheduler);
 
         Assert.Equal(ActionResult.Failed, result);
         Assert.Equal(new Vector2(0, 1), fixture.World.Get<Position>(fixture.Player).Value);
@@ -68,8 +68,8 @@ public class DoorSystemTests
 
         Assert.Equal(ActionResult.Turn, result);
         Assert.True(DoorSystem.IsPassable(fixture.Context, fixture.Transition));
-        Assert.Contains(fixture.Context.Log.Messages,
-            message => message.Text.Contains("noise carries", StringComparison.Ordinal));
+        Assert.Contains(fixture.Context.Events.History,
+            simulationEvent => simulationEvent.Description.Contains("noise carries", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -135,8 +135,8 @@ public class DoorSystemTests
             fixture.Context, fixture.Player, container, new Vector2i(1, 1),
             "tool_crowbar", "pry", 8));
         Assert.True(fixture.World.Get<LockState>(container).Broken);
-        Assert.Contains(fixture.Context.Log.Messages,
-            message => message.Text.Contains("pry the lock", StringComparison.Ordinal));
+        Assert.Contains(fixture.Context.Events.History,
+            simulationEvent => simulationEvent.Description.Contains("pry the lock", StringComparison.Ordinal));
     }
 
     private static Fixture CreateFixture()
@@ -180,7 +180,7 @@ public class DoorSystemTests
             Rng = new Rng(1234),
             Player = player,
             Clock = new WorldClock(2001, 3, 12, 7, 30),
-            Turns = turns,
+             Scheduler = turns.Scheduler,
             Visibilities = new Dictionary<string, VisibilityMap> { ["from"] = visibility },
             Visibility = visibility,
             ViewRadius = 6,

@@ -33,4 +33,18 @@ public class StableReferenceTests
 
         Assert.Equal(default, world.ResolveStableId(stableId));
     }
+
+    [Fact]
+    public void CreateWithStableIdRemapsOccupiedIdExplicitly()
+    {
+        var world = new World();
+        var occupied = world.Create();
+        var requested = world.StableId(occupied);
+
+        var remapped = world.Create(requested, out var assigned);
+
+        Assert.NotEqual(requested, assigned);
+        Assert.Equal(assigned, world.StableId(remapped));
+        Assert.Equal(occupied, world.ResolveStableId(requested));
+    }
 }

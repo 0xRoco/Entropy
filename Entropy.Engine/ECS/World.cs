@@ -35,6 +35,20 @@ public class World
         return entity;
     }
 
+    public Entity Create(long requestedStableId, out long assignedStableId)
+    {
+        if (requestedStableId > 0 && !_entitiesByStableId.ContainsKey(requestedStableId))
+        {
+            var entity = Create(requestedStableId);
+            assignedStableId = requestedStableId;
+            return entity;
+        }
+
+        var remapped = Create();
+        assignedStableId = StableId(remapped);
+        return remapped;
+    }
+
     public void Destroy(Entity entity)
     {
         if (!_entities.Remove(entity.Id)) return;

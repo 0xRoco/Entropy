@@ -1,6 +1,4 @@
-using Entropy.Game;
-
-namespace Entropy.Game.Systems;
+namespace Entropy.Simulation;
 
 public sealed class SimulationEventBus
 {

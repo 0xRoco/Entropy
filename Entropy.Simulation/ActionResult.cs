@@ -1,4 +1,4 @@
-namespace Entropy.Game.Systems;
+namespace Entropy.Simulation;
 
 public readonly record struct ActionResult(bool Succeeded, bool ConsumesTurn, int TimeCostMinutes = 1)
 {

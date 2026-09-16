@@ -1,9 +1,11 @@
 using Entropy.Engine.ECS;
+using Entropy.Engine.ECS.Components;
 using Entropy.Engine.World;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Inventory;
 using Entropy.Game.Components.Spatial;
 using OpenTK.Mathematics;
+using Entropy.Simulation;
 
 namespace Entropy.Game.Systems;
 
@@ -15,7 +17,7 @@ public static class DoorSystem
         transition.ToMap,
         transition.ToTile);
 
-    public static bool TryGet(GameContext context, MapTransition transition,
+    public static bool TryGet(IGameRuntimeContext context, MapTransition transition,
         out DoorDefinition definition, out DoorState state)
     {
         var key = KeyFor(transition);
@@ -28,10 +30,10 @@ public static class DoorSystem
         return false;
     }
 
-    public static bool IsPassable(GameContext context, MapTransition transition) =>
+    public static bool IsPassable(IGameRuntimeContext context, MapTransition transition) =>
         !TryGet(context, transition, out _, out var state) || !state.Locked || state.Broken;
 
-    public static ActionResult Unlock(GameContext context, Entity player, MapTransition transition)
+    public static ActionResult Unlock(IGameRuntimeContext context, Entity player, MapTransition transition)
     {
         if (!TryGet(context, transition, out var definition, out var state) ||
             !state.Locked || state.Broken || !HasItemWithFlag(context, player, definition.RequiredKeyFlag))
@@ -39,11 +41,17 @@ public static class DoorSystem
 
         state.Locked = false;
         context.DoorStates[KeyFor(transition)] = state;
-        context.Log.Add("You unlock the door quietly.", Color4.Cyan);
+        context.Events.Publish(new SimEvent(
+            "door.unlock",
+            "A door was unlocked quietly.",
+            transition.FromMap,
+            transition.FromTile,
+            context.Clock.MinuteOfDay,
+            context.World.IsAlive(player) ? context.World.StableId(player) : null));
         return ActionResult.Turn;
     }
 
-    public static ActionResult ForceEntry(GameContext context, Entity player,
+    public static ActionResult ForceEntry(IGameRuntimeContext context, Entity player,
         MapTransition transition, Vector2i source)
     {
         return ForceEntry(context, player, transition, source,
@@ -51,7 +59,7 @@ public static class DoorSystem
             "smash", 12);
     }
 
-    public static ActionResult ForceEntry(GameContext context, Entity player,
+    public static ActionResult ForceEntry(IGameRuntimeContext context, Entity player,
         MapTransition transition, Vector2i source, string toolFlag, string method, int noiseRadius)
     {
         if (!TryGet(context, transition, out var definition, out var state) ||
@@ -61,12 +69,18 @@ public static class DoorSystem
         state.Locked = false;
         state.Broken = true;
         context.DoorStates[KeyFor(transition)] = state;
-        context.Log.Add($"You {method} the lock. The noise carries down the street.", Color4.OrangeRed);
+        context.Events.Publish(new SimEvent(
+            "door.force",
+            $"You {method} the lock. The noise carries down the street.",
+            transition.FromMap,
+            source,
+            context.Clock.MinuteOfDay,
+            context.World.IsAlive(player) ? context.World.StableId(player) : null));
         NoiseSystem.Emit(context, source, noiseRadius, $"Something is {method}ing into the door");
         return ActionResult.Turn;
     }
 
-    public static ActionResult UnlockContainer(GameContext context, Entity player, Entity container)
+    public static ActionResult UnlockContainer(IGameRuntimeContext context, Entity player, Entity container)
     {
         if (!TryGetLock(context, container, out var state) || !state.Locked || state.Broken ||
             !HasItemWithFlag(context, player, state.RequiredKeyFlag))
@@ -74,11 +88,21 @@ public static class DoorSystem
 
         state.Locked = false;
         context.World.Set(container, state);
-        context.Log.Add("You unlock it quietly.", Color4.Cyan);
+        var location = context.World.Has<Position>(container)
+            ? context.World.Get<Position>(container).Value
+            : OpenTK.Mathematics.Vector2.Zero;
+        context.Events.Publish(new SimEvent(
+            "container.unlock",
+            "A container was unlocked quietly.",
+            context.World.Has<Location>(container) ? context.World.Get<Location>(container).MapId : context.MapId,
+            new Vector2i((int)location.X, (int)location.Y),
+            context.Clock.MinuteOfDay,
+            context.World.IsAlive(player) ? context.World.StableId(player) : null,
+            context.World.IsAlive(container) ? context.World.StableId(container) : null));
         return ActionResult.Turn;
     }
 
-    public static ActionResult ForceContainerEntry(GameContext context, Entity player, Entity container,
+    public static ActionResult ForceContainerEntry(IGameRuntimeContext context, Entity player, Entity container,
         Vector2i source, string toolFlag, string method, int noiseRadius)
     {
         if (!TryGetLock(context, container, out var state) || !state.Locked || state.Broken ||
@@ -88,12 +112,19 @@ public static class DoorSystem
         state.Locked = false;
         state.Broken = true;
         context.World.Set(container, state);
-        context.Log.Add($"You {method} the lock. The noise carries down the street.", Color4.OrangeRed);
+        context.Events.Publish(new SimEvent(
+            "container.force",
+            $"You {method} the lock. The noise carries down the street.",
+            context.World.Has<Location>(container) ? context.World.Get<Location>(container).MapId : context.MapId,
+            source,
+            context.Clock.MinuteOfDay,
+            context.World.IsAlive(player) ? context.World.StableId(player) : null,
+            context.World.IsAlive(container) ? context.World.StableId(container) : null));
         NoiseSystem.Emit(context, source, noiseRadius, $"Something is {method}ing into the container");
         return ActionResult.Turn;
     }
 
-    public static bool TryGetLock(GameContext context, Entity entity, out LockState state)
+    public static bool TryGetLock(IGameRuntimeContext context, Entity entity, out LockState state)
     {
         if (context.World.Has<LockState>(entity))
         {
@@ -105,7 +136,7 @@ public static class DoorSystem
         return false;
     }
 
-    public static bool HasItemWithFlag(GameContext context, Entity player, string flag)
+    public static bool HasItemWithFlag(IGameRuntimeContext context, Entity player, string flag)
     {
         var world = context.World;
         if (string.IsNullOrWhiteSpace(flag) || !world.Has<Container>(player))
