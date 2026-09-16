@@ -86,6 +86,24 @@ public class InventoryActionTests
         Assert.Equal(1, fixture.World.Get<Stackable>(item).Count);
     }
 
+    [Fact]
+    public void FullInventoryStillAcceptsItemThatFitsExistingStack()
+    {
+        var fixture = CreateFixture(5);
+        fixture.World.Set(fixture.Player, Container.WithSlots(1));
+
+        var existing = fixture.CreateItem("food");
+        fixture.World.Set(existing, new Stackable { Count = 4, MaxStack = 5 });
+        fixture.PutInInventory(existing);
+
+        var incoming = fixture.CreateItem("food");
+        fixture.World.Set(incoming, new Stackable { Count = 1, MaxStack = 5 });
+
+        Assert.True(ItemSystem.Transfer(fixture.World, incoming, fixture.Player));
+        Assert.Equal(5, fixture.World.Get<Stackable>(existing).Count);
+        Assert.False(fixture.World.IsAlive(incoming));
+    }
+
     private static Fixture CreateFixture(int health)
     {
         var map = new TileMap(3, 3);

@@ -39,19 +39,11 @@ public sealed class GameSession
         var pharmacyDoor = DoorSystem.KeyFor(pharmacyTransition);
         var simulation = result.Simulation;
         var visibility = result.Visibilities[result.MapId];
-        var turns = new TurnProcessor(simulation.Scheduler);
-        var context = new GameContext
+        var context = new GameContext(simulation)
         {
             Map = result.Map,
             MapId = result.MapId,
-            Maps = result.Maps,
             Log = log,
-            World = result.World,
-            Definitions = definitions,
-            Player = result.Player,
-            Rng = rng,
-            Clock = simulation.Clock,
-            Scheduler = simulation.Scheduler,
             Visibilities = result.Visibilities,
             Visibility = visibility,
             ViewRadius = viewRadius,
@@ -63,10 +55,8 @@ public sealed class GameSession
             {
                 [pharmacyDoor] = new DoorState { Locked = true }
             },
-            Events = simulation.Events,
-            Simulation = simulation
         };
-        var adapter = new SimulationRuntime(simulation, context, log);
+        var adapter = new SimulationRuntime(simulation, context);
         return new GameSession(context, adapter, result.Visibilities, result.Buildings);
     }
 

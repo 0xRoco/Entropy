@@ -148,6 +148,7 @@ public class EntropyGame : IGameClient
         if (ActivitySystem.IsActive(_context.World, _context.Player))
         {
             _actions.ProcessActivity();
+            EventProjector.Project(_context.Events, _log);
             return;
         }
 
@@ -163,6 +164,7 @@ public class EntropyGame : IGameClient
             var tx = (int)inspectedTile.Value.X;
             var ty = (int)inspectedTile.Value.Y;
             _simulation.Execute(new ExamineCommand(new Vector2i(tx, ty)));
+            EventProjector.Project(_context.Events, _log);
         }
 
         var rightClicked = Controls.GetClickedTile(_input, _camera, MouseButton.Right);
@@ -212,6 +214,7 @@ public class EntropyGame : IGameClient
 
         var action = _actions.ProcessPlayerAction();
         _actions.ProcessActionResult(action);
+        EventProjector.Project(_context.Events, _log);
     }
 
     public void Render(FrameEventArgs args)

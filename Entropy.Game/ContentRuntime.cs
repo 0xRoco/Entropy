@@ -134,6 +134,14 @@ public sealed class ContentRuntime : IDisposable
 
     private void FinishInitialLoad()
     {
+        var errors = DefinitionValidator.Validate(
+            Definitions.Items, Definitions.Creatures, Definitions.Terrains,
+            Definitions.Tilesets, Definitions.BuildingTemplates, Definitions.WorldObjects,
+            Definitions.LootTables);
+        if (errors.Count > 0)
+            throw new InvalidOperationException(
+                $"Content validation failed with {errors.Count} error(s): {string.Join("; ", errors.Take(3))}");
+
         Tileset = Definitions.Tileset("entropy_art");
         TerrainAtlas = Tileset.Mode == "art"
             ? new GlyphAtlas(Path.Combine(

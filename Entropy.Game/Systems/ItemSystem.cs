@@ -55,7 +55,8 @@ public static class ItemSystem
 
         ref var destinationContainer = ref world.Get<Container>(destination);
         var alreadyContained = destinationContainer.Items.Contains(item);
-        if (!alreadyContained && destinationContainer.Items.Count >= destinationContainer.Slots)
+        if (!alreadyContained && destinationContainer.Items.Count >= destinationContainer.Slots &&
+            !HasCapacityForStack(world, destinationContainer, item))
             return false;
 
         RemoveFromContainer(world, item);
@@ -118,6 +119,27 @@ public static class ItemSystem
         }
         
         container.Items.Add(item);
+    }
+
+    private static bool HasCapacityForStack(World world, Container container, Entity item)
+    {
+        if (!world.Has<Stackable>(item) || !world.Has<ItemIdentity>(item))
+            return false;
+
+        var incoming = world.Get<Stackable>(item).Count;
+        var definitionId = world.Get<ItemIdentity>(item).DefinitionId;
+        foreach (var existing in container.Items)
+        {
+            if (!world.IsAlive(existing) || !world.Has<Stackable>(existing) || !world.Has<ItemIdentity>(existing))
+                continue;
+            if (world.Get<ItemIdentity>(existing).DefinitionId != definitionId)
+                continue;
+            incoming -= Math.Max(0, world.Get<Stackable>(existing).MaxStack - world.Get<Stackable>(existing).Count);
+            if (incoming <= 0)
+                return true;
+        }
+
+        return false;
     }
 
     private static bool WouldCreateCycle(World world, Entity item, Entity destination)

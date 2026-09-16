@@ -1,7 +1,7 @@
 using Entropy.Game.UI;
 using OpenTK.Mathematics;
 
-namespace Entropy.Game.Systems;
+namespace Entropy.Game.UI;
 
 public static class EventProjector
 {

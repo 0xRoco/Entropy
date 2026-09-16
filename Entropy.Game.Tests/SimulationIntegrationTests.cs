@@ -110,7 +110,7 @@ public sealed class SimulationIntegrationTests
             Simulation = simulation
         };
 
-        var adapter = new SimulationRuntime(simulation, context, context.Log);
+        var adapter = new SimulationRuntime(simulation, context);
 
         Assert.True(adapter.Execute(new WaitCommand()).Succeeded);
         Assert.Equal(1, adapter.Advance(1));
