@@ -2,10 +2,10 @@ using Entropy.Engine.Core;
 using Entropy.Engine.ECS;
 using Entropy.Engine.World;
 using Entropy.Game.Components.Spatial;
+using Entropy.Game.Components;
 
 namespace Entropy.Game.Systems;
 
-// Runtime state needed by gameplay, deliberately separate from presentation services.
 public interface IGameRuntimeContext
 {
     TileMap Map { get; set; }
@@ -23,4 +23,5 @@ public interface IGameRuntimeContext
     Dictionary<DoorKey, DoorDefinition> DoorDefinitions { get; }
     Dictionary<DoorKey, DoorState> DoorStates { get; }
     SimulationEventBus Events { get; }
+    ArrivalState Arrival { get; }
 }

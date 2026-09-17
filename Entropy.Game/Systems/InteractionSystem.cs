@@ -35,6 +35,24 @@ public static class InteractionSystem
             DoorSystem.TryGet(context, transition, out var door, out var doorState) &&
             doorState.Locked && !doorState.Broken)
         {
+            if (door.RequiresTemporaryPermit && context.Arrival.HasTemporaryPermit &&
+                context.Arrival.HasValidPermit(context.Clock.TotalMinutes))
+            {
+                var direction = tile - new Vector2i(
+                    (int)world.Get<Position>(player).Value.X,
+                    (int)world.Get<Position>(player).Value.Y);
+                verbs.Add(new WorldVerb("Present temporary permit",
+                    (ctx, p) => PlayerActions.Move(p, direction, ctx, ctx.Visibility, ctx.ViewRadius, ctx.Scheduler)));
+            }
+
+            if (door.RequiresTemporaryPermit && !context.Arrival.HasTemporaryPermit &&
+                world.Has<Wallet>(player) &&
+                world.Get<Wallet>(player).CashCents >= ArrivalSystem.BribeCostCents)
+            {
+                verbs.Add(new WorldVerb($"Offer ${ArrivalSystem.BribeCostCents / 100} for entry",
+                    (ctx, p) => ArrivalSystem.BribeForTemporaryPermit(ctx, p)));
+            }
+
             if (!string.IsNullOrWhiteSpace(door.RequiredKeyFlag) && DoorSystem.HasItemWithFlag(context, player, door.RequiredKeyFlag))
             {
                 verbs.Add(new WorldVerb("Unlock the door",
@@ -123,9 +141,17 @@ public static class InteractionSystem
             var target = entity;
 
             if (IsAdjacent(world.Get<Position>(player).Value, tile))
+            {
+                if (name.Equals("Checkpoint Guard", StringComparison.OrdinalIgnoreCase) &&
+                    mapId.Equals("checkpoint", StringComparison.OrdinalIgnoreCase) &&
+                    !context.Arrival.HasTemporaryPermit)
+                    verbs.Add(new WorldVerb("Request a temporary entry permit",
+                        (ctx, p) => ArrivalSystem.GrantTemporaryPermit(ctx, p)));
+
                 verbs.Add(new WorldVerb($"Attack {name}",
                     (ctx, _) => Attack(ctx, player, target),
                     new AttackCommand(target)));
+            }
 
                 verbs.Add(new WorldVerb($"Talk to {name}",
                     (ctx, _) =>

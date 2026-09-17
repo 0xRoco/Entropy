@@ -12,7 +12,8 @@ public sealed record DoorDefinition(
     string Id,
     string RequiredKeyFlag,
     string RequiredToolFlag,
-    bool Trespass = false);
+    bool Trespass = false,
+    bool RequiresTemporaryPermit = false);
 
 public struct DoorState
 {

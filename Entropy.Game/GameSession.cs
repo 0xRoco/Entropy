@@ -34,10 +34,22 @@ public sealed class GameSession
         Rng rng,
         int viewRadius)
     {
-        var pharmacyTransition = result.Maps.Transitions.Single(transition =>
-            transition.ToMap.Equals("neighborhood_pharmacy_interior", StringComparison.OrdinalIgnoreCase));
-        var pharmacyDoor = DoorSystem.KeyFor(pharmacyTransition);
         var simulation = result.Simulation;
+        var entryTransition = result.Maps.Transitions.SingleOrDefault(transition =>
+            transition.FromMap.Equals("checkpoint", StringComparison.OrdinalIgnoreCase) &&
+            transition.ToMap.Equals("spire_commons", StringComparison.OrdinalIgnoreCase));
+        var doorDefinitions = new Dictionary<DoorKey, DoorDefinition>();
+        var doorStates = new Dictionary<DoorKey, DoorState>();
+        if (entryTransition is not null)
+        {
+            var doorKey = DoorSystem.KeyFor(entryTransition);
+            doorDefinitions[doorKey] = new DoorDefinition(
+                "spire_entry_gate",
+                string.Empty,
+                string.Empty,
+                RequiresTemporaryPermit: true);
+            doorStates[doorKey] = new DoorState { Locked = true };
+        }
         var visibility = result.Visibilities[result.MapId];
         var context = new GameContext(simulation)
         {
@@ -47,14 +59,8 @@ public sealed class GameSession
             Visibilities = result.Visibilities,
             Visibility = visibility,
             ViewRadius = viewRadius,
-            DoorDefinitions = new()
-            {
-                [pharmacyDoor] = new DoorDefinition("pharmacy_door", "key_pharmacy", "tool_smash", Trespass: false)
-            },
-            DoorStates = new()
-            {
-                [pharmacyDoor] = new DoorState { Locked = true }
-            },
+            DoorDefinitions = doorDefinitions,
+            DoorStates = doorStates,
         };
         var adapter = new SimulationRuntime(simulation, context);
         return new GameSession(context, adapter, result.Visibilities, result.Buildings);

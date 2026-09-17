@@ -30,8 +30,15 @@ public static class DoorSystem
         return false;
     }
 
-    public static bool IsPassable(IGameRuntimeContext context, MapTransition transition) =>
-        !TryGet(context, transition, out _, out var state) || !state.Locked || state.Broken;
+    public static bool IsPassable(IGameRuntimeContext context, MapTransition transition)
+    {
+        if (!TryGet(context, transition, out var definition, out var state))
+            return true;
+        if (!state.Locked || state.Broken)
+            return true;
+        return definition.RequiresTemporaryPermit &&
+               context.Arrival.HasValidPermit(context.Clock.TotalMinutes);
+    }
 
     public static ActionResult Unlock(IGameRuntimeContext context, Entity player, MapTransition transition)
     {

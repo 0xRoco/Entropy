@@ -151,6 +151,19 @@ public sealed class PlayerActions
             context.MapId = transition.ToMap;
             context.Map = context.Maps[transition.ToMap];
             context.Visibility = context.Visibilities[transition.ToMap];
+            if (transition.ToMap.Equals("spire_commons", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Arrival.HasEnteredSpire = true;
+                context.Arrival.EntryRestricted = false;
+                context.Arrival.LegalIdentityStatus = "temporary_resident";
+                context.Events.Publish(new SimEvent(
+                    "arrival.entered",
+                    "The gate opens. You are admitted under temporary status. Find work or a sponsor before the permit expires.",
+                    transition.ToMap,
+                    transition.ToTile,
+                    context.Clock.MinuteOfDay,
+                    context.World.StableId(player)));
+            }
             if (DoorSystem.TryGet(context, transition, out var door, out var doorState) && door.Trespass && doorState.Broken && !doorState.TrespassReported)
             {
                 doorState.TrespassReported = true;

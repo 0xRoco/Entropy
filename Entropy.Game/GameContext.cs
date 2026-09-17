@@ -3,6 +3,7 @@ using Entropy.Engine.ECS;
 using Entropy.Engine.World;
 using Entropy.Content;
 using Entropy.Game.Components.Spatial;
+using Entropy.Game.Components;
 using Entropy.Game.Systems;
 using Entropy.Game.UI;
 using Entropy.Simulation;
@@ -67,6 +68,7 @@ public sealed class GameContext : IGameRuntimeContext
     public required int ViewRadius { get; init; }
     public required Dictionary<DoorKey, DoorDefinition> DoorDefinitions { get; init; }
     public required Dictionary<DoorKey, DoorState> DoorStates { get; init; }
+    public ArrivalState Arrival { get; init; } = new();
     public SimulationEventBus Events
     {
         get => Simulation.Events;

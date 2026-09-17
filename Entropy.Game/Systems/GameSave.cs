@@ -36,7 +36,8 @@ public sealed record GameSaveData(
     IReadOnlyList<ContainerStateData>? Containers = null,
     IReadOnlyList<WorldItemData>? WorldItems = null,
     ActivityData? PlayerActivity = null,
-    long? EquippedItemStableId = null);
+    long? EquippedItemStableId = null,
+    ArrivalStateData? Arrival = null);
 
 public sealed record HealthData(int Current, int Max);
 public sealed record HungerData(int Current, int Max, bool Starving);
@@ -126,6 +127,12 @@ public sealed record WitnessEventData(
     int Minute,
     long? ActorStableId,
     long? TargetStableId);
+public sealed record ArrivalStateData(
+    string LegalIdentityStatus,
+    bool HasTemporaryPermit,
+    int PermitExpiryMinute,
+    bool EntryRestricted,
+    bool HasEnteredSpire);
 
 public static class GameSave
 {
@@ -351,7 +358,13 @@ public static class GameSave
                     context.World.Has<Position>(item) ? (int)context.World.Get<Position>(item).Value.X : 0,
                     context.World.Has<Position>(item) ? (int)context.World.Get<Position>(item).Value.Y : 0))
                 .ToList(),
-            PlayerActivity = CaptureActivity(context.World, context.Player)
+            PlayerActivity = CaptureActivity(context.World, context.Player),
+            Arrival = new ArrivalStateData(
+                context.Arrival.LegalIdentityStatus,
+                context.Arrival.HasTemporaryPermit,
+                context.Arrival.PermitExpiryMinute,
+                context.Arrival.EntryRestricted,
+                context.Arrival.HasEnteredSpire)
         };
 
     public static void RestorePlayer(GameContext context, GameSaveData save)
@@ -378,6 +391,15 @@ public static class GameSave
         });
         context.World.Set(context.Player, new Fatigue { Current = save.Fatigue.Current, Max = save.Fatigue.Max });
         context.World.Set(context.Player, new Wallet { CashCents = save.CashCents });
+
+        if (save.Arrival is { } arrival)
+        {
+            context.Arrival.LegalIdentityStatus = arrival.LegalIdentityStatus;
+            context.Arrival.HasTemporaryPermit = arrival.HasTemporaryPermit;
+            context.Arrival.PermitExpiryMinute = arrival.PermitExpiryMinute;
+            context.Arrival.EntryRestricted = arrival.EntryRestricted;
+            context.Arrival.HasEnteredSpire = arrival.HasEnteredSpire;
+        }
 
         if (save.Character is { } character)
         {

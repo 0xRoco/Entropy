@@ -32,60 +32,111 @@ public class WorldSetup
         var world = new World();
         var scheduler = new ActorScheduler();
 
-        var block = CityBlockGenerator.Generate(defs);
-        var maps = block.Maps;
-        var streetMap = maps[block.StreetMapId];
+        const string mapId = "spire_commons";
+        var mapPath = Path.Combine(AppContext.BaseDirectory, "Content", "Maps", "spire_commons.json");
+        var authored = AuthoredMapLoader.Load(mapPath, defs);
+        var checkpointPath = Path.Combine(AppContext.BaseDirectory, "Content", "Maps", "checkpoint.json");
+        var checkpoint = AuthoredMapLoader.Load(checkpointPath, defs);
+        var maps = new MapGraph();
+        maps.AddMap(mapId, authored.Map);
+        maps.AddMap(checkpoint.Definition.Id, checkpoint.Map);
+
+        var outsideMapId = $"outside_{rng.Seed}";
+        var outside = ProceduralOutsideGenerator.Generate(
+            defs,
+            new Rng(unchecked(rng.Seed ^ 0x5EED5EED)),
+            96,
+            64);
+        maps.AddMap(outsideMapId, outside.Map);
+        var authoredMaps = new Dictionary<string, AuthoredMap>(StringComparer.OrdinalIgnoreCase)
+        {
+            [authored.Definition.Id] = authored,
+            [checkpoint.Definition.Id] = checkpoint
+        };
+        foreach (var source in authoredMaps.Values)
+        foreach (var transition in source.Definition.Transitions)
+        {
+            var targetMap = transition.TargetMap.Equals("outside", StringComparison.OrdinalIgnoreCase)
+                ? outsideMapId
+                : transition.TargetMap;
+            var targetTile = transition.TargetAnchor.Equals("west_gate", StringComparison.OrdinalIgnoreCase)
+                ? new Vector2i(outside.Map.Width - 1, outside.Map.Height / 2)
+                : Anchor(authoredMaps[targetMap].Definition, transition.TargetAnchor);
+            maps.Connect(
+                source.Definition.Id,
+                new Vector2i(transition.X, transition.Y),
+                targetMap,
+                targetTile);
+        }
+
+        var startMapId = outsideMapId;
+        var startMap = outside.Map;
 
         var visibilities = maps.Maps.ToDictionary(
             pair => pair.Key,
             pair => new VisibilityMap(pair.Value.Width, pair.Value.Height));
 
-        var playerStart = new Vector2i(30, 20);
+        var playerStart = new Vector2i(startMap.Width - 6, startMap.Height / 2);
         var player = EntitySpawner.CreatePlayer(
             world,
-            block.StreetMapId,
+            startMapId,
             defs.Creature("player"),
             playerStart.X,
             playerStart.Y);
 
         scheduler.Add(player);
 
-        foreach (var building in block.Buildings.Values)
+        foreach (var placement in authored.Definition.Objects)
         {
-            foreach (var (anchorName, tile) in building.Anchors)
-            {
-                if (!defs.TryWorldObject(anchorName, out var objectDef) &&
-                    !defs.TryWorldObject(anchorName.TrimEnd("0123456789".ToCharArray()), out objectDef))
-                    continue;
+            var objectDef = defs.WorldObject(placement.Definition);
+            var spawned = EntitySpawner.CreateWorldObject(
+                world,
+                mapId,
+                objectDef,
+                placement.X,
+                placement.Y,
+                placement.Id);
 
-                var spawned = EntitySpawner.CreateWorldObject(
-                    world,
-                    building.MapId,
-                    objectDef,
-                    tile.X,
-                    tile.Y);
+            foreach (var itemId in objectDef.StarterItems)
+                EntitySpawner.SpawnIntoContainer(world, spawned, defs.Item(itemId));
 
-                foreach (var itemId in objectDef.StarterItems)
-                    EntitySpawner.SpawnIntoContainer(world, spawned, defs.Item(itemId));
+            if (objectDef.LootTableId is { Length: > 0 } lootTableId)
+                LootSystem.Generate(world, defs, rng, spawned, defs.LootTable(lootTableId));
+        }
 
-                if (objectDef.LootTableId is { Length: > 0 } lootTableId)
-                    LootSystem.Generate(world, defs, rng, spawned, defs.LootTable(lootTableId));
-            }
+        foreach (var placement in checkpoint.Definition.Objects)
+        {
+            var objectDef = defs.WorldObject(placement.Definition);
+            EntitySpawner.CreateWorldObject(
+                world,
+                checkpoint.Definition.Id,
+                objectDef,
+                placement.X,
+                placement.Y,
+                placement.Id);
         }
 
         var civilian = defs.Creature("human_civilian");
 
-        var store = block.Buildings["corner_store"];
-        var danaApartment = block.Buildings["apartment_dana"];
-        var marcusApartment = block.Buildings["apartment_marcus"];
+        var guardPost = Anchor(checkpoint.Definition, "guard_post");
+        var guard = EntitySpawner.CreateHuman(
+            world,
+            checkpoint.Definition.Id,
+            civilian,
+            guardPost.X,
+            guardPost.Y,
+            "Checkpoint Guard",
+            "guard:checkpoint");
+        guard.With(world, ShiftWork(6 * 60, 18 * 60, 22 * 60, 5 * 60));
+        scheduler.Add(guard);
 
-        var danaHome = danaApartment.Anchors["home"];
-        var danaBed = danaApartment.Anchors["bed"];
-        var storeWork = store.Anchors["work"];
+        var danaHome = Anchor(authored.Definition, "dana_home");
+        var danaBed = Anchor(authored.Definition, "dana_bed");
+        var storeWork = Anchor(authored.Definition, "store_work");
 
         var dana = EntitySpawner.CreateHuman(
             world,
-            danaApartment.MapId,
+            mapId,
             civilian,
             danaBed.X,
             danaBed.Y,
@@ -93,13 +144,13 @@ public class WorldSetup
 
         dana.With(world, new Home
         {
-            MapId = danaApartment.MapId,
+            MapId = mapId,
             Tile = danaHome
         });
 
         dana.With(world, new Workplace
         {
-            MapId = store.MapId,
+            MapId = mapId,
             Tile = storeWork
         });
 
@@ -111,12 +162,12 @@ public class WorldSetup
 
         scheduler.Add(dana);
 
-        var marcusHome = marcusApartment.Anchors["home"];
-        var marcusBed = marcusApartment.Anchors["bed"];
+        var marcusHome = Anchor(authored.Definition, "marcus_home");
+        var marcusBed = Anchor(authored.Definition, "marcus_bed");
 
         var marcus = EntitySpawner.CreateHuman(
             world,
-            marcusApartment.MapId,
+            mapId,
             civilian,
             marcusBed.X,
             marcusBed.Y,
@@ -124,13 +175,13 @@ public class WorldSetup
 
         marcus.With(world, new Home
         {
-            MapId = marcusApartment.MapId,
+            MapId = mapId,
             Tile = marcusHome
         });
 
         marcus.With(world, new Workplace
         {
-            MapId = store.MapId,
+            MapId = mapId,
             Tile = storeWork
         });
 
@@ -144,7 +195,7 @@ public class WorldSetup
 
         var priya = EntitySpawner.CreateHuman(
             world,
-            danaApartment.MapId,
+            mapId,
             civilian,
             danaHome.X - 1,
             danaHome.Y,
@@ -152,7 +203,7 @@ public class WorldSetup
 
         priya.With(world, new Home
         {
-            MapId = danaApartment.MapId,
+            MapId = mapId,
             Tile = danaHome
         });
 
@@ -162,50 +213,47 @@ public class WorldSetup
 
         scheduler.Add(priya);
 
-        var house = block.Buildings["neighborhood_house"];
-        var keyTile = house.Anchors["home"];
+        var keyTile = Anchor(authored.Definition, "quest_key");
         EntitySpawner.CreateItem(
             world,
-            house.MapId,
+            mapId,
             defs.Item("key_pharmacy"),
             keyTile.X,
             keyTile.Y);
 
-        var pharmacy = block.Buildings["neighborhood_pharmacy"];
-        var pharmacyShelf = pharmacy.Anchors["shelf1"];
+        var pharmacyShelf = Anchor(authored.Definition, "pharmacy_shelf");
         EntitySpawner.CreateItem(
             world,
-            pharmacy.MapId,
+            mapId,
             defs.Item("first_aid_kit"),
             pharmacyShelf.X,
             pharmacyShelf.Y);
 
-        var hardware = block.Buildings["neighborhood_hardware"];
-        var hardwareShelf = hardware.Anchors["shelf1"];
+        var hardwareShelf = Anchor(authored.Definition, "hardware_shelf");
         EntitySpawner.CreateItem(
             world,
-            hardware.MapId,
+            mapId,
             defs.Item("baseball_bat"),
             hardwareShelf.X,
             hardwareShelf.Y);
 
         var zombie = EntitySpawner.CreateHuman(
             world,
-            block.StreetMapId,
+            mapId,
             defs.Creature("zombie"),
-            108,
-            20,
+            Anchor(authored.Definition, "zombie_spawn").X,
+            Anchor(authored.Definition, "zombie_spawn").Y,
             "Zombie");
         scheduler.Add(zombie);
 
         Fov.Compute(
             playerStart,
             viewRadius,
-            streetMap,
-            visibilities[block.StreetMapId]);
+            startMap,
+            visibilities[startMapId]);
 
         log.Add($"Seed: {rng.Seed}", Color4.LightGray);
-        log.Add("Welcome to the block.", Color4.Red);
+        log.Add("The Spire checkpoint waits beyond the road.", Color4.Red);
 
         var simulation = new SimulationState(new SimulationContext
         {
@@ -220,14 +268,23 @@ public class WorldSetup
         });
 
         return new NewGameResult(
-            streetMap,
-            block.StreetMapId,
+            startMap,
+            startMapId,
             maps,
             visibilities,
             world,
             player,
-            block.Buildings,
+            new Dictionary<string, BuildingInstance>(),
             simulation);
+    }
+
+    private static Vector2i Anchor(MapDefinition definition, string id)
+    {
+        var anchor = definition.Anchors.SingleOrDefault(candidate =>
+            candidate.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        return anchor is null
+            ? throw new InvalidOperationException($"Map '{definition.Id}' is missing anchor '{id}'.")
+            : new Vector2i(anchor.X, anchor.Y);
     }
 
     private static Schedule ShiftWork(

@@ -65,5 +65,28 @@
       "water_bottle",
       "canned_beans"
     ]
+  },
+  {
+    "type": "WORLD_OBJECT",
+    "id": "fence",
+    "name": "Chain-link Fence",
+    "symbol": "#",
+    "color": "gray",
+    "description": "A temporary chain-link barrier dividing the checkpoint lanes.",
+    "flags": [
+      "solid"
+    ]
+  },
+  {
+    "type": "WORLD_OBJECT",
+    "id": "checkpoint_gate",
+    "name": "Checkpoint Gate",
+    "symbol": "+",
+    "color": "yellow",
+    "description": "A reinforced gate controlling access to the Spire.",
+    "flags": [
+      "walkable",
+      "gate"
+    ]
   }
 ]

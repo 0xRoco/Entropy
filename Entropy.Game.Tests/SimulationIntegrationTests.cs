@@ -65,6 +65,73 @@ public sealed class SimulationIntegrationTests
     }
 
     [Fact]
+    public void NewGameConnectsAuthoredCommonsToSeededOutside()
+    {
+        var contentPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../Entropy.Game/Content/Json"));
+        var definitions = new DefinitionRegistry();
+        definitions.LoadItems(contentPath);
+        definitions.LoadCreatures(contentPath);
+        definitions.LoadTerrains(contentPath);
+        definitions.LoadBuildingTemplates(contentPath);
+        definitions.LoadWorldObjects(contentPath);
+        definitions.LoadLootTables(contentPath);
+
+        var result = WorldSetup.StartNewGame(
+            new Rng(123),
+            new MessageLog(),
+            definitions,
+            6,
+            new WorldClock(2001, 3, 12, 7, 30));
+
+        Assert.Contains("spire_commons", result.Maps.Maps.Keys);
+        Assert.Contains("outside_123", result.Maps.Maps.Keys);
+        Assert.NotNull(result.Maps.TransitionAt("spire_commons", new Vector2i(0, 15)));
+    }
+
+    [Fact]
+    public void TemporaryPermitControlsEntryAndIsCapturedBySave()
+    {
+        var session = CreateWorldSetupSession(321);
+        var transition = session.Context.Maps.Transitions.Single(candidate =>
+            candidate.FromMap == "checkpoint" && candidate.ToMap == "spire_commons");
+
+        Assert.False(DoorSystem.IsPassable(session.Context, transition));
+        Assert.Equal(ActionResult.Turn,
+            ArrivalSystem.GrantTemporaryPermit(session.Context, session.Context.Player));
+        Assert.True(DoorSystem.IsPassable(session.Context, transition));
+
+        var save = GameSave.Capture(session.Context);
+
+        Assert.NotNull(save.Arrival);
+        Assert.True(save.Arrival!.HasTemporaryPermit);
+        Assert.Equal("temporary_entrant", save.Arrival.LegalIdentityStatus);
+
+        session.Context.Arrival.HasTemporaryPermit = false;
+        session.Context.Arrival.LegalIdentityStatus = "unregistered";
+        GameSave.RestorePlayer(session.Context, save);
+
+        Assert.True(session.Context.Arrival.HasTemporaryPermit);
+        Assert.Equal("temporary_entrant", session.Context.Arrival.LegalIdentityStatus);
+    }
+
+    [Fact]
+    public void BriberyGrantsEntryAtTheConfiguredCost()
+    {
+        var session = CreateWorldSetupSession(654);
+        var wallet = session.Context.World.Get<Entropy.Game.Components.Inventory.Wallet>(session.Context.Player);
+        var startingCash = wallet.CashCents;
+
+        Assert.Equal(ActionResult.Turn,
+            ArrivalSystem.BribeForTemporaryPermit(session.Context, session.Context.Player));
+        wallet = session.Context.World.Get<Entropy.Game.Components.Inventory.Wallet>(session.Context.Player);
+        Assert.Equal(startingCash - ArrivalSystem.BribeCostCents, wallet.CashCents);
+        Assert.True(session.Context.Arrival.HasTemporaryPermit);
+
+        session.Context.Arrival.PermitExpiryMinute = session.Context.Clock.TotalMinutes;
+        Assert.False(session.Context.Arrival.HasValidPermit(session.Context.Clock.TotalMinutes));
+    }
+
+    [Fact]
     public void AdapterExecutesCommandAndAdvancesAuthoritativeClock()
     {
         var world = new Entropy.Engine.ECS.World();
