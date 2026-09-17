@@ -165,13 +165,15 @@ public static class GameSave
         }
     }
 
-    public static GameSaveData? Read()
+    public static GameSaveData? Read() => Read(Path);
+
+    public static GameSaveData? Read(string path)
     {
-        if (!Exists) return null;
+        if (!File.Exists(path)) return null;
 
         try
         {
-            var data = JsonSerializer.Deserialize<GameSaveData>(File.ReadAllText(Path));
+            var data = JsonSerializer.Deserialize<GameSaveData>(File.ReadAllText(path));
             if (data is null || data.Health is null || data.Hunger is null ||
                 data.Thirst is null || data.Fatigue is null || data.Inventory is null ||
                 string.IsNullOrWhiteSpace(data.MapId))

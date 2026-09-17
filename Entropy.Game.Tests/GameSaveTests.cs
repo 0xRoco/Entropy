@@ -7,6 +7,8 @@ using Entropy.Game;
 using Entropy.Game.Components.Inventory;
 using Entropy.Game.Components.Identity;
 using Entropy.Game.Components.Spatial;
+using Entropy.Game.Components.Simulation;
+using Entropy.Game.Components.Tags;
 using Entropy.Game.Components.Vitals;
 using OpenTK.Mathematics;
 using Entropy.Game.Systems;
@@ -127,6 +129,129 @@ public class GameSaveTests
         Assert.Equal("iron_sword", restored.World.Get<ItemIdentity>(equipped).DefinitionId);
         Assert.Single(restored.World.Get<Container>(restored.Player).Items);
         Assert.NotEqual(savedWeaponId, restored.World.StableId(equipped));
+    }
+
+    [Fact]
+    public void RestoreReturnsExistingNpcToSavedPosition()
+    {
+        var contentPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../Entropy.Game/Content/Json"));
+        var definitions = new Entropy.Simulation.DefinitionRegistry();
+        definitions.LoadItems(contentPath);
+        var map = new TileMap(5, 5);
+        for (var y = 0; y < map.Height; y++)
+        for (var x = 0; x < map.Width; x++)
+            map.SetTile(x, y, Tile.Floor);
+        var maps = new MapGraph();
+        maps.AddMap("test", map);
+        var visibility = new VisibilityMap(5, 5);
+        var context = CreateSaveContext(new World(), map, maps, visibility, definitions);
+        var npc = context.World.Create();
+        context.World.Set(npc, new Position { Value = new Vector2(3, 2) });
+        context.World.Set(npc, new Location { MapId = "test" });
+        context.World.Set(npc, new Health { Current = 4, Max = 4 });
+
+        var save = GameSave.Capture(context);
+        context.World.Set(npc, new Position { Value = new Vector2(1, 4) });
+
+        GameSave.RestorePlayer(context, save);
+
+        Assert.Equal(new Vector2(3, 2), context.World.Get<Position>(npc).Value);
+    }
+
+    [Fact]
+    public void RestorePreservesDoorState()
+    {
+        var contentPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../Entropy.Game/Content/Json"));
+        var definitions = new Entropy.Simulation.DefinitionRegistry();
+        definitions.LoadItems(contentPath);
+        var map = new TileMap(5, 5);
+        var maps = new MapGraph();
+        maps.AddMap("test", map);
+        var visibility = new VisibilityMap(5, 5);
+        var context = CreateSaveContext(new World(), map, maps, visibility, definitions);
+        var key = new DoorKey("test", new Vector2i(1, 1), "test", new Vector2i(2, 1));
+        context.DoorStates[key] = new DoorState { Locked = false, Broken = true, TrespassReported = true };
+
+        var save = GameSave.Capture(context);
+        context.DoorStates[key] = new DoorState { Locked = true };
+        GameSave.RestorePlayer(context, save);
+
+        Assert.Equal(new DoorState { Locked = false, Broken = true, TrespassReported = true },
+            context.DoorStates[key]);
+    }
+
+    [Fact]
+    public void RestorePreservesSearchedContainerAndDroppedItem()
+    {
+        var contentPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../Entropy.Game/Content/Json"));
+        var definitions = new Entropy.Simulation.DefinitionRegistry();
+        definitions.LoadItems(contentPath);
+        var map = new TileMap(5, 5);
+        for (var y = 0; y < map.Height; y++)
+        for (var x = 0; x < map.Width; x++)
+            map.SetTile(x, y, Tile.Floor);
+        var maps = new MapGraph();
+        maps.AddMap("test", map);
+        var visibility = new VisibilityMap(5, 5);
+        var context = CreateSaveContext(new World(), map, maps, visibility, definitions);
+        var shelf = CreateShelf(context.World);
+        context.World.Set(shelf, new Searched());
+        var dropped = EntitySpawner.CreateItem(context.World, "test", definitions.Item("scrap_metal"), 3, 3);
+
+        var save = GameSave.Capture(context);
+        context.World.Remove<Searched>(shelf);
+        context.World.Destroy(dropped);
+        GameSave.RestorePlayer(context, save);
+
+        Assert.True(context.World.Has<Searched>(shelf));
+        Assert.Contains(context.World.Query<ItemIdentity>(), item =>
+            context.World.Get<ItemIdentity>(item).DefinitionId == "scrap_metal");
+    }
+
+    [Fact]
+    public void RestorePreservesActivePlayerActivity()
+    {
+        var contentPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../Entropy.Game/Content/Json"));
+        var definitions = new Entropy.Simulation.DefinitionRegistry();
+        definitions.LoadItems(contentPath);
+        var map = new TileMap(5, 5);
+        var maps = new MapGraph();
+        maps.AddMap("test", map);
+        var visibility = new VisibilityMap(5, 5);
+        var context = CreateSaveContext(new World(), map, maps, visibility, definitions);
+        context.World.Set(context.Player, new Activity
+        {
+            Kind = ActivityKind.Sleep,
+            RemainingMinutes = 30,
+            TotalMinutes = 60
+        });
+
+        var save = GameSave.Capture(context);
+        context.World.Remove<Activity>(context.Player);
+        GameSave.RestorePlayer(context, save);
+
+        var activity = context.World.Get<Activity>(context.Player);
+        Assert.Equal(ActivityKind.Sleep, activity.Kind);
+        Assert.Equal(30, activity.RemainingMinutes);
+        Assert.Equal(60, activity.TotalMinutes);
+    }
+
+    [Theory]
+    [InlineData("{")]
+    [InlineData("{}")]
+    public void ReadRejectsMalformedOrIncompleteSave(string contents)
+    {
+        var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"entropy-save-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, contents);
+
+            Assert.Null(GameSave.Read(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     private static GameContext CreateSaveContext(

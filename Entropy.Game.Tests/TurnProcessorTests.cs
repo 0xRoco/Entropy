@@ -39,6 +39,24 @@ public class TurnProcessorTests
         Assert.Equal(new Vector2(1, 1), fixture.World.Get<Position>(fixture.Player).Value);
     }
 
+    [Fact]
+    public void OccupiedTileBlocksMovementAndConsumesTurn()
+    {
+        var fixture = CreateFixture();
+        var occupant = fixture.World.Create();
+        fixture.World.Set(occupant, new Position { Value = new Vector2(2, 1) });
+        fixture.World.Set(occupant, new Location { MapId = "test" });
+        fixture.World.Set(occupant, new Actor());
+
+        var result = PlayerActions.Move(
+            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6, fixture.Turns.Scheduler);
+
+        Assert.Equal(ActionResult.Turn, result);
+        Assert.Equal(new Vector2(1, 1), fixture.World.Get<Position>(fixture.Player).Value);
+        Assert.Contains(fixture.Context.Events.History,
+            simulationEvent => simulationEvent.Type == "movement.blocked");
+    }
+
     private static Fixture CreateFixture()
     {
         var map = new TileMap(4, 3);

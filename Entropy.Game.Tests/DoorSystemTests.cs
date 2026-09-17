@@ -35,6 +35,24 @@ public class DoorSystemTests
     }
 
     [Fact]
+    public void OpenDoorMovesPlayerToDestinationMapAndUpdatesRuntimeView()
+    {
+        var fixture = CreateFixture();
+        fixture.PutInInventory(fixture.CreateItem("key_pharmacy"));
+        Assert.Equal(ActionResult.Turn, DoorSystem.Unlock(fixture.Context, fixture.Player, fixture.Transition));
+
+        var result = PlayerActions.Move(
+            fixture.Player, new Vector2i(1, 0), fixture.Context, fixture.Visibility, 6, fixture.Turns.Scheduler);
+
+        Assert.Equal(ActionResult.Turn, result);
+        Assert.Equal("to", fixture.Context.MapId);
+        Assert.Same(fixture.Context.Maps["to"], fixture.Context.Map);
+        Assert.Equal(new Vector2(fixture.Transition.ToTile.X, fixture.Transition.ToTile.Y),
+            fixture.World.Get<Position>(fixture.Player).Value);
+        Assert.Same(fixture.ToVisibility, fixture.Context.Visibility);
+    }
+
+    [Fact]
     public void CorrectKeyUnlocksDoor()
     {
         var fixture = CreateFixture();
@@ -194,7 +212,9 @@ public class DoorSystemTests
             }
         };
 
-        return new Fixture(world, player, transition, from, visibility, turns, context);
+        var toVisibility = new VisibilityMap(to.Width, to.Height);
+        context.Visibilities["to"] = toVisibility;
+        return new Fixture(world, player, transition, from, toVisibility, visibility, turns, context);
     }
 
     private sealed class Fixture(
@@ -202,6 +222,7 @@ public class DoorSystemTests
         Entity player,
         MapTransition transition,
         TileMap map,
+        VisibilityMap toVisibility,
         VisibilityMap visibility,
         TurnProcessor turns,
         GameContext context)
@@ -211,6 +232,7 @@ public class DoorSystemTests
         public MapTransition Transition { get; } = transition;
         public TileMap Map { get; } = map;
         public VisibilityMap Visibility { get; } = visibility;
+        public VisibilityMap ToVisibility { get; } = toVisibility;
         public TurnProcessor Turns { get; } = turns;
         public GameContext Context { get; } = context;
 
