@@ -16,14 +16,30 @@
         </Grid.ColumnDefinitions>
 
         <DockPanel Grid.Column="0" Margin="0,0,8,0">
+            <TextBlock DockPanel.Dock="Top" Text="ITEM BROWSER" FontSize="10" FontWeight="Bold"
+                       Foreground="{StaticResource EditorMutedText}" Margin="0,0,0,6"/>
+            <TextBox DockPanel.Dock="Top" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Filter by ID, name, or description" Margin="0,0,0,6"/>
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
                 <Button Content="New" Command="{Binding AddCommand}" Padding="8,2" Margin="0,0,4,0"/>
                 <Button Content="Duplicate" Command="{Binding DuplicateCommand}" Padding="8,2" Margin="0,0,4,0"/>
                 <Button Content="Delete" Command="{Binding DeleteCommand}" Padding="8,2"/>
             </StackPanel>
-            <ListBox ItemsSource="{Binding Defs}"
-                     SelectedItem="{Binding Selected}"
-                     DisplayMemberPath="Id"/>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                <Button Content="ID" Command="{Binding SortCommand}" CommandParameter="Id" Padding="6,2" Margin="0,0,4,0" ToolTip="Sort by ID"/>
+                <Button Content="Name" Command="{Binding SortCommand}" CommandParameter="Name" Padding="6,2" ToolTip="Sort by name"/>
+            </StackPanel>
+            <ListBox ItemsSource="{Binding VisibleDefs}" SelectedItem="{Binding Selected}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Id}"/>
+                            <TextBlock Text="{Binding Name}" FontSize="10"
+                                       Foreground="{StaticResource EditorMutedText}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </DockPanel>
 
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="0,0,8,0">
@@ -87,8 +103,15 @@
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Column="2" Margin="8,0,0,0">
-            <TextBlock Text="Sprite" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <Border Grid.Column="2" Margin="8,0,0,0" Background="{StaticResource EditorSurfaceRaised}"
+                BorderBrush="{StaticResource EditorBorder}" BorderThickness="1" Padding="10">
+            <StackPanel>
+                <TextBlock Text="SELECTED ITEM" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}"/>
+                <TextBlock Text="{Binding Selected.Name}" FontSize="16" Margin="0,7,0,0"/>
+                <TextBlock Text="{Binding Selected.Id}" Foreground="{StaticResource EditorAccent}" Margin="0,2,0,12"/>
+                <TextBlock Text="SPRITE PREVIEW" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}" Margin="0,0,0,5"/>
             <Image Source="{Binding PreviewImage}" Width="128" Height="128"
                    Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor"
                    HorizontalAlignment="Left" Margin="0,0,0,8"/>
@@ -102,6 +125,7 @@
                 <Button Content="+Drink" Click="OnAddHydrate" Padding="6,2"/>
             </StackPanel>
             <Button Content="Remove Selected Effect" Click="OnRemoveEffect" Padding="6,2" Margin="0,4,0,0"/>
-        </StackPanel>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

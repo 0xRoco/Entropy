@@ -14,6 +14,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Entropy.Content\Entropy.Content.csproj" />
+        <ProjectReference Include="..\Entropy.Simulation\Entropy.Simulation.csproj" />
     </ItemGroup>
 
 </Project>

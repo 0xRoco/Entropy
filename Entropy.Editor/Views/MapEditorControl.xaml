@@ -1,0 +1,258 @@
+<UserControl x:Name="MapEditorRoot" x:Class="Entropy.Editor.Views.MapEditorControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewModels="clr-namespace:Entropy.Editor.ViewModels"
+             xmlns:local="clr-namespace:Entropy.Editor.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             d:DataContext="{d:DesignInstance Type=viewModels:MapWorkspaceViewModel, IsDesignTimeCreatable=False}"
+             mc:Ignorable="d">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{StaticResource EditorSurface}"
+                BorderBrush="{StaticResource EditorBorder}" BorderThickness="1,1,1,0" Padding="10,7">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <TextBlock Text="MAP WORKSPACE" FontWeight="Bold" FontSize="12"
+                               Foreground="{StaticResource EditorAccent}" VerticalAlignment="Center"/>
+                    <TextBlock Text="  /  author world regions" FontSize="11"
+                               Foreground="{StaticResource EditorMutedText}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Save Map" Command="{Binding SaveMapCommand}" Padding="10,3"/>
+                    <Button Content="Undo" Command="{Binding UndoMapCommand}" Padding="10,3"/>
+                    <Button Content="Redo" Command="{Binding RedoMapCommand}" Padding="10,3" Margin="0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="228"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="310"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{StaticResource EditorSurface}"
+                    BorderBrush="{StaticResource EditorBorder}" BorderThickness="1,0,1,0" Padding="12">
+                <DockPanel>
+                    <StackPanel>
+                        <TextBlock Text="TOOLS" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource EditorMutedText}" Margin="0,0,0,6"/>
+                        <UniformGrid Columns="2" Margin="0,0,0,14">
+                            <ToggleButton x:Name="PaintToolButton" Content="Paint" IsChecked="True"
+                                          Click="PaintToolClick" Margin="0,0,4,4"/>
+                            <ToggleButton x:Name="SelectToolButton" Content="Select"
+                                          Click="SelectToolClick" Margin="0,0,0,4"/>
+                            <Button Content="Object" Click="ObjectToolClick" Margin="0,0,4,4"/>
+                            <Button Content="Anchor" Click="AnchorToolClick" Margin="0,0,0,4"/>
+                            <Button Content="Transition" Click="TransitionToolClick" Margin="0,0,4,4"/>
+                            <Button Content="Fill" Click="FillToolClick" Margin="0,0,0,0"/>
+                            <Button Content="Rect" Click="RectangleToolClick" Margin="0,0,0,0"/>
+                            <Button Content="Resize" Click="ResizeToolClick" Margin="0,0,0,0"/>
+                        </UniformGrid>
+
+                        <TextBlock Text="TERRAIN PALETTE" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource EditorMutedText}" Margin="0,0,0,6"/>
+                        <ListBox ItemsSource="{Binding TerrainChoices}" SelectedValuePath="Id"
+                                 SelectedValue="{Binding SelectedTerrainId}" MaxHeight="170">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Ellipse Width="9" Height="9" Fill="{Binding Id, Converter={StaticResource MapTerrainBrush}}"
+                                                 Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Id}"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1" Background="#000000"
+                    BorderBrush="{StaticResource EditorBorder}" BorderThickness="0,0,1,0" Padding="12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="34"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <ListBox Grid.Row="0" ItemsSource="{Binding Documents}" SelectedItem="{Binding Selected}"
+                             Background="{StaticResource EditorSurface}" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                <Setter Property="Foreground" Value="{StaticResource EditorMutedText}"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,2,0"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="TabBorder"
+                                                    Background="{TemplateBinding Background}"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="0,0,0,2"
+                                                    Padding="12,5">
+                                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="TabBorder" Property="Background" Value="#16191C"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource EditorAccentSoft}"/>
+                                                    <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource EditorAccent}"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource EditorAccent}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center"/>
+                                    <Button Content="x" Click="CloseMapTabClick" Width="18" Height="18"
+                                            Padding="0" Margin="8,0,0,0" ToolTip="Close map"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <DockPanel Grid.Row="1" Margin="0,0,0,8">
+                        <TextBlock Text="VIEWPORT" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource EditorMutedText}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock x:Name="CoordinateText" Text="Cell: -" Foreground="{StaticResource EditorMutedText}"
+                                       VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <CheckBox Content="Grid" IsChecked="True" Click="GridToggleClick"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox Content="Objects" IsChecked="True" Click="ObjectsToggleClick"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox Content="Anchors" IsChecked="True" Click="AnchorsToggleClick"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox Content="Links" IsChecked="True" Click="TransitionsToggleClick"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox Content="Collision" Click="CollisionToggleClick"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox Content="Opacity" Click="OpacityToggleClick"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Content="-" Width="26" Padding="0" Margin="0,0,3,0" Click="ZoomOutClick"/>
+                            <Button x:Name="ZoomResetButton" Content="100%" Width="52" Padding="0" Margin="0,0,3,0"
+                                    Click="ZoomResetClick"/>
+                            <Button Content="+" Width="26" Padding="0" Margin="0" Click="ZoomInClick"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <local:MapCanvas x:Name="MapCanvasView" Document="{Binding Selected}"
+                                         SelectedTerrainId="{Binding SelectedTerrainId}"
+                                         SelectedTerrainSymbol="{Binding SelectedTerrainSymbol}"/>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Background="{StaticResource EditorSurface}" Padding="14">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel DataContext="{Binding Selected}">
+                        <TextBlock Text="INSPECTOR" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource EditorMutedText}"/>
+                        <TextBlock Text="{Binding DisplayName}" FontSize="18" Margin="0,8,0,0"/>
+                        <TextBlock Text="{Binding Summary}" Foreground="{StaticResource EditorMutedText}" Margin="0,2,0,0"/>
+                        <TextBlock Text="Unsaved changes" Foreground="{StaticResource EditorAccent}" Margin="0,5,0,0"
+                                   Visibility="{Binding IsDirty, Converter={StaticResource BoolToVis}}"/>
+                        <Separator Margin="0,14"/>
+
+                        <TextBlock Text="SELECTED CELL" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource EditorMutedText}"/>
+                        <TextBlock x:Name="SelectedCellText" Text="No cell selected" Margin="0,7,0,0"/>
+                        <TextBlock x:Name="SelectedTerrainText" Foreground="{StaticResource EditorText}"
+                                   TextWrapping="Wrap" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="SelectedEntitiesText" Foreground="{StaticResource EditorAccent}"
+                                   TextWrapping="Wrap" Margin="0,3,0,0"/>
+                        <ListBox x:Name="EntityList"
+                                 ItemsSource="{Binding EntityChoices, ElementName=MapEditorRoot}"
+                                 DisplayMemberPath="Label" SelectionChanged="EntitySelectionChanged"
+                                 MaxHeight="100" Margin="0,5,0,0"/>
+
+                        <TextBlock Text="EDIT SELECTED ENTITIES" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource EditorMutedText}" Margin="0,14,0,2"/>
+                        <TextBlock Text="Used by placement tools and Apply fields."
+                                   Foreground="{StaticResource EditorMutedText}" FontSize="10"
+                                   TextWrapping="Wrap" Margin="0,0,0,7"/>
+                        <TextBlock Text="Object definition" FontSize="10"
+                                   Foreground="{StaticResource EditorMutedText}"/>
+                        <ComboBox ItemsSource="{Binding DataContext.ObjectChoices, ElementName=MapEditorRoot}"
+                                  SelectedValuePath="Id"
+                                  SelectedValue="{Binding DataContext.SelectedObjectDefinitionId, ElementName=MapEditorRoot}"
+                                  ToolTip="Object definition">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Id}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBlock Text="Anchor kind" FontSize="10"
+                                   Foreground="{StaticResource EditorMutedText}" Margin="0,6,0,0"/>
+                        <TextBox Text="{Binding DataContext.AnchorKind, ElementName=MapEditorRoot, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,2,0,0" ToolTip="Anchor kind"/>
+                        <TextBlock Text="Transition target map" FontSize="10"
+                                   Foreground="{StaticResource EditorMutedText}" Margin="0,6,0,0"/>
+                        <ComboBox ItemsSource="{Binding DataContext.TargetMapChoices, ElementName=MapEditorRoot}"
+                                  SelectedItem="{Binding DataContext.TargetMap, ElementName=MapEditorRoot, UpdateSourceTrigger=PropertyChanged}"
+                                  IsEditable="True" Margin="0,2,0,0" ToolTip="Transition target map"/>
+                        <TextBlock Text="Transition target anchor" FontSize="10"
+                                   Foreground="{StaticResource EditorMutedText}" Margin="0,6,0,0"/>
+                        <TextBox Text="{Binding DataContext.TargetAnchor, ElementName=MapEditorRoot, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,2,0,0" ToolTip="Transition target anchor"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="Remove entities" Click="RemoveEntitiesClick" Padding="7,3" Margin="0,0,5,0"/>
+                            <Button Content="Apply fields" Click="ApplyEntityFieldsClick" Padding="7,3" Margin="0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Button Content="Left" Click="MoveLeftClick" Padding="5,2" Margin="0,0,3,0"/>
+                            <Button Content="Up" Click="MoveUpClick" Padding="5,2" Margin="0,0,3,0"/>
+                            <Button Content="Down" Click="MoveDownClick" Padding="5,2" Margin="0,0,3,0"/>
+                            <Button Content="Right" Click="MoveRightClick" Padding="5,2" Margin="0"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,16"/>
+                        <TextBlock Text="VALIDATION" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource EditorMutedText}"/>
+                        <TextBlock Text="Valid" Foreground="#BDBDBD" Margin="0,6,0,0"
+                                   Visibility="{Binding IsValid, Converter={StaticResource BoolToVis}}"/>
+                        <ListBox ItemsSource="{Binding ValidationErrors}" MaxHeight="180" Margin="0,5,0,0"/>
+                        <TextBlock Text="{Binding FilePath}" TextWrapping="Wrap" FontSize="10"
+                                   Foreground="{StaticResource EditorMutedText}" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{StaticResource EditorSurface}"
+                BorderBrush="{StaticResource EditorBorder}" BorderThickness="1,0,1,1" Padding="10,0">
+            <DockPanel VerticalAlignment="Center">
+                <TextBlock Text="Middle drag pan  |  Wheel zoom  |  Right-click select"
+                           Foreground="{StaticResource EditorMutedText}"/>
+                <TextBlock Text="Terrain painting is undoable" HorizontalAlignment="Right"
+                           Foreground="{StaticResource EditorMutedText}"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

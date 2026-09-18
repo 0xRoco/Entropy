@@ -1,0 +1,126 @@
+<UserControl x:Class="Entropy.Editor.Views.TilesetEditorControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource EditorSurface}">
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="280"/>
+        </Grid.ColumnDefinitions>
+
+        <DockPanel Grid.Column="0" Margin="0,0,8,0">
+            <TextBlock DockPanel.Dock="Top" Text="TILESET BROWSER" FontSize="10" FontWeight="Bold"
+                       Foreground="{StaticResource EditorMutedText}" Margin="0,0,0,6"/>
+            <TextBox DockPanel.Dock="Top" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Filter tilesets by ID" Margin="0,0,0,6"/>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                <Button Content="NEW" Command="{Binding AddCommand}" Padding="8,3" Margin="0,0,4,0"/>
+                <Button Content="DUPLICATE" Command="{Binding DuplicateCommand}" Padding="8,3" Margin="0,0,4,0"/>
+                <Button Content="DELETE" Command="{Binding DeleteCommand}" Padding="8,3"/>
+            </StackPanel>
+            <ListBox ItemsSource="{Binding VisibleDefs}" SelectedItem="{Binding Selected}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Id}"/>
+                            <TextBlock Text="{Binding Atlas}" FontSize="10"
+                                       Foreground="{StaticResource EditorMutedText}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <ScrollViewer Grid.Column="1" Margin="8,0" VerticalScrollBarVisibility="Auto">
+            <StackPanel DataContext="{Binding Selected}">
+                <TextBlock Text="IDENTITY" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}" Margin="0,0,0,6"/>
+                <Border Background="{StaticResource EditorSurfaceRaised}" BorderBrush="{StaticResource EditorBorder}"
+                        BorderThickness="1" Padding="10" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="ID" Foreground="{StaticResource EditorMutedText}"/>
+                        <TextBox Grid.Row="0" Text="{Binding Id, UpdateSourceTrigger=PropertyChanged}" Margin="90,0,0,5"/>
+                        <TextBlock Grid.Row="1" Text="MODE" Foreground="{StaticResource EditorMutedText}"/>
+                        <TextBox Grid.Row="1" Text="{Binding Mode, UpdateSourceTrigger=PropertyChanged}" Margin="90,0,0,5"/>
+                        <TextBlock Grid.Row="2" Text="CELL SIZE" Foreground="{StaticResource EditorMutedText}"/>
+                        <TextBox Grid.Row="2" Text="{Binding CellSize, UpdateSourceTrigger=PropertyChanged}" Margin="90,0,0,0"/>
+                    </Grid>
+                </Border>
+                <TextBlock Text="ATLAS" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}" Margin="0,0,0,6"/>
+                <Border Background="{StaticResource EditorSurfaceRaised}" BorderBrush="{StaticResource EditorBorder}"
+                        BorderThickness="1" Padding="10">
+                    <TextBox Text="{Binding Atlas, UpdateSourceTrigger=PropertyChanged}"/>
+                </Border>
+                <TextBlock Text="ATLAS PREVIEW" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}" Margin="0,14,0,6"/>
+                <Border Background="#101418" BorderBrush="{StaticResource EditorBorder}" BorderThickness="1"
+                        Padding="10" HorizontalAlignment="Left">
+                    <ScrollViewer MaxHeight="520" MaxWidth="760" HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto">
+                        <Canvas Width="{Binding DataContext.AtlasWidth, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                Height="{Binding DataContext.AtlasHeight, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <Canvas.LayoutTransform>
+                                <ScaleTransform ScaleX="4" ScaleY="4"/>
+                            </Canvas.LayoutTransform>
+                            <Image Source="{Binding DataContext.AtlasImage, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   Width="{Binding DataContext.AtlasWidth, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   Height="{Binding DataContext.AtlasHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   Stretch="None" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            <TextBlock Text="{Binding DataContext.AsciiPreviewText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       FontFamily="Consolas" FontSize="16" Foreground="{StaticResource EditorAccent}"
+                                       LineHeight="18" Opacity="{Binding DataContext.AsciiPreviewOpacity, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            <Rectangle Canvas.Left="{Binding DataContext.HighlightX, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       Canvas.Top="{Binding DataContext.HighlightY, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       Width="{Binding DataContext.Selected.CellSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       Height="{Binding DataContext.Selected.CellSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       Fill="#55FFB000" Stroke="{StaticResource EditorAccent}" StrokeThickness="2"
+                                       Opacity="{Binding DataContext.HighlightOpacity, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                        </Canvas>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Column="2" Margin="8,0,0,0" Background="{StaticResource EditorSurfaceRaised}"
+                BorderBrush="{StaticResource EditorBorder}" BorderThickness="1" Padding="10">
+            <StackPanel>
+                <TextBlock Text="SPRITE INDEX" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}"/>
+                <TextBlock Text="{Binding Selected.Id}" FontSize="16" Margin="0,7,0,0"/>
+                <TextBlock Text="Select an entry to highlight its atlas cell" Foreground="{StaticResource EditorMutedText}" Margin="0,2,0,10"/>
+                <TextBlock Text="SPRITE ENTRIES" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}" Margin="0,12,0,5"/>
+                <ListBox ItemsSource="{Binding SpriteKeys}" SelectedItem="{Binding SelectedSpriteKey}" MaxHeight="160">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="EDIT SELECTED ENTRY" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource EditorMutedText}" Margin="0,10,0,5"/>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding SpriteKeyEdit, UpdateSourceTrigger=PropertyChanged}" ToolTip="Sprite key"/>
+                    <TextBox Grid.Column="1" Text="{Binding SpriteXEdit, UpdateSourceTrigger=PropertyChanged}" Margin="4,0,0,0" ToolTip="Cell X"/>
+                    <TextBox Grid.Column="2" Text="{Binding SpriteYEdit, UpdateSourceTrigger=PropertyChanged}" Margin="4,0,0,0" ToolTip="Cell Y"/>
+                </Grid>
+                <Button Content="UPDATE SELECTED SPRITE" Command="{Binding UpdateSpriteCommand}"
+                        Padding="6,2" Margin="0,5,0,0" HorizontalAlignment="Left"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBox Text="{Binding NewSpriteKey, UpdateSourceTrigger=PropertyChanged}" Width="100" ToolTip="Sprite key"/>
+                    <TextBox Text="{Binding NewSpriteX, UpdateSourceTrigger=PropertyChanged}" Width="42" Margin="4,0,0,0" ToolTip="Cell X"/>
+                    <TextBox Text="{Binding NewSpriteY, UpdateSourceTrigger=PropertyChanged}" Width="42" Margin="4,0,0,0" ToolTip="Cell Y"/>
+                    <Button Content="ADD" Command="{Binding AddSpriteCommand}" Padding="6,2" Margin="4,0,0,0"/>
+                </StackPanel>
+                <Button Content="REMOVE SELECTED SPRITE" Command="{Binding RemoveSpriteCommand}"
+                        Padding="6,2" Margin="0,5,0,0" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

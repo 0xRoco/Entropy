@@ -124,10 +124,22 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [4, 7],
-      "home": [5, 3],
-      "bed1": [3, 3],
-      "fridge": [7, 2]
+      "entry": [
+        4,
+        7
+      ],
+      "home": [
+        5,
+        3
+      ],
+      "bed1": [
+        3,
+        3
+      ],
+      "fridge": [
+        7,
+        2
+      ]
     }
   },
   {
@@ -151,11 +163,26 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [4, 8],
-      "shelf1": [2, 2],
-      "shelf2": [2, 5],
-      "register": [7, 2],
-      "fridge": [7, 5]
+      "entry": [
+        4,
+        8
+      ],
+      "shelf1": [
+        2,
+        2
+      ],
+      "shelf2": [
+        2,
+        5
+      ],
+      "register": [
+        7,
+        2
+      ],
+      "fridge": [
+        7,
+        5
+      ]
     }
   },
   {
@@ -178,10 +205,22 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [5, 7],
-      "register": [9, 2],
-      "fridge": [9, 5],
-      "shelf1": [2, 2]
+      "entry": [
+        5,
+        7
+      ],
+      "register": [
+        9,
+        2
+      ],
+      "fridge": [
+        9,
+        5
+      ],
+      "shelf1": [
+        2,
+        2
+      ]
     }
   },
   {
@@ -204,10 +243,22 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [5, 7],
-      "shelf1": [2, 2],
-      "shelf2": [2, 5],
-      "register": [9, 2]
+      "entry": [
+        5,
+        7
+      ],
+      "shelf1": [
+        2,
+        2
+      ],
+      "shelf2": [
+        2,
+        5
+      ],
+      "register": [
+        9,
+        2
+      ]
     }
   },
   {
@@ -231,10 +282,22 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [4, 8],
-      "bed1": [2, 2],
-      "bed2": [2, 5],
-      "fridge": [7, 2]
+      "entry": [
+        4,
+        8
+      ],
+      "bed1": [
+        2,
+        2
+      ],
+      "bed2": [
+        2,
+        5
+      ],
+      "fridge": [
+        7,
+        2
+      ]
     }
   },
   {
@@ -258,10 +321,22 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [6, 8],
-      "shelf1": [3, 2],
-      "shelf2": [3, 5],
-      "shelf3": [10, 2]
+      "entry": [
+        6,
+        8
+      ],
+      "shelf1": [
+        3,
+        2
+      ],
+      "shelf2": [
+        3,
+        5
+      ],
+      "shelf3": [
+        10,
+        2
+      ]
     }
   },
   {
@@ -284,10 +359,22 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [4, 7],
-      "bed1": [2, 2],
-      "shelf1": [7, 2],
-      "register": [7, 5]
+      "entry": [
+        4,
+        7
+      ],
+      "bed1": [
+        2,
+        2
+      ],
+      "shelf1": [
+        7,
+        2
+      ],
+      "register": [
+        7,
+        5
+      ]
     }
   },
   {
@@ -310,10 +397,22 @@
       "d": "door"
     },
     "anchors": {
-      "entry": [5, 7],
-      "register": [9, 2],
-      "shelf1": [2, 2],
-      "fridge": [9, 5]
+      "entry": [
+        5,
+        7
+      ],
+      "register": [
+        9,
+        2
+      ],
+      "shelf1": [
+        2,
+        2
+      ],
+      "fridge": [
+        9,
+        5
+      ]
     }
   }
 ]

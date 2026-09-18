@@ -4,10 +4,383 @@
              xmlns:local="clr-namespace:Entropy.Editor"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <FontFamily x:Key="EditorMonoFont">JetBrains Mono, Consolas, Monospace</FontFamily>
+        <SolidColorBrush x:Key="EditorBackground" Color="#0A0B0C"/>
+        <SolidColorBrush x:Key="EditorSurface" Color="#101214"/>
+        <SolidColorBrush x:Key="EditorSurfaceRaised" Color="#141619"/>
+        <SolidColorBrush x:Key="EditorBorder" Color="#1E2124"/>
+        <SolidColorBrush x:Key="EditorBorderSoft" Color="#15181A"/>
+        <SolidColorBrush x:Key="EditorText" Color="#E8E9EA"/>
+        <SolidColorBrush x:Key="EditorMutedText" Color="#6A6F74"/>
+        <SolidColorBrush x:Key="EditorAccent" Color="#C7B15A"/>
+        <SolidColorBrush x:Key="EditorAccentActive" Color="#2ECC71"/>
+        <SolidColorBrush x:Key="EditorAccentWarn" Color="#F8E247"/>
+        <SolidColorBrush x:Key="EditorAccentSoft" Color="#2A2E32"/>
+        <SolidColorBrush x:Key="EditorError" Color="#FF4747"/>
+
+        <Style TargetType="Window">
+            <Setter Property="Background" Value="{StaticResource EditorBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="FontFamily" Value="{StaticResource EditorMonoFont}"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="FontFamily" Value="{StaticResource EditorMonoFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="{StaticResource EditorSurfaceRaised}"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource EditorBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="FontFamily" Value="{StaticResource EditorMonoFont}"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource EditorSurfaceRaised}"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource EditorBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="FontFamily" Value="{StaticResource EditorMonoFont}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#16191C"/>
+                                <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#1B1F22"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource EditorSurfaceRaised}"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource EditorBorder}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource EditorAccent}"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="FontFamily" Value="{StaticResource EditorMonoFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#3A4045"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource EditorAccent}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Background" Value="{StaticResource EditorSurfaceRaised}"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource EditorBorder}"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="DropDownButton"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Background="{StaticResource EditorSurfaceRaised}" BorderBrush="{TemplateBinding BorderBrush}"
+                                          BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                                      Margin="2,0,18,0"
+                                                      VerticalAlignment="Center"
+                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                    <TextBlock Text="v" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               Foreground="{TemplateBinding Foreground}" Margin="0,0,4,0"/>
+                                </Grid>
+                            </ToggleButton>
+                            <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
+                                   PlacementTarget="{Binding ElementName=DropDownButton}"
+                                   AllowsTransparency="True" Focusable="False">
+                                    <Border Background="{StaticResource EditorSurface}" BorderBrush="{StaticResource EditorBorder}" BorderThickness="1"
+                                        MinWidth="{Binding ActualWidth, ElementName=DropDownButton}">
+                                    <ScrollViewer MaxHeight="260" Background="{StaticResource EditorSurface}">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                         </Grid>
+                         <ControlTemplate.Triggers>
+                             <Trigger Property="IsMouseOver" Value="True">
+                                 <Setter TargetName="DropDownButton" Property="Background" Value="#16191C"/>
+                                 <Setter TargetName="DropDownButton" Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                             </Trigger>
+                         </ControlTemplate.Triggers>
+                     </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Background" Value="{StaticResource EditorSurface}"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#16191C"/>
+                    <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                </Trigger>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="#16191C"/>
+                    <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource EditorAccentSoft}"/>
+                    <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ToggleButton">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Background" Value="{StaticResource EditorSurfaceRaised}"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource EditorBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="0,0,4,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#16191C"/>
+                                <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{StaticResource EditorAccentSoft}"/>
+                                <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Padding" Value="12,9"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorMutedText}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#16191C"/>
+                    <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource EditorAccentSoft}"/>
+                    <Setter Property="Foreground" Value="{StaticResource EditorAccent}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ScrollBar">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Background" Value="#000000"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="#000000">
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True"
+                                   Orientation="{TemplateBinding Orientation}"
+                                   Value="{TemplateBinding Value}"
+                                   Maximum="{TemplateBinding Maximum}"
+                                   Minimum="{TemplateBinding Minimum}"
+                                   ViewportSize="{TemplateBinding ViewportSize}">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}"
+                                                  Background="#000000" BorderThickness="0" IsTabStop="False"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Background="#333333"
+                                           BorderBrush="#555555"
+                                           BorderThickness="1"
+                                           Margin="1,2">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="ThumbBorder"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="3"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#444444"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#555555"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}"
+                                                  Background="#000000" BorderThickness="0" IsTabStop="False"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Orientation" Value="Vertical">
+                                <Setter Property="Width" Value="10"/>
+                            </Trigger>
+                            <Trigger Property="Orientation" Value="Horizontal">
+                                <Setter Property="Height" Value="10"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{StaticResource EditorSurface}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource EditorBorder}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter ContentSource="SelectedContent"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Foreground" Value="{StaticResource EditorText}"/>
+            <Setter Property="Background" Value="{StaticResource EditorSurface}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource EditorBorder}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="HeaderBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="#16191C"/>
+                                <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource EditorAccentSoft}"/>
+                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{StaticResource EditorAccent}"/>
+                                <Setter TargetName="HeaderBorder" Property="BorderThickness" Value="0,0,0,2"/>
+                                <Setter Property="Foreground" Value="{StaticResource EditorAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#16191C"/>
+                    <Setter Property="Foreground" Value="{StaticResource EditorAccentActive}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource EditorAccentSoft}"/>
+                    <Setter Property="Foreground" Value="{StaticResource EditorAccent}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:CharConverter x:Key="Char"/>
         <local:ColorNameConverter x:Key="ColorName"/>
         <local:Color4ToBrushConverter x:Key="Color4Brush"/>
+        <local:MapTerrainBrushConverter x:Key="MapTerrainBrush"/>
         <local:MaterialsConverter x:Key="Materials"/>
         <local:FlagsConverter x:Key="Flags"/>
         <local:ItemIdsConverter x:Key="ItemIds"/>

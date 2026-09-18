@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,8 +16,14 @@ public abstract partial class DefListViewModel<T>(ContentWorkspace workspace) : 
     public ContentWorkspace Workspace { get; } = workspace;
 
     public ObservableCollection<T> Defs { get; } = new();
+    public ICollectionView VisibleDefs => _visibleDefs ??= CreateView();
     [ObservableProperty] private T? _selected;
     [ObservableProperty] private ImageSource? _previewImage;
+    [ObservableProperty] private string _filterText = string.Empty;
+    [ObservableProperty] private string _sortProperty = "Id";
+    [ObservableProperty] private ListSortDirection _sortDirection = ListSortDirection.Ascending;
+
+    private ICollectionView? _visibleDefs;
 
     public abstract string TypeName { get; }
 
@@ -24,10 +32,35 @@ public abstract partial class DefListViewModel<T>(ContentWorkspace workspace) : 
         Defs.Clear();
         foreach (var def in defs) Defs.Add(def);
         Selected = Defs.Count > 0 ? Defs[0] : null;
+        VisibleDefs.Refresh();
         UpdatePreview();
     }
 
-    partial void OnSelectedChanged(T? value) => UpdatePreview();
+    partial void OnSelectedChanged(T? value)
+    {
+        UpdatePreview();
+        SelectedChanged(value);
+    }
+
+    protected virtual void SelectedChanged(T? value) { }
+
+    partial void OnFilterTextChanged(string value) => VisibleDefs.Refresh();
+
+    [RelayCommand]
+    private void Sort(string property)
+    {
+        if (string.Equals(SortProperty, property, StringComparison.Ordinal))
+            SortDirection = SortDirection == ListSortDirection.Ascending
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
+        else
+        {
+            SortProperty = property;
+            SortDirection = ListSortDirection.Ascending;
+        }
+
+        ApplySort();
+    }
 
     protected abstract string? SpriteKeyOf(T def);
 
@@ -76,6 +109,39 @@ public abstract partial class DefListViewModel<T>(ContentWorkspace workspace) : 
         PreviewImage = Selected is null
             ? null
             : Workspace.GetPreviewImage(SpriteKeyOf(Selected) ?? string.Empty);
+    }
+
+    private ICollectionView CreateView()
+    {
+        var view = new ListCollectionView(Defs);
+        view.Filter = item => string.IsNullOrWhiteSpace(FilterText) || MatchesFilter(item, FilterText);
+        view.SortDescriptions.Add(new SortDescription(SortProperty, SortDirection));
+        return view;
+    }
+
+    partial void OnSortPropertyChanged(string value) => ApplySort();
+
+    partial void OnSortDirectionChanged(ListSortDirection value) => ApplySort();
+
+    private void ApplySort()
+    {
+        if (_visibleDefs is null)
+            return;
+
+        _visibleDefs.SortDescriptions.Clear();
+        _visibleDefs.SortDescriptions.Add(new SortDescription(SortProperty, SortDirection));
+        _visibleDefs.Refresh();
+    }
+
+    private static bool MatchesFilter(object? item, string filter)
+    {
+        if (item is null)
+            return false;
+
+        var type = item.GetType();
+        return new[] { "Id", "Name", "Description" }
+            .Select(property => type.GetProperty(property)?.GetValue(item)?.ToString())
+            .Any(value => value?.Contains(filter, StringComparison.OrdinalIgnoreCase) == true);
     }
 
     protected static string UniqueId(IEnumerable<string> existingIds, string baseId)
@@ -212,7 +278,112 @@ public partial class TerrainViewModel(ContentWorkspace workspace) : DefListViewM
 
 public partial class TilesetsViewModel(ContentWorkspace workspace) : DefListViewModel<TilesetDefinition>(workspace)
 {
+    public ObservableCollection<string> SpriteKeys { get; } = new();
+
+    [ObservableProperty] private ImageSource? _atlasImage;
+    [ObservableProperty] private string? _selectedSpriteKey;
+    [ObservableProperty] private string _newSpriteKey = string.Empty;
+    [ObservableProperty] private int _newSpriteX;
+    [ObservableProperty] private int _newSpriteY;
+    [ObservableProperty] private double _atlasWidth = 1;
+    [ObservableProperty] private double _atlasHeight = 1;
+    [ObservableProperty] private double _highlightX;
+    [ObservableProperty] private double _highlightY;
+    [ObservableProperty] private double _highlightOpacity;
+    [ObservableProperty] private string _spriteKeyEdit = string.Empty;
+    [ObservableProperty] private int _spriteXEdit;
+    [ObservableProperty] private int _spriteYEdit;
+    [ObservableProperty] private string _asciiPreviewText = string.Empty;
+    [ObservableProperty] private double _asciiPreviewOpacity;
+
     public override string TypeName => "Tileset";
+
+    protected override void SelectedChanged(TilesetDefinition? value)
+    {
+        AtlasImage = value is null ? null : Workspace.GetAtlasImage(value);
+        if (AtlasImage is System.Windows.Media.Imaging.BitmapSource bitmap)
+        {
+            AtlasWidth = bitmap.PixelWidth;
+            AtlasHeight = bitmap.PixelHeight;
+        }
+        else
+        {
+            AtlasWidth = 1;
+            AtlasHeight = 1;
+        }
+        SpriteKeys.Clear();
+        if (value is not null)
+            foreach (var key in value.Sprites.Keys.OrderBy(key => key, StringComparer.OrdinalIgnoreCase))
+                SpriteKeys.Add(key);
+        SelectedSpriteKey = SpriteKeys.FirstOrDefault();
+        AsciiPreviewText = string.Equals(value?.Mode, "ascii", StringComparison.OrdinalIgnoreCase)
+            ? BuildAsciiPreview()
+            : string.Empty;
+        AsciiPreviewOpacity = string.IsNullOrEmpty(AsciiPreviewText) ? 0 : 1;
+    }
+
+    partial void OnSelectedSpriteKeyChanged(string? value)
+    {
+        if (Selected is not null && value is not null && Selected.Sprites.TryGetValue(value, out var cell))
+        {
+            SpriteKeyEdit = value;
+            SpriteXEdit = cell.X;
+            SpriteYEdit = cell.Y;
+            HighlightX = cell.X * Selected.CellSize;
+            HighlightY = cell.Y * Selected.CellSize;
+            HighlightOpacity = 1;
+        }
+        else
+        {
+            SpriteKeyEdit = string.Empty;
+            SpriteXEdit = 0;
+            SpriteYEdit = 0;
+            HighlightOpacity = 0;
+        }
+    }
+
+    [RelayCommand]
+    private void UpdateSprite()
+    {
+        if (Selected is null || string.IsNullOrWhiteSpace(SelectedSpriteKey) || string.IsNullOrWhiteSpace(SpriteKeyEdit)) return;
+        var oldKey = SelectedSpriteKey;
+        var newKey = SpriteKeyEdit.Trim();
+        Selected.Sprites.Remove(oldKey);
+        Selected.Sprites[newKey] = new Vector2i(SpriteXEdit, SpriteYEdit);
+        var index = SpriteKeys.IndexOf(oldKey);
+        SpriteKeys.Remove(oldKey);
+        if (index < 0 || index > SpriteKeys.Count) index = SpriteKeys.Count;
+        SpriteKeys.Insert(index, newKey);
+        SelectedSpriteKey = newKey;
+    }
+
+    private static string BuildAsciiPreview()
+    {
+        const string glyphs = "@#$%&*+=-:.ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        return string.Join(Environment.NewLine, Enumerable.Range(0, 8)
+            .Select(row => new string(Enumerable.Range(0, 16)
+                .Select(column => glyphs[(row * 16 + column) % glyphs.Length]).ToArray())));
+    }
+
+    [RelayCommand]
+    private void AddSprite()
+    {
+        if (Selected is null || string.IsNullOrWhiteSpace(NewSpriteKey)) return;
+        Selected.Sprites[NewSpriteKey.Trim()] = new Vector2i(NewSpriteX, NewSpriteY);
+        if (!SpriteKeys.Contains(NewSpriteKey.Trim(), StringComparer.OrdinalIgnoreCase))
+            SpriteKeys.Add(NewSpriteKey.Trim());
+        SelectedSpriteKey = NewSpriteKey.Trim();
+        NewSpriteKey = string.Empty;
+    }
+
+    [RelayCommand]
+    private void RemoveSprite()
+    {
+        if (Selected is null || string.IsNullOrWhiteSpace(SelectedSpriteKey)) return;
+        Selected.Sprites.Remove(SelectedSpriteKey);
+        SpriteKeys.Remove(SelectedSpriteKey);
+        SelectedSpriteKey = SpriteKeys.FirstOrDefault();
+    }
 
     protected override string? SpriteKeyOf(TilesetDefinition def) => null; // preview not applicable
 

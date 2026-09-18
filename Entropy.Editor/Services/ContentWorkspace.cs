@@ -66,6 +66,24 @@ public partial class ContentWorkspace : ObservableObject
             cell.X * art.CellSize, cell.Y * art.CellSize, art.CellSize, art.CellSize));
     }
 
+    public ImageSource? GetAtlasImage(TilesetDefinition tileset)
+    {
+        if (FolderPath is null || string.IsNullOrWhiteSpace(tileset.Atlas)) return null;
+
+        var contentRoot = Directory.GetParent(FolderPath)!.FullName;
+        var gameRoot = Directory.GetParent(contentRoot)!.FullName;
+        var atlasPath = Path.Combine(gameRoot, tileset.Atlas.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(atlasPath)) return null;
+
+        var image = new BitmapImage();
+        image.BeginInit();
+        image.CacheOption = BitmapCacheOption.OnLoad;
+        image.UriSource = new Uri(atlasPath);
+        image.EndInit();
+        image.Freeze();
+        return image;
+    }
+
     public void Load(string folder)
     {
         FolderPath = folder;

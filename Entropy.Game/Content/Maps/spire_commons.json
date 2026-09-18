@@ -1,18 +1,18 @@
 {
-  "version": 1,
-  "id": "spire_commons",
-  "name": "Spire Commons",
-  "kind": "authored",
-  "width": 52,
-  "height": 31,
-  "terrain": {
-    "legend": {
+  "Version": 1,
+  "Id": "spire_commons",
+  "Name": "Spire Commons",
+  "Kind": "authored",
+  "Width": 52,
+  "Height": 31,
+  "Terrain": {
+    "Legend": {
       ".": "sidewalk",
       "=": "road_asphalt",
       "#": "wall_concrete",
-      "+": "door"
+      "\u002B": "door"
     },
-    "rows": [
+    "Rows": [
       "....................................................",
       "....................................................",
       "....................................................",
@@ -46,119 +46,126 @@
       "...................................................."
     ]
   },
-  "objects": [
+  "Objects": [
     {
-      "id": "dana_bed_object",
-      "definition": "bed",
-      "x": 9,
-      "y": 5
+      "Id": "dana_bed_object",
+      "Definition": "bed",
+      "X": 6,
+      "Y": 8,
+      "Rotation": 0
     },
     {
-      "id": "marcus_bed_object",
-      "definition": "bed",
-      "x": 25,
-      "y": 5
+      "Id": "marcus_bed_object",
+      "Definition": "bed",
+      "X": 21,
+      "Y": 7,
+      "Rotation": 0
     },
     {
-      "id": "commons_fridge",
-      "definition": "fridge",
-      "x": 10,
-      "y": 6
+      "Id": "commons_fridge",
+      "Definition": "fridge",
+      "X": 14,
+      "Y": 7,
+      "Rotation": 0
     },
     {
-      "id": "store_shelf",
-      "definition": "store_shelf",
-      "x": 40,
-      "y": 6
+      "Id": "store_shelf",
+      "Definition": "store_shelf",
+      "X": 41,
+      "Y": 8,
+      "Rotation": 0
     },
     {
-      "id": "store_register",
-      "definition": "register",
-      "x": 39,
-      "y": 5
+      "Id": "store_register",
+      "Definition": "register",
+      "X": 39,
+      "Y": 9,
+      "Rotation": 0
     },
     {
-      "id": "pharmacy_shelf",
-      "definition": "shelf",
-      "x": 24,
-      "y": 6
+      "Id": "pharmacy_shelf",
+      "Definition": "shelf",
+      "X": 23,
+      "Y": 8,
+      "Rotation": 0
     },
     {
-      "id": "hardware_shelf",
-      "definition": "shelf",
-      "x": 40,
-      "y": 22
+      "Id": "hardware_shelf",
+      "Definition": "shelf",
+      "X": 42,
+      "Y": 20,
+      "Rotation": 0
     }
   ],
-  "anchors": [
+  "Anchors": [
     {
-      "id": "player_spawn",
-      "kind": "player_spawn",
-      "x": 2,
-      "y": 15
+      "Id": "player_spawn",
+      "Kind": "player_spawn",
+      "X": 2,
+      "Y": 15
     },
     {
-      "id": "dana_home",
-      "kind": "home",
-      "x": 8,
-      "y": 5
+      "Id": "dana_home",
+      "Kind": "home",
+      "X": 8,
+      "Y": 9
     },
     {
-      "id": "dana_bed",
-      "kind": "bed",
-      "x": 9,
-      "y": 5
+      "Id": "dana_bed",
+      "Kind": "bed",
+      "X": 6,
+      "Y": 8
     },
     {
-      "id": "marcus_home",
-      "kind": "home",
-      "x": 24,
-      "y": 5
+      "Id": "marcus_home",
+      "Kind": "home",
+      "X": 25,
+      "Y": 9
     },
     {
-      "id": "marcus_bed",
-      "kind": "bed",
-      "x": 25,
-      "y": 5
+      "Id": "marcus_bed",
+      "Kind": "bed",
+      "X": 21,
+      "Y": 7
     },
     {
-      "id": "store_work",
-      "kind": "workplace",
-      "x": 40,
-      "y": 5
+      "Id": "store_work",
+      "Kind": "workplace",
+      "X": 41,
+      "Y": 9
     },
     {
-      "id": "quest_key",
-      "kind": "item",
-      "x": 8,
-      "y": 6
+      "Id": "quest_key",
+      "Kind": "item",
+      "X": 9,
+      "Y": 9
     },
     {
-      "id": "pharmacy_shelf",
-      "kind": "item",
-      "x": 24,
-      "y": 6
+      "Id": "pharmacy_shelf",
+      "Kind": "item",
+      "X": 23,
+      "Y": 8
     },
     {
-      "id": "hardware_shelf",
-      "kind": "item",
-      "x": 40,
-      "y": 22
+      "Id": "hardware_shelf",
+      "Kind": "item",
+      "X": 42,
+      "Y": 20
     },
     {
-      "id": "zombie_spawn",
-      "kind": "creature_spawn",
-      "x": 44,
-      "y": 15
+      "Id": "zombie_spawn",
+      "Kind": "creature_spawn",
+      "X": 49,
+      "Y": 21
     }
   ],
-  "transitions": [
+  "Transitions": [
     {
-      "id": "commons_west_exit",
-      "x": 0,
-      "y": 15,
-      "targetMap": "outside",
-      "targetAnchor": "west_gate"
+      "Id": "commons_west_exit",
+      "X": 0,
+      "Y": 15,
+      "TargetMap": "outside",
+      "TargetAnchor": "west_gate"
     }
   ]
 }

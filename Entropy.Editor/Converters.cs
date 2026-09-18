@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows.Data;
+using System.Windows.Media;
 using Entropy.Content;
 using OpenTK.Mathematics;
 
@@ -55,6 +56,28 @@ public class Color4ToBrushConverter : IValueConverter
             ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(
                 (byte)(c.R * 255), (byte)(c.G * 255), (byte)(c.B * 255)))
             : System.Windows.Media.Brushes.Transparent;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+public class MapTerrainBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var id = value?.ToString() ?? string.Empty;
+        var color = id switch
+        {
+            "road_asphalt" => "#252525",
+            "sidewalk" => "#555555",
+            "wall_concrete" => "#383838",
+            "wall_brick" => "#302A2A",
+            "door" => "#5A5A5A",
+            "grass" => "#182018",
+            _ => "#080808"
+        };
+        return new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
+    }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

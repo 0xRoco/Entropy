@@ -81,7 +81,7 @@
     "type": "WORLD_OBJECT",
     "id": "checkpoint_gate",
     "name": "Checkpoint Gate",
-    "symbol": "+",
+    "symbol": "\u002B",
     "color": "yellow",
     "description": "A reinforced gate controlling access to the Spire.",
     "flags": [
